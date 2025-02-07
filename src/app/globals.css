@@ -83,6 +83,9 @@
 }
 
 @layer utilities {
+  .no-scroll {
+    overflow: hidden !important;
+  }
   .divider {
     @apply w-16 border-b-[0.4rem] border-dotted mx-auto border-foreground/40 my-[10svh];
   }
