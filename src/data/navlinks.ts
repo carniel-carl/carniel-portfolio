@@ -1,3 +1,8 @@
+import { BsChatDotsFill } from "react-icons/bs";
+import { FaHome, FaTools } from "react-icons/fa";
+import { GoPersonFill } from "react-icons/go";
+import { MdWork } from "react-icons/md";
+
 export const NavLinks = [
   {
     name: "Blog",
@@ -12,3 +17,29 @@ export const NavLinks = [
   //   link: "/about",
   // },
 ];
+
+export const navLinksData = {
+  id: ".portfolio",
+  links: [
+    {
+      title: "About",
+      to: "#",
+      icon: GoPersonFill,
+    },
+    {
+      title: "projects",
+      to: "#projects",
+      icon: MdWork,
+    },
+    {
+      title: "skills",
+      to: "#skill",
+      icon: FaTools,
+    },
+    {
+      title: "contact",
+      to: "#contact",
+      icon: BsChatDotsFill,
+    },
+  ],
+};

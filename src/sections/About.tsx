@@ -7,7 +7,7 @@ const About = () => {
   return (
     <section
       id="about"
-      className="flex md:flex-row flex-col items-center  lg:gap-x-24 md:gap-x-12 gap-y-12 md:mt-20 mt-10"
+      className="portfolio flex md:flex-row flex-col items-center  lg:gap-x-24 md:gap-x-12 gap-y-12 md:mt-20 mt-10"
     >
       <div className="w-fit relative">
         <div className="relative lg:w-[21rem] lg:h-[28rem] md:w-[18rem]  md:h-[22rem] w-[19rem] h-[18rem] about-profile__after">

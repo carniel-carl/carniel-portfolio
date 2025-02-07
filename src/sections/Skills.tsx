@@ -3,7 +3,7 @@ import { skillsData } from "@/data/skills-data";
 
 const Skills = () => {
   return (
-    <section id="skill" className="flex flex-col">
+    <section id="skill" className="portfolio flex flex-col">
       <h2 className="heading-style after:content-['Acquired_skills'] font-nunito after:font-montserrat md:self-center md:mb-20 mb-12">
         Skills
       </h2>

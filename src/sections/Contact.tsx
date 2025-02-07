@@ -11,12 +11,12 @@ const Contact = () => {
   const msgRef = useRef<HTMLTextAreaElement | null>(null);
 
   return (
-    <section id="contact" className="flex flex-col">
+    <section id="contact" className="portfolio flex flex-col">
       <h2 className="heading-style after:content-['Reach_out_to_me'] font-nunito after:font-montserrat md:self-center md:mb-20 mb-12">
         contact
       </h2>
 
-      <div className="grid md:grid-cols-2 ">
+      <div className="grid md:grid-cols-2  min-h-[25rem]">
         <div className="hire-container">
           <p className="text-xl mb-12 font-bold">Hire me</p>
           <div className="flex flex-col gap-4 items-start">
