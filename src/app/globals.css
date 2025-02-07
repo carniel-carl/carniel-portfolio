@@ -2,12 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
-
 @layer base {
   :root {
     /* --bg: hsl(0, 0%, 98%); */
@@ -72,7 +66,7 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     /* --clr: #21d8a1; */
-    --clr: #149daa;
+    --clr: #14aaa0;
 
     --heading-clr: #f6f6f6;
     --gradient2: rgba(255, 255, 255, 0.3);
@@ -88,83 +82,100 @@
   }
 }
 
-.about-profile__after {
-  &::after {
-    content: "";
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: var(--clr);
-    bottom: -5%;
-    right: -5%;
-    z-index: -3;
-    border-radius: 20px;
-    transform: rotate(-10deg) scale(0.95) translate(-3%, -5%);
-    transition: all 0.8s;
-    filter: saturate(0.3) brightness(0.8);
+@layer utilities {
+  .divider {
+    @apply w-16 border-b-[0.4rem] border-dotted mx-auto border-foreground/40 my-[10svh];
   }
-  &:hover {
-    transform: scale(1.03);
 
+  .about-profile__after {
     &::after {
-      transform: rotate(0deg) scale(1) translate(1%, 1%);
-    }
-  }
-}
-
-.heading-style {
-  text-transform: uppercase;
-  width: fit-content;
-  font-size: clamp(2.5rem, 12vw, 7rem);
-  white-space: nowrap;
-  -webkit-text-fill-color: transparent;
-  -webkit-text-stroke-width: 1.5px;
-  -webkit-text-stroke-color: var(--gradient2);
-  position: relative;
-  margin-bottom: 1.5rem;
-
-  &::before {
-    content: "";
-    position: absolute;
-    width: 40%;
-    height: 3px;
-    background-color: var(--clr);
-    bottom: 5%;
-    left: 50%;
-    transform: translateX(-50%);
-
-    /* @include mobile {
+      content: "";
+      position: absolute;
       width: 100%;
-      left: 0;
-      transform: translateX(-30%);
-      bottom: -30%;
-    } */
+      height: 100%;
+      background: var(--clr);
+      bottom: -5%;
+      right: -5%;
+      z-index: -3;
+      border-radius: 20px;
+      transform: rotate(-10deg) scale(0.95) translate(-3%, -5%);
+      transition: all 0.8s;
+      filter: saturate(0.3) brightness(0.8);
+    }
+    &:hover {
+      transform: scale(1.03);
+
+      &::after {
+        transform: rotate(0deg) scale(1) translate(1%, 1%);
+      }
+    }
   }
 
-  &::after {
-    position: absolute;
-    width: 20%;
-    height: 5px;
-    font-size: 1.5rem;
-    font-weight: bold;
-    top: 30%;
-    left: 70%;
-    color: var(--clr);
-    text-transform: capitalize;
-    letter-spacing: 0.25rem;
-    transform: translateX(-50%);
-    -webkit-text-fill-color: var(--heading-clr);
-    -webkit-text-stroke-width: unset;
-    -webkit-text-stroke-color: var(--heading-clr);
+  .heading-style {
+    text-transform: uppercase;
+    width: fit-content;
+    font-size: clamp(2rem, 10vw, 7rem);
+    white-space: nowrap;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 1.5px;
+    -webkit-text-stroke-color: var(--gradient2);
+    position: relative;
 
-    /* @include tablet {
-      font-size: 1.3rem;
-      left: 50%;
-    }
-    @include mobile {
-      font-size: 0.89rem;
+    &::before {
+      content: "";
+      position: absolute;
+      width: 40%;
+      height: 3px;
+      background-color: var(--clr);
+      bottom: 5%;
       left: 50%;
       transform: translateX(-50%);
-    } */
+    }
+
+    &::after {
+      position: absolute;
+      width: 20%;
+      height: 5px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      top: 40%;
+      left: 70%;
+      color: var(--clr);
+      text-transform: capitalize;
+      letter-spacing: 0.25rem;
+      transform: translateX(-50%);
+      -webkit-text-fill-color: var(--heading-clr);
+      -webkit-text-stroke-width: unset;
+      -webkit-text-stroke-color: var(--heading-clr);
+    }
+  }
+
+  /* HDR: TABLET */
+  @media screen and (max-width: 75rem) {
+    .heading-style {
+      &::after {
+        font-size: 1.2rem;
+        left: 45%;
+      }
+    }
+  }
+
+  /* HDR: MOBILE */
+  @media screen and (max-width: 34.4rem) {
+    .heading-style {
+      &::before {
+        width: 100%;
+        left: 0;
+        transform: translateX(-30%);
+        bottom: -10%;
+      }
+
+      &::after {
+        font-size: 1.2rem;
+        left: 50%;
+        top: 30%;
+        transform: translateX(-50%);
+      }
+    }
   }
 }

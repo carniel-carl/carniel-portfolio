@@ -5,7 +5,7 @@ const MaxWidth = (props: React.HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       {...props}
-      className={cn(props.className, "w-[90%] max-w-[85rem] mx-auto")}
+      className={cn("w-[90%] max-w-[85rem] mx-auto", props.className)}
     />
   );
 };

@@ -34,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${montserrat.className} ${montserrat.variable}  ${nunito.variable}  antialiased`}
+        className={`${montserrat.className} ${montserrat.variable}  ${nunito.variable} antialiased`}
       >
         <ThemeWrapper>
           <div className="grid  grid-rows-[4.5rem_1fr]">
