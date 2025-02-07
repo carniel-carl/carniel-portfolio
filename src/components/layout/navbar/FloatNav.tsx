@@ -5,6 +5,28 @@ import React, { useEffect, useCallback } from "react";
 const FloatNav = () => {
   // const [showFloatNav, setShowFloatNav] = useState(false);
 
+  const getCurrentSection = () => {
+    const currentId = navLinksData.id;
+    const sections = document.querySelectorAll(currentId);
+
+    let currentSection = "";
+
+    const scrollPosition = window.scrollY + window.innerHeight / 3; // Offset to detect earlier
+
+    sections.forEach((section) => {
+      const { offsetTop, offsetHeight, id } = section as HTMLElement;
+
+      if (
+        scrollPosition >= offsetTop &&
+        scrollPosition < offsetTop + offsetHeight
+      ) {
+        currentSection = `#${id}`; // Return the section's ID prefixed with "#"
+      }
+    });
+
+    return currentSection;
+  };
+
   //   HDR: On Page load, Add active to the first li
   useEffect(() => {
     const navlink = document.querySelector(".float-nav li");
@@ -36,15 +58,16 @@ const FloatNav = () => {
 
   //HDR: SETTING THE ACTIVE NAV LINK BASED ON SCROLLED POSITION
   useEffect(() => {
-    const home = navLinksData.id;
+    const currentId = navLinksData.id;
     const navlinks = document.querySelectorAll(".float-nav li");
-    const sections = document.querySelectorAll(home);
+    const sections = document.querySelectorAll(currentId);
 
     const inview = () => {
       const currentPosition = window.scrollY;
       sections?.forEach((section, index) => {
-        const sectionTop = section.offsetTop;
-        const sectionHeight = section.offsetHeight;
+        const sectionElement = section as HTMLElement;
+        const sectionTop = sectionElement.offsetTop;
+        const sectionHeight = sectionElement.offsetHeight;
 
         if (
           currentPosition >= sectionTop - sectionHeight / 2 &&
@@ -72,7 +95,7 @@ const FloatNav = () => {
       });
       return;
     }
-    const sectionEL = document.querySelector(elementRef);
+    const sectionEL = document.querySelector(elementRef) as HTMLElement;
     window.scrollTo({
       top: sectionEL?.offsetTop,
     });

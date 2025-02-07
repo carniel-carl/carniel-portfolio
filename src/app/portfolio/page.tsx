@@ -1,5 +1,6 @@
 import MaxWidth from "@/components/general/MaxWidth";
 import FloatNav from "@/components/layout/navbar/FloatNav";
+import ScrollToTop from "@/components/layout/ScrollToTop";
 import About from "@/sections/About";
 import Contact from "@/sections/Contact";
 import Projects from "@/sections/Projects";
@@ -9,7 +10,8 @@ const PortfolioPage = () => {
   return (
     <>
       <FloatNav />
-      <MaxWidth className="lg:max-w-[65rem] md:max-w-[40rem] mb-20">
+      <ScrollToTop />
+      <MaxWidth className="lg:max-w-[65rem] md:max-w-[40rem] mb-28">
         <About />
         <div className="divider" />
         <Projects />

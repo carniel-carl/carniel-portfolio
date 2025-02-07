@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Logo from "@/components/general/Logo";
 
 import { cn } from "@/lib/utils";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import MaxWidth from "@/components/general/MaxWidth";
@@ -15,7 +15,10 @@ import {
   containerVariant,
   menuLinkVariant,
   menuVariant,
-} from "./navbar-animation";
+} from "@/components/animations/navbar-animation";
+import { FocusTrap } from "focus-trap-react";
+import { TfiClose } from "react-icons/tfi";
+import { socialLinks } from "@/data/social-links";
 
 type MenuLinkType = {
   name: string;
@@ -44,7 +47,7 @@ const Navbar = () => {
 
   return (
     <>
-      <header className=" text-black fixed md:py-3 py-2 z-[20] w-full top-0">
+      <header className=" text-black bg-background/10 backdrop-blur-sm fixed md:py-3 py-2 z-[20] w-full top-0">
         <MaxWidth>
           <nav className="flex items-center md:gap-x-8 gap-x-4">
             <div
@@ -69,34 +72,69 @@ const Navbar = () => {
               {/* SUB: NAVLINKS */}
               <AnimatePresence>
                 {showMenu && (
-                  <motion.div
-                    variants={menuVariant}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    className=" bg-accent bg-opacity-[10%]  w-full h-[100svh]  md:px-10 px-6  md:pt-32 pt-24 z-10 fixed inset-0 origin-top"
-                  >
-                    <motion.ul
-                      variants={containerVariant}
+                  <FocusTrap>
+                    <motion.div
+                      variants={menuVariant}
                       initial="initial"
-                      animate="open"
-                      exit="initial"
-                      className="flex flex-col gap-y-6  md:items-start items-center"
+                      animate="animate"
+                      exit="exit"
+                      className=" bg-accent bg-opacity-[10%]  w-full h-[100svh]  md:px-10 px-6  md:pt-32 pt-24 z-10 fixed inset-0 origin-top flex flex-col pb-8"
                     >
-                      {NavLinks.map(({ name, link }) => {
-                        return (
-                          <li key={name} className="overflow-hidden">
-                            <MenuLink
-                              name={name}
-                              link={link}
-                              closeMenu={closeMenu}
-                              pathName={pathName}
-                            />
-                          </li>
-                        );
-                      })}
-                    </motion.ul>
-                  </motion.div>
+                      <button
+                        className="absolute right-[5%] top-[3%]"
+                        onClick={() => setShowMenu((prev) => !prev)}
+                      >
+                        <span className="sr-only">Close menu</span>
+                        <span className="uppercase font-semibold text-base dark:text-white">
+                          Close
+                        </span>
+                      </button>
+                      <motion.ul
+                        role="modal"
+                        variants={containerVariant}
+                        initial="initial"
+                        animate="open"
+                        exit="initial"
+                        className="flex flex-col gap-y-6  md:items-start items-center"
+                      >
+                        {NavLinks.map(({ name, link }) => {
+                          return (
+                            <li key={name} className="overflow-hidden">
+                              <MenuLink
+                                name={name}
+                                link={link}
+                                closeMenu={closeMenu}
+                                pathName={pathName}
+                              />
+                            </li>
+                          );
+                        })}
+                      </motion.ul>
+
+                      {/* SUB: Bottom content */}
+                      <div className="mt-auto flex items-center justify-around ">
+                        <button
+                          className=""
+                          onClick={() => setShowMenu((prev) => !prev)}
+                        >
+                          <span className="sr-only">Close menu</span>
+                          <TfiClose className="md:size-24 size-12 font-thin opacity-65" />
+                        </button>
+                        <ul className="grid grid-cols-2 md:gap-x-10 gap-x-4">
+                          {socialLinks.map((item) => (
+                            <li key={item.name}>
+                              <a
+                                href={item.link}
+                                className="capitalize font-semibold text-lg"
+                              >
+                                {item.name}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </motion.div>
+                  </FocusTrap>
                 )}
               </AnimatePresence>
 
@@ -105,14 +143,11 @@ const Navbar = () => {
                 <ThemeSwitch />
 
                 <button
-                  className="relative z-[12]"
+                  className=""
                   onClick={() => setShowMenu((prev) => !prev)}
                 >
-                  {showMenu ? (
-                    <span className="uppercase text-lg">Close</span>
-                  ) : (
-                    <Menu size={30} className="dark:text-white" />
-                  )}
+                  <span className="sr-only">Show menu</span>
+                  <Menu size={30} className="dark:text-white" />
                 </button>
               </div>
             </div>
@@ -129,7 +164,7 @@ const MenuLink = ({ link, name, pathName, closeMenu }: MenuLinkType) => {
       <Link
         href={link}
         className={cn(
-          "text-4xl md:text-8xl uppercase",
+          "text-4xl md:text-8xl uppercase  ",
           pathName === link && "text-white"
         )}
         onClick={closeMenu}

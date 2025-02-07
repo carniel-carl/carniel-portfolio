@@ -6,6 +6,7 @@ const Logo = () => {
   return (
     <Link href="/" className="relative size-8 block text-accent">
       <SVGIcon width="2rem" height="2rem" />
+      <span className="sr-only">Home</span>
     </Link>
   );
 };
