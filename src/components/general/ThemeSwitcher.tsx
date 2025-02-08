@@ -1,6 +1,6 @@
 "use client";
 import { useTheme } from "next-themes";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 
 const ThemeSwitch = () => {
   const { theme, setTheme } = useTheme();

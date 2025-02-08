@@ -1,100 +1,62 @@
 "use client";
-import { staggerContainer } from "@/components/animations/portfolio-page";
+import { slideUpVariant } from "@/components/animations/portfolio-page";
 import { featuredProjectData } from "@/data/project-data";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import Image from "next/image";
-
-type FeatureProjectCardType = {
-  data: {
-    name: string;
-    img: string;
-    live: string;
-    code: string;
-    description: string;
-    stack: string[];
-  };
-  variant: "left" | "right";
-};
+import ProjectCard from "@/components/general/ProjectCard";
+import { FaGithub } from "react-icons/fa";
+import { Radio } from "lucide-react";
+import { useState } from "react";
 
 const Projects = () => {
+  const [currTab, setCurrTab] = useState<"featured" | "other">("featured");
   return (
-    <motion.section
-      variants={staggerContainer}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.3 }}
-      id="projects"
-      className="portfolio flex flex-col"
-    >
-      <h2 className="heading-style after:content-['Explore_my_works'] font-nunito after:font-montserrat md:self-center md:mb-20 mb-12">
+    <section id="projects" className="portfolio flex flex-col">
+      <motion.h2
+        variants={slideUpVariant}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.5 }}
+        className="heading-style after:content-['Explore_my_works'] font-nunito after:font-montserrat md:self-center md:mb-20 mb-12"
+      >
         Projects
-      </h2>
-      <div className="space-y-32">
+      </motion.h2>
+      <div className="lg:space-y-32 md:space-y-24 space-y-12">
         {featuredProjectData.map((project, index) => {
-          const variant = index % 2 === 0 ? "left" : "right";
+          const variant = index % 2 === 0 ? "right" : "left";
+
           return (
-            <FeaturedProjectCard
+            <ProjectCard
+              project={project}
               key={project.name}
-              data={project}
               variant={variant}
+              image={<ProjectCard.Image />}
+              info={
+                <>
+                  <ProjectCard.Title />
+                  <ProjectCard.Description />
+                  <ProjectCard.Stack variant={variant} />
+                </>
+              }
+              action={
+                <>
+                  <ProjectCard.ActionButton href={project.live}>
+                    <div className="flex items-center gap-2 border-accent border rounded-md px-2 py-0.5 hover:bg-accent duration-200 ease transition-all">
+                      <Radio className="size-5" />
+                      <span>Live</span>
+                      <span className="sr-only">View site</span>
+                    </div>
+                  </ProjectCard.ActionButton>
+                  <ProjectCard.ActionButton href={project.code}>
+                    <FaGithub className="size-5" />
+                    <span className="sr-only">View source code</span>
+                  </ProjectCard.ActionButton>
+                </>
+              }
             />
           );
         })}
       </div>
-      {/* <div className="h-[30rem]"></div> */}
-    </motion.section>
-  );
-};
-
-const FeaturedProjectCard = ({ data, variant }: FeatureProjectCardType) => {
-  const isRight = variant === "right";
-  return (
-    <div
-      className={cn(
-        "grid grid-cols-[35rem_1fr] items-center",
-        isRight ? "grid-cols-[1fr_35rem]" : ""
-      )}
-    >
-      <div
-        className={cn(
-          "flex flex-col relative -right-[1.5rem] z-[3]",
-          isRight ? "right-[1.5rem] order-2  text-right" : ""
-        )}
-      >
-        <h3 className="text-xl font-semibold">{data.name}</h3>
-        <p className="p-4 dark:bg-neutral-900 bg-neutral-300 rounded-md shadow-lg mt-10 mb-4 text-foreground font-medium">
-          {data.description}
-        </p>
-        <ul
-          className={cn(
-            "flex flex-wrap gap-x-8 gap-y-2 opacity-90 list-disc pl-5 disc ",
-            isRight ? "justify-end" : ""
-          )}
-        >
-          {data.stack?.map((item) => (
-            <li
-              key={item}
-              className="capitalize marker:text-accent text-sm font-normal"
-            >
-              {item}
-            </li>
-          ))}
-        </ul>
-        <div>live</div>
-      </div>
-      <div>
-        <div className="relative w-full h-[20rem] group">
-          {/* <div className="w-full h-full absolute inset-0 bg-accent z-[2] rounded-md opacity-10 group-hover:opacity-0 duration-300 transition-opacity ease-in-out" /> */}
-          <Image
-            src={data.img}
-            alt={data.name}
-            fill
-            className="object-cover rounded-md filter grayscale brightness-10 group-hover:filter-none group-hover:brightness-10 transition duration-500"
-          />
-        </div>
-      </div>
-    </div>
+    </section>
   );
 };
 

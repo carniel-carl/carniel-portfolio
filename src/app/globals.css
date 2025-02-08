@@ -91,6 +91,7 @@
   }
   html {
     scroll-behavior: smooth;
+    scroll-padding-top: 2rem;
   }
   body {
     @apply bg-background text-foreground;
@@ -173,7 +174,7 @@
     position: fixed;
     height: auto;
     z-index: 10;
-    bottom: 2svh;
+    bottom: 1vh;
     left: 50vw;
     transform: translateX(-50%);
 

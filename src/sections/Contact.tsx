@@ -1,6 +1,7 @@
 "use client";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import { useRef } from "react";
 import { BsGithub } from "react-icons/bs";
 import { HiDownload } from "react-icons/hi";
@@ -11,12 +12,12 @@ const Contact = () => {
   const msgRef = useRef<HTMLTextAreaElement | null>(null);
 
   return (
-    <section id="contact" className="portfolio flex flex-col">
+    <section id="contact" className="portfolio flex flex-col relative">
       <h2 className="heading-style after:content-['Get_in_touch'] font-nunito after:font-montserrat md:self-center md:mb-20 mb-12">
         contact
       </h2>
 
-      <div className="grid md:grid-cols-2  min-h-[25rem]">
+      <div className="grid lg:grid-cols-2  gap-y-10 ">
         <div className="hire-container">
           <p className="text-xl mb-12 font-bold">Hire me</p>
           <div className="flex flex-col gap-4 items-start">
@@ -95,9 +96,9 @@ const Contact = () => {
         </div>
       </div>
 
-      {/* <div className="react-cont">
-      <img src={icon} alt="react icon" />
-    </div> */}
+      <div className="absolute md:w-[30vw] w-[60vw]  aspect-[1] top-[30%] opacity-5 -z-[4]">
+        <Image src="/images/react-icon.svg" alt="react icon" fill />
+      </div>
     </section>
   );
 };

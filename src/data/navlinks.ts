@@ -1,5 +1,5 @@
 import { BsChatDotsFill } from "react-icons/bs";
-import { FaHome, FaTools } from "react-icons/fa";
+import { FaTools } from "react-icons/fa";
 import { GoPersonFill } from "react-icons/go";
 import { MdWork } from "react-icons/md";
 

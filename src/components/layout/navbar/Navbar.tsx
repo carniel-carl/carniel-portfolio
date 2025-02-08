@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Logo from "@/components/general/Logo";
 
 import { cn } from "@/lib/utils";
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import MaxWidth from "@/components/general/MaxWidth";
@@ -78,7 +78,7 @@ const Navbar = () => {
                       initial="initial"
                       animate="animate"
                       exit="exit"
-                      className=" bg-accent bg-opacity-[10%]  w-full h-[100svh]  md:px-10 px-6  md:pt-32 pt-24 z-10 fixed inset-0 origin-top flex flex-col pb-8"
+                      className=" bg-accent bg-opacity-[10%]  w-full h-[100dvh]  md:px-10 px-6  md:pt-32 pt-24 z-10 fixed inset-0 origin-top flex flex-col pb-8"
                     >
                       <button
                         className="absolute right-[5%] top-[3%]"

@@ -18,7 +18,7 @@ const About = () => {
       variants={staggerContainer}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, amount: 1 }}
+      viewport={{ once: true }}
     >
       {/* SUB: Image Section */}
       <motion.div variants={slideLeftVariant} className="w-fit relative">
@@ -51,14 +51,8 @@ const About = () => {
           I discovered my passion for coding while building a website for my art
           business. Since then, I have immersed myself in the world of
           technology, continuously expanding my skills and exploring its vast
-          potential. I thrive on combining creativity with functionality, making
-          my journey in tech both fulfilling and dynamic.
-          {/* I'm a passionate individual who discovered my love for coding when I
-          needed a website for my Art business. Since then, I've immersed myself
-          in the world of technology, continually expanding my coding skills and
-          exploring the endless possibilities it offers. I find joy in bringing
-          creativity and functionality together through code, making my journey
-          in the tech world both fulfilling and exciting. */}
+          potential. Combining creativity with functionality, makes my journey
+          in tech both fulfilling and dynamic.
         </motion.p>
 
         <motion.div variants={slideUpVariant}>

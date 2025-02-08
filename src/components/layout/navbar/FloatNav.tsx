@@ -17,27 +17,27 @@ interface NavLinksData {
 const FloatNav = ({ data }: { data: NavLinksData }) => {
   // const [showFloatNav, setShowFloatNav] = useState(false);
 
-  const getCurrentSection = () => {
-    const currentId = data.id;
-    const sections = document.querySelectorAll(currentId);
+  // const getCurrentSection = () => {
+  //   const currentId = data.id;
+  //   const sections = document.querySelectorAll(currentId);
 
-    let currentSection = "";
+  //   let currentSection = "";
 
-    const scrollPosition = window.scrollY + window.innerHeight / 3; // Offset to detect earlier
+  //   const scrollPosition = window.scrollY + window.innerHeight / 3; // Offset to detect earlier
 
-    sections.forEach((section) => {
-      const { offsetTop, offsetHeight, id } = section as HTMLElement;
+  //   sections.forEach((section) => {
+  //     const { offsetTop, offsetHeight, id } = section as HTMLElement;
 
-      if (
-        scrollPosition >= offsetTop &&
-        scrollPosition < offsetTop + offsetHeight
-      ) {
-        currentSection = `#${id}`; // Return the section's ID prefixed with "#"
-      }
-    });
+  //     if (
+  //       scrollPosition >= offsetTop &&
+  //       scrollPosition < offsetTop + offsetHeight
+  //     ) {
+  //       currentSection = `#${id}`; // Return the section's ID prefixed with "#"
+  //     }
+  //   });
 
-    return currentSection;
-  };
+  //   return currentSection;
+  // };
 
   //   HDR: On Page load, Add active to the first li
   useEffect(() => {
@@ -73,14 +73,23 @@ const FloatNav = ({ data }: { data: NavLinksData }) => {
     const currentId = data.id;
     const navlinks = document.querySelectorAll(".float-nav li");
     const sections = document.querySelectorAll(currentId);
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
 
     const inview = () => {
       const currentPosition = window.scrollY;
 
-      // Ensure the first nav link is active at the top
-      if (currentPosition < 150) {
+      //SUB: Ensure the first nav link is active at the top
+      if (currentPosition < 100) {
         navlinks.forEach((link) => link.classList.remove("active"));
         navlinks[0]?.classList.add("active");
+        return;
+      }
+
+      //SUB: Ensure the last nav link is active when at the bottom of the page
+      if (currentPosition + windowHeight >= documentHeight - 10) {
+        navlinks.forEach((link) => link.classList.remove("active"));
+        navlinks[navlinks.length - 1]?.classList.add("active");
         return;
       }
 
@@ -117,8 +126,9 @@ const FloatNav = ({ data }: { data: NavLinksData }) => {
       return;
     }
     const sectionEL = document.querySelector(elementRef) as HTMLElement;
+    const offset = 70;
     window.scrollTo({
-      top: sectionEL?.offsetTop,
+      top: sectionEL?.offsetTop - offset,
     });
   }, []);
 
