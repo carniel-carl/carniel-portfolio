@@ -12,7 +12,7 @@ const Contact = () => {
 
   return (
     <section id="contact" className="portfolio flex flex-col">
-      <h2 className="heading-style after:content-['Reach_out_to_me'] font-nunito after:font-montserrat md:self-center md:mb-20 mb-12">
+      <h2 className="heading-style after:content-['Get_in_touch'] font-nunito after:font-montserrat md:self-center md:mb-20 mb-12">
         contact
       </h2>
 

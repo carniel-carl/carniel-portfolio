@@ -32,7 +32,7 @@ const ScrollToTop = () => {
       style={{ display: "var(--display)" }}
     >
       <button className="text-accent size-6" onClick={scrollUp}>
-        <FaArrowUp className="w-full h-full block" />
+        <FaArrowUp className="w-full h-full" />
       </button>
     </div>
   );

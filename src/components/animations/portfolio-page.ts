@@ -1,63 +1,33 @@
 import { Variants } from "framer-motion";
 
-const slideLeftVariant: Variants = {
-  hidden: {
-    opacity: 0,
-    x: -90,
-    transition: {
-      delay: 0.8,
-      duration: 1,
-      ease: "easeOut",
-    },
-  },
-  visible: {
-    opacity: 1,
-    x: 0,
-  },
-};
-const slideRightVariant: Variants = {
-  hidden: {
-    opacity: 0,
-    x: 90,
-    transition: {
-      delay: 0.9,
-      duration: 1,
-      ease: "easeOut",
-    },
-  },
-  visible: {
-    opacity: 1,
-    x: 0,
-  },
-};
-const slideUpVariant: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 50,
-    transition: {
-      delay: 0.9,
-      duration: 1,
-      ease: "easeOut",
-    },
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-  },
-};
-
-const staggerVariant: Variants = {
-  hidden: {
-    transition: {
-      staggerChildren: 0.09,
-    },
-  },
+const staggerContainer: Variants = {
+  hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.8,
-      //   delayChildren: 1,
+      staggerChildren: 0.3, // Controls the delay between children animations
+      delayChildren: 0.4, // Wait 0.5s before starting children animations
     },
   },
 };
 
-export { slideLeftVariant, slideRightVariant, slideUpVariant, staggerVariant };
+const slideLeftVariant = {
+  hidden: { opacity: 0, x: -50 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: "easeOut" } },
+};
+
+const slideUpVariant = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
+};
+
+const slideRightVariant = {
+  hidden: { opacity: 0, x: 50 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: "easeOut" } },
+};
+
+export {
+  slideLeftVariant,
+  slideRightVariant,
+  slideUpVariant,
+  staggerContainer,
+};

@@ -1,12 +1,24 @@
 "use client";
-import { navLinksData } from "@/data/navlinks";
-import React, { useEffect, useCallback } from "react";
 
-const FloatNav = () => {
+import React, { useEffect, useCallback } from "react";
+import { IconType } from "react-icons";
+
+interface NavLink {
+  title: string;
+  to: string;
+  icon: IconType;
+}
+
+// Define the type for the navLinksData object
+interface NavLinksData {
+  id: string;
+  links: NavLink[];
+}
+const FloatNav = ({ data }: { data: NavLinksData }) => {
   // const [showFloatNav, setShowFloatNav] = useState(false);
 
   const getCurrentSection = () => {
-    const currentId = navLinksData.id;
+    const currentId = data.id;
     const sections = document.querySelectorAll(currentId);
 
     let currentSection = "";
@@ -58,13 +70,22 @@ const FloatNav = () => {
 
   //HDR: SETTING THE ACTIVE NAV LINK BASED ON SCROLLED POSITION
   useEffect(() => {
-    const currentId = navLinksData.id;
+    const currentId = data.id;
     const navlinks = document.querySelectorAll(".float-nav li");
     const sections = document.querySelectorAll(currentId);
 
     const inview = () => {
       const currentPosition = window.scrollY;
-      sections?.forEach((section, index) => {
+
+      // Ensure the first nav link is active at the top
+      if (currentPosition < 150) {
+        navlinks.forEach((link) => link.classList.remove("active"));
+        navlinks[0]?.classList.add("active");
+        return;
+      }
+
+      sections.forEach((section, index) => {
+        if (!section) return; // Skip if section is null
         const sectionElement = section as HTMLElement;
         const sectionTop = sectionElement.offsetTop;
         const sectionHeight = sectionElement.offsetHeight;
@@ -73,14 +94,14 @@ const FloatNav = () => {
           currentPosition >= sectionTop - sectionHeight / 2 &&
           currentPosition < sectionTop + sectionHeight / 2
         ) {
-          navlinks.forEach((link) => {
-            link.classList.remove("active");
-          });
+          navlinks.forEach((link) => link.classList.remove("active"));
           navlinks[index]?.classList.add("active");
         }
       });
     };
+
     window.addEventListener("scroll", inview);
+    inview(); // Run once on mount to set initial active class
 
     return () => {
       window.removeEventListener("scroll", inview);
@@ -105,17 +126,17 @@ const FloatNav = () => {
     <nav className="float-nav">
       <div className="navigation">
         <ul className="icons">
-          {navLinksData.links.map((data) => (
-            <li key={data.title}>
+          {data.links.map((item) => (
+            <li key={item.title}>
               <div
                 className="navigate"
-                onClick={() => scrollToSection(data.to)}
+                onClick={() => scrollToSection(item.to)}
               >
                 <span className="icon">
-                  <data.icon />
+                  <item.icon />
                 </span>
 
-                <span className="tooltip">{data.title}</span>
+                <span className="tooltip">{item.title}</span>
               </div>
             </li>
           ))}

@@ -37,7 +37,13 @@
     /* --clr: #faad4f; */
     --clr: #e7a128;
     --heading-clr: #171616;
-    --gradient2: rgba(0, 0, 0, 0.3);
+    --gradient2: rgba(0, 0, 0, 0.2);
+    --display: none;
+
+    ::selection {
+      background-color: var(--clr);
+      color: white;
+    }
   }
 
   .dark {
@@ -67,9 +73,14 @@
     --chart-5: 340 75% 55%;
     /* --clr: #21d8a1; */
     --clr: #14aaa0;
-
     --heading-clr: #f6f6f6;
-    --gradient2: rgba(255, 255, 255, 0.3);
+    --gradient2: rgba(255, 255, 255, 0.2);
+    --display: none;
+
+    ::selection {
+      background-color: var(--clr);
+      color: black;
+    }
   }
 }
 
