@@ -5,10 +5,12 @@ import { motion } from "framer-motion";
 import ProjectCard from "@/components/general/ProjectCard";
 import { FaGithub } from "react-icons/fa";
 import { Radio } from "lucide-react";
-import { useState } from "react";
+// import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 const Projects = () => {
-  const [currTab, setCurrTab] = useState<"featured" | "other">("featured");
+  // const [currTab, setCurrTab] = useState<"featured" | "other">("featured");
   return (
     <section id="projects" className="portfolio flex flex-col">
       <motion.h2
@@ -40,14 +42,19 @@ const Projects = () => {
               action={
                 <>
                   <ProjectCard.ActionButton href={project.live}>
-                    <div className="flex items-center gap-2 border-accent border rounded-md px-2 py-0.5 hover:bg-accent duration-200 ease transition-all">
+                    <div
+                      className={cn(
+                        buttonVariants({ variant: "outline" }),
+                        "py-1 duration-500 ease-in-out"
+                      )}
+                    >
                       <Radio className="size-5" />
                       <span>Live</span>
                       <span className="sr-only">View site</span>
                     </div>
                   </ProjectCard.ActionButton>
                   <ProjectCard.ActionButton href={project.code}>
-                    <FaGithub className="size-5" />
+                    <FaGithub className="size-6 hover:scale-125 ease duration-300 hover:text-accent" />
                     <span className="sr-only">View source code</span>
                   </ProjectCard.ActionButton>
                 </>

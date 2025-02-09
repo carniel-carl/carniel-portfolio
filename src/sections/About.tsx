@@ -57,9 +57,9 @@ const About = () => {
 
         <motion.div variants={slideUpVariant}>
           <a
-            href="CHIMEZIE RESUME.pdf"
+            href="chimezie-resume.pdf"
             className={`${buttonVariants()} py-6 rounded-md`}
-            download="CHIMEZIE RESUME"
+            download="chimezie-resume"
             target="_blank"
           >
             <span className="capitalize">Download resume</span>

@@ -5,6 +5,7 @@ import Navbar from "@/components/layout/navbar/Navbar";
 import dynamic from "next/dynamic";
 import PageLoader from "@/components/general/PageLoader";
 import Footer from "@/components/layout/Footer";
+import { Toaster } from "@/components/ui/sonner";
 
 const ThemeWrapper = dynamic(() => import("@/context/theme-provider"), {
   ssr: false,
@@ -43,6 +44,7 @@ export default function RootLayout({
             <main className="row-start-2 row-end-3">{children}</main>
           </div>
           <Footer />
+          <Toaster richColors position="top-center" />
         </ThemeWrapper>
       </body>
     </html>

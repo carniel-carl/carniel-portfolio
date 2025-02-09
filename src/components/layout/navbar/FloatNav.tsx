@@ -9,43 +9,12 @@ interface NavLink {
   icon: IconType;
 }
 
-// Define the type for the navLinksData object
 interface NavLinksData {
   id: string;
   links: NavLink[];
 }
 const FloatNav = ({ data }: { data: NavLinksData }) => {
   // const [showFloatNav, setShowFloatNav] = useState(false);
-
-  // const getCurrentSection = () => {
-  //   const currentId = data.id;
-  //   const sections = document.querySelectorAll(currentId);
-
-  //   let currentSection = "";
-
-  //   const scrollPosition = window.scrollY + window.innerHeight / 3; // Offset to detect earlier
-
-  //   sections.forEach((section) => {
-  //     const { offsetTop, offsetHeight, id } = section as HTMLElement;
-
-  //     if (
-  //       scrollPosition >= offsetTop &&
-  //       scrollPosition < offsetTop + offsetHeight
-  //     ) {
-  //       currentSection = `#${id}`; // Return the section's ID prefixed with "#"
-  //     }
-  //   });
-
-  //   return currentSection;
-  // };
-
-  //   HDR: On Page load, Add active to the first li
-  useEffect(() => {
-    const navlink = document.querySelector(".float-nav li");
-    if (navlink) {
-      navlink.classList.add("active");
-    }
-  }, []);
 
   // TIMER FOR SHOWING FLOATING NAVIGATION
   // useEffect(() => {
@@ -75,26 +44,27 @@ const FloatNav = ({ data }: { data: NavLinksData }) => {
     const sections = document.querySelectorAll(currentId);
     const windowHeight = window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
+    const offset = 100;
 
     const inview = () => {
       const currentPosition = window.scrollY;
 
       //SUB: Ensure the first nav link is active at the top
-      if (currentPosition < 100) {
+      if (currentPosition < offset) {
         navlinks.forEach((link) => link.classList.remove("active"));
         navlinks[0]?.classList.add("active");
         return;
       }
 
       //SUB: Ensure the last nav link is active when at the bottom of the page
-      if (currentPosition + windowHeight >= documentHeight - 10) {
+      if (currentPosition + windowHeight >= documentHeight - offset) {
         navlinks.forEach((link) => link.classList.remove("active"));
         navlinks[navlinks.length - 1]?.classList.add("active");
         return;
       }
 
       sections.forEach((section, index) => {
-        if (!section) return; // Skip if section is null
+        if (!section) return;
         const sectionElement = section as HTMLElement;
         const sectionTop = sectionElement.offsetTop;
         const sectionHeight = sectionElement.offsetHeight;
@@ -110,6 +80,7 @@ const FloatNav = ({ data }: { data: NavLinksData }) => {
     };
 
     window.addEventListener("scroll", inview);
+
     inview(); // Run once on mount to set initial active class
 
     return () => {
