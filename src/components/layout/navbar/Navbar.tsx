@@ -19,6 +19,10 @@ import {
 import { FocusTrap } from "focus-trap-react";
 import { TfiClose } from "react-icons/tfi";
 import { socialLinks } from "@/data/social-links";
+import {
+  letterAnimeVariant,
+  staggerVariant,
+} from "@/components/animations/general";
 
 type MenuLinkType = {
   name: string;
@@ -114,7 +118,7 @@ const Navbar = () => {
                       {/* SUB: Bottom content */}
                       <div className="mt-auto flex items-center justify-around ">
                         <button
-                          className=""
+                          className="hover:scale-110 duration-300 transiton ease-in-out"
                           onClick={() => setShowMenu((prev) => !prev)}
                         >
                           <span className="sr-only">Close menu</span>
@@ -122,10 +126,13 @@ const Navbar = () => {
                         </button>
                         <ul className="grid grid-cols-2 md:gap-x-10 gap-x-4">
                           {socialLinks.map((item) => (
-                            <li key={item.name}>
+                            <li
+                              key={item.name}
+                              className="hover:scale-110 duration-300 transiton ease-in-out"
+                            >
                               <a
                                 href={item.link}
-                                className="capitalize font-semibold text-lg"
+                                className="capitalize font-semibold text-lg "
                               >
                                 {item.name}
                               </a>
@@ -143,7 +150,7 @@ const Navbar = () => {
                 <ThemeSwitch />
 
                 <button
-                  className=""
+                  className="hover:scale-110 duration-300 transiton ease-in-out"
                   onClick={() => setShowMenu((prev) => !prev)}
                 >
                   <span className="sr-only">Show menu</span>
@@ -164,8 +171,8 @@ const MenuLink = ({ link, name, pathName, closeMenu }: MenuLinkType) => {
       <Link
         href={link}
         className={cn(
-          "text-4xl md:text-8xl uppercase  ",
-          pathName === link && "text-white"
+          "text-4xl md:text-8xl uppercase hover:tracking-widest focus-within:tracking-widest duration-300 transiton ease-in-out",
+          pathName === link && "text-white "
         )}
         onClick={closeMenu}
       >
@@ -174,5 +181,20 @@ const MenuLink = ({ link, name, pathName, closeMenu }: MenuLinkType) => {
     </motion.div>
   );
 };
+
+const AnimatedLetters = ({ title }: { title: string }) => (
+  <motion.span
+    className=""
+    variants={staggerVariant}
+    initial="initial"
+    animate="visible"
+  >
+    {Array.from(title).map((letter, index) => (
+      <motion.span key={index} variants={letterAnimeVariant}>
+        {letter}
+      </motion.span>
+    ))}
+  </motion.span>
+);
 
 export default React.memo(Navbar);

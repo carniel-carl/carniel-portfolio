@@ -124,7 +124,7 @@ const Contact = () => {
                 className="input"
                 ref={msgRef}
               />
-              <span className="label">Project</span>
+              <label className="label">Message</label>
             </div>
 
             <ValidationError

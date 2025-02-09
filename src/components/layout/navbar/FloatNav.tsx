@@ -112,6 +112,13 @@ const FloatNav = ({ data }: { data: NavLinksData }) => {
               <div
                 className="navigate"
                 onClick={() => scrollToSection(item.to)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    scrollToSection(item.to);
+                  }
+                }}
+                role="link"
+                tabIndex={1}
               >
                 <span className="icon">
                   <item.icon />

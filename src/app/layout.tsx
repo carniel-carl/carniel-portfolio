@@ -35,7 +35,7 @@ export default function RootLayout({
         className={`${montserrat.className} ${montserrat.variable}  ${nunito.variable} antialiased`}
       >
         <ThemeWrapper>
-          <div className="grid  grid-rows-[4.5rem_1fr]">
+          <div className="grid grid-rows-[4.5rem_1fr]">
             <Navbar />
             <main className="row-start-2 row-end-3">{children}</main>
           </div>
