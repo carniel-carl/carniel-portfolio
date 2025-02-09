@@ -1,7 +1,7 @@
 "use client";
 import ProjectCardContext, {
   useProjectCardContext,
-} from "@/context/product-card-context";
+} from "@/context/project-card-context";
 import { cn } from "@/lib/utils";
 import { ProjectCardTypes } from "@/types/project";
 import Image from "next/image";
@@ -63,7 +63,7 @@ const ProjectCard = ({
 // HDR: Project Title
 const ProjectTitle = () => {
   const { project } = useProjectCardContext();
-  return <h3 className="text-xl font-semibold">{project.name}</h3>;
+  return <h3 className="lg:text-2xl text-xl font-semibold">{project.name}</h3>;
 };
 
 // HDR: Project Description
@@ -116,6 +116,11 @@ const ProjectImage = () => {
   );
 };
 
+const ProjectTag = () => {
+  const { project } = useProjectCardContext();
+  return <small className="text-sm uppercase text-accent">{project.tag}</small>;
+};
+
 // HDR: Project Action
 const ProjectActionButton: React.FC<{
   children: ReactNode;
@@ -124,6 +129,7 @@ const ProjectActionButton: React.FC<{
   return <Link href={href}>{children}</Link>;
 };
 
+ProjectCard.Tag = ProjectTag;
 ProjectCard.Title = ProjectTitle;
 ProjectCard.Description = ProjectDescription;
 ProjectCard.Image = ProjectImage;

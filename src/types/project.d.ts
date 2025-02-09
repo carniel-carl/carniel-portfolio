@@ -1,4 +1,5 @@
 type ProjectDataType = {
+  tag: string;
   name: string;
   img: string;
   live: string;

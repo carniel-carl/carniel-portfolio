@@ -2,15 +2,11 @@ import type { Metadata } from "next";
 import { Montserrat, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/navbar/Navbar";
-import dynamic from "next/dynamic";
-import PageLoader from "@/components/general/PageLoader";
+// import dynamic from "next/dynamic";
+// import PageLoader from "@/components/general/PageLoader";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/sonner";
-
-const ThemeWrapper = dynamic(() => import("@/context/theme-provider"), {
-  ssr: false,
-  loading: () => <PageLoader />,
-});
+import ThemeWrapper from "@/context/theme-provider";
 
 const montserrat = Montserrat({
   subsets: ["latin"],

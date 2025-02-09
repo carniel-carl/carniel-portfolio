@@ -1,5 +1,8 @@
-const featuredProjectData = [
+import { ProjectDataType } from "@/types/project";
+
+const featuredProjectData: ProjectDataType[] = [
   {
+    tag: "Blog",
     name: "Creator Economy IQ",
     img: "/images/projects/jollofdiary.png",
     live: "https://www.thejollofdiary.com/",
@@ -17,6 +20,7 @@ const featuredProjectData = [
     ],
   },
   {
+    tag: "ECommerce",
     name: "Greens review",
     img: "/images/projects/greens.png",
     live: "https://www.greensreviews.store/",
@@ -34,6 +38,7 @@ const featuredProjectData = [
     ],
   },
   {
+    tag: "Landing",
     name: "Zubion Logistics",
     img: "/images/projects/zubion.png",
     live: "https://www.zubionlogistics.com/",
@@ -44,6 +49,7 @@ const featuredProjectData = [
   },
 
   {
+    tag: "Web3",
     name: "Pouch Swap",
     img: "/images/projects/pouchswap.png",
     live: "https://www.pouchswap.xyz/",

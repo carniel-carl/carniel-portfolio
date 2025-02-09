@@ -34,6 +34,7 @@ const Projects = () => {
               image={<ProjectCard.Image />}
               info={
                 <>
+                  <ProjectCard.Tag />
                   <ProjectCard.Title />
                   <ProjectCard.Description />
                   <ProjectCard.Stack variant={variant} />
