@@ -3,12 +3,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { staggerContainer } from "@/components/animations/portfolio-page";
 import {
   slideLeftVariant,
   slideRightVariant,
   slideUpVariant,
-  staggerContainer,
-} from "@/components/animations/portfolio-page";
+} from "@/components/animations/general";
 
 const About = () => {
   return (

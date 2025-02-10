@@ -1,5 +1,5 @@
 "use client";
-import { slideUpVariant } from "@/components/animations/portfolio-page";
+
 import { featuredProjectData } from "@/data/project-data";
 import { motion } from "framer-motion";
 import ProjectCard from "@/components/general/ProjectCard";
@@ -8,6 +8,7 @@ import { Radio } from "lucide-react";
 // import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { slideUpVariant } from "@/components/animations/general";
 
 const Projects = () => {
   // const [currTab, setCurrTab] = useState<"featured" | "other">("featured");

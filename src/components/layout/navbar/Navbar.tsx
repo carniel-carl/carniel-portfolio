@@ -19,10 +19,6 @@ import {
 import { FocusTrap } from "focus-trap-react";
 import { TfiClose } from "react-icons/tfi";
 import { socialLinks } from "@/data/social-links";
-import {
-  letterAnimeVariant,
-  staggerVariant,
-} from "@/components/animations/general";
 
 type MenuLinkType = {
   name: string;
@@ -181,20 +177,5 @@ const MenuLink = ({ link, name, pathName, closeMenu }: MenuLinkType) => {
     </motion.div>
   );
 };
-
-const AnimatedLetters = ({ title }: { title: string }) => (
-  <motion.span
-    className=""
-    variants={staggerVariant}
-    initial="initial"
-    animate="visible"
-  >
-    {Array.from(title).map((letter, index) => (
-      <motion.span key={index} variants={letterAnimeVariant}>
-        {letter}
-      </motion.span>
-    ))}
-  </motion.span>
-);
 
 export default React.memo(Navbar);

@@ -1,14 +1,20 @@
 import { Variants } from "framer-motion";
 
 const letterAnimeVariant: Variants = {
-  initial: { y: 400 },
-  visible: {
-    y: 0,
-    transition: {
-      ease: [0.6, 0.01, -0.05, 0.95],
-      duration: 1,
-    },
+  initial: {
+    y: "100%",
+    opacity: 0,
   },
+  visible: (i) => ({
+    y: 0,
+    opacity: 1,
+    transition: { duration: 1, ease: [0.76, 0, 0.24, 1], delay: i[0] },
+  }),
+  exit: (i) => ({
+    y: "100%",
+    opacity: 0,
+    transition: { duration: 0.7, ease: [0.76, 0, 0.24, 1], delay: i[1] },
+  }),
 };
 
 const staggerVariant: Variants = {
@@ -40,5 +46,26 @@ const blurVariant: Variants = {
     },
   },
 };
+const slideLeftVariant = {
+  hidden: { opacity: 0, x: -50 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: "easeOut" } },
+};
 
-export { staggerVariant, letterAnimeVariant, blurVariant };
+const slideUpVariant = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
+};
+
+const slideRightVariant = {
+  hidden: { opacity: 0, x: 50 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: "easeOut" } },
+};
+
+export {
+  staggerVariant,
+  letterAnimeVariant,
+  blurVariant,
+  slideLeftVariant,
+  slideRightVariant,
+  slideUpVariant,
+};

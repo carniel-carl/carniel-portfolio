@@ -10,12 +10,12 @@ import { HiDownload } from "react-icons/hi";
 import { useForm, ValidationError } from "@formspree/react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { staggerContainer } from "@/components/animations/portfolio-page";
 import {
   slideLeftVariant,
   slideRightVariant,
   slideUpVariant,
-  staggerContainer,
-} from "@/components/animations/portfolio-page";
+} from "@/components/animations/general";
 
 const ID = process.env.NEXT_PUBLIC_FORM_ID!;
 const Contact = () => {

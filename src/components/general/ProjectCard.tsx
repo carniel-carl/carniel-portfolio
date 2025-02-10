@@ -8,11 +8,8 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { ReactNode } from "react";
 import { motion } from "framer-motion";
-import {
-  slideLeftVariant,
-  slideRightVariant,
-  staggerContainer,
-} from "@/components/animations/portfolio-page";
+import { staggerContainer } from "@/components/animations/portfolio-page";
+import { slideLeftVariant, slideRightVariant } from "../animations/general";
 
 type PropsVariantType = "left" | "right";
 

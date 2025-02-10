@@ -8,7 +8,7 @@ import Contact from "@/sections/Contact";
 import Projects from "@/sections/Projects";
 import Skills from "@/sections/Skills";
 import { useState } from "react";
-import { AnimatePresence, AnimateSharedLayout } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import PreLoader from "@/components/layout/PreLoader";
 import { motion } from "framer-motion";
 

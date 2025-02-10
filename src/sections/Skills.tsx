@@ -1,8 +1,6 @@
 "use client";
-import {
-  staggerContainer,
-  slideUpVariant,
-} from "@/components/animations/portfolio-page";
+import { slideUpVariant } from "@/components/animations/general";
+import { staggerContainer } from "@/components/animations/portfolio-page";
 import { skillsData } from "@/data/skills-data";
 import { motion } from "framer-motion";
 import { LucideProps } from "lucide-react";
