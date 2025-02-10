@@ -1,6 +1,9 @@
 "use client";
 
-import { letterAnimeVariant } from "@/components/animations/general";
+import {
+  letterAnimeVariant,
+  staggerVariant,
+} from "@/components/animations/general";
 import { motion } from "framer-motion";
 const AnimatedLetters = ({
   text,
@@ -10,7 +13,12 @@ const AnimatedLetters = ({
   disabled?: boolean;
 }) => {
   return (
-    <>
+    <motion.span
+      variants={disabled ? undefined : staggerVariant}
+      initial="initial"
+      animate="visible"
+      className="inline-block whitespace-nowrap relative overflow-hidden"
+    >
       {text.split("").map((char, i) => (
         <motion.span
           custom={[i * 0.05, (text.length - i) * 0.03]}
@@ -19,11 +27,12 @@ const AnimatedLetters = ({
           animate="visible"
           exit="exit"
           key={char + i}
+          className="inline-block whitespace-nowrap relative"
         >
           {char}
         </motion.span>
       ))}
-    </>
+    </motion.span>
   );
 };
 

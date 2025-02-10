@@ -8,6 +8,7 @@ import MaxWidth from "@/components/general/MaxWidth";
 
 import AnimatedLetters from "@/components/general/AnimatedLetters";
 import BannerImage from "@/sections/BannerImage";
+import Marquee from "react-fast-marquee";
 
 const HomePage = () => {
   return (
@@ -16,13 +17,15 @@ const HomePage = () => {
         variants={staggerVariant}
         initial="initial"
         animate="visible"
-        className="w-full min-h-[calc(100svh-8rem)] my-8"
+        className="w-screen min-h-[calc(100svh-8rem)] my-8 overflow-x-hidden"
       >
         <MaxWidth>
           <h4 className="text-lg ">Hello, I'm</h4>
           <BannerTop title="Carniel" />
-          <BannerCenter title="Frontend" playMarquee={false} />
         </MaxWidth>
+        <div>
+          <BannerCenter title="Frontend" playMarquee={true} />
+        </div>
 
         <BannerImage />
         <div className="h-screen">hell0</div>
@@ -31,10 +34,11 @@ const HomePage = () => {
   );
 };
 
+// HDR: Top Content
 const BannerTop = ({ title }: { title: string }) => {
   return (
-    <div className="grid md:grid-cols-2 grid-cols-1 items-center">
-      <h2 className="flex font-semibold md:text-[8rem] text-[3rem] overflow-hidden">
+    <div className="grid md:grid-cols-[2fr_1fr] grid-cols-1 items-center w-full">
+      <h2 className="flex font-semibold  md:text-[6rem] text-[3rem]">
         <AnimatedLetters text={title} />
       </h2>
 
@@ -66,23 +70,23 @@ const BannerCenter = ({
   playMarquee: boolean;
 }) => {
   return (
-    <div
-      className={`banner-row marquee overflow-hidden  ${
-        playMarquee && "animate"
-      }`}
-    >
-      <motion.p
-        initial={{ y: 310 }}
-        animate={{ y: 0 }}
-        transition={{ ease: [0.6, 0.01, -0.05, 0.9], duration: 1 }}
-        className="marquee__inner"
-      >
-        <AnimatedLetters text={title} disabled />
-        <AnimatedLetters text={title} />
-        <AnimatedLetters text={title} disabled />
-        <AnimatedLetters text={title} disabled />
-      </motion.p>
-    </div>
+    <>
+      <Marquee speed={140} direction="left" play={playMarquee}>
+        <motion.p
+          initial={{ y: 200 }}
+          animate={{ y: 0 }}
+          transition={{ ease: [0.6, 0.01, -0.05, 0.9], duration: 1 }}
+          className=" flex items-center gap-[6rem] mx-16 font-semibold md:text-[16rem] text-[7rem] "
+        >
+          <span className="text-accent flex items-center">
+            <AnimatedLetters text={title} />
+          </span>
+          <AnimatedLetters text="Developer" disabled />
+          {/* <AnimatedLetters text={title} /> */}
+          {/* <AnimatedLetters text={title} /> */}
+        </motion.p>
+      </Marquee>
+    </>
   );
 };
 
