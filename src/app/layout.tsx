@@ -1,12 +1,11 @@
+import "./globals.css";
 import type { Metadata } from "next";
 import { Montserrat, Nunito_Sans, Poppins } from "next/font/google";
-import "./globals.css";
-import Navbar from "@/components/layout/navbar/Navbar";
-// import dynamic from "next/dynamic";
-// import PageLoader from "@/components/general/PageLoader";
-import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/sonner";
 import ThemeWrapper from "@/context/theme-provider";
+import MainLayout from "@/components/layout/MainLayout";
+import Navbar from "@/components/layout/navbar/Navbar";
+import Footer from "@/components/layout/Footer";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -37,11 +36,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${poppins.className} ${montserrat.variable}  ${nunito.variable} antialiased`}
+        className={`${poppins.className} ${montserrat.variable}  ${nunito.variable} antialiased overscroll-none`}
       >
         <ThemeWrapper>
           <div className="grid grid-rows-[4.5rem_1fr]">
-            <Navbar />
+            <div>
+              <Navbar />
+            </div>
             <main className="row-start-2 row-end-3">{children}</main>
           </div>
           <Footer />

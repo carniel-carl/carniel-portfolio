@@ -21,7 +21,7 @@ const staggerVariant: Variants = {
   visible: {
     transition: {
       staggerChildren: 0.3, // Controls the delay between children animations
-      delayChildren: 0.5, // Wait 0.5s before starting children animations
+      // delayChildren: 0.1, // Wait 0.5s before starting children animations
     },
   },
 };

@@ -11,22 +11,22 @@ interface InputProps
     InputHTMLAttributes<HTMLInputElement>,
     HTMLInputElement
   > {
-  error?: string | null;
+  // error?: string | null;
   label: string;
-  variant: "primary" | "search" | "regular";
+  // variant: "primary" | "search" | "regular";
 }
 
 const Input = forwardRef(
   (
-    { className, error, label, variant, ...props }: InputProps,
+    { className, label, ...props }: InputProps,
     ref: ForwardedRef<HTMLInputElement>
   ) => {
-    const [showPassword, setShowPassword] = useState(false);
+    const [showPassword] = useState(false);
 
     // SUB: Show/hide password handler
-    const showPasswordHandler = () => {
-      setShowPassword((prev) => !prev);
-    };
+    // const showPasswordHandler = () => {
+    //   setShowPassword((prev) => !prev);
+    // };
     const inputType =
       props?.type === "password"
         ? showPassword
@@ -48,5 +48,7 @@ const Input = forwardRef(
     );
   }
 );
+
+Input.displayName = "Input";
 
 export default Input;

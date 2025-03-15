@@ -94,7 +94,7 @@
     scroll-padding-top: 2rem;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
   }
 }
 

@@ -98,7 +98,7 @@ const Contact = () => {
           >
             <Input
               ref={nameRef}
-              variant="primary"
+              // variant="primary"
               type="text"
               name="name"
               id="name"
@@ -107,7 +107,7 @@ const Contact = () => {
             />
 
             <Input
-              variant="primary"
+              // variant="primary"
               ref={emailRef}
               label="Email"
               type="email"

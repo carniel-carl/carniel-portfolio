@@ -49,6 +49,8 @@ const ProjectCard = ({
             {action}
           </div>
         </motion.div>
+
+        {/* SUB: IMAGE CONTAINER */}
         <motion.div variants={isRight ? slideLeftVariant : slideRightVariant}>
           {image}
         </motion.div>
