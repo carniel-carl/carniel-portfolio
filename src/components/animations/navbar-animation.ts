@@ -1,23 +1,39 @@
 import { Variants } from "framer-motion";
 
+// const menuVariant: Variants = {
+//   initial: {
+//     scaleY: 0,
+//   },
+//   animate: {
+//     scaleY: 1,
+//     transition: {
+//       duration: 0.5,
+//       ease: [0.12, 0, 0.39, 0],
+//     },
+//   },
+//   exit: {
+//     scaleY: 0,
+//     transition: {
+//       delay: 0.5,
+//       duration: 0.5,
+//       ease: [0.22, 1, 0.36, 1],
+//     },
+//   },
+// };
 const menuVariant: Variants = {
-  initial: {
-    scaleY: 0,
+  open: {
+    width: 350,
+    height: 500,
+    top: -5,
+    right: -5,
+    transition: { duration: 0.75, ease: [0.76, 0, 0.24, 1] },
   },
-  animate: {
-    scaleY: 1,
-    transition: {
-      duration: 0.5,
-      ease: [0.12, 0, 0.39, 0],
-    },
-  },
-  exit: {
-    scaleY: 0,
-    transition: {
-      delay: 0.5,
-      duration: 0.5,
-      ease: [0.22, 1, 0.36, 1],
-    },
+  closed: {
+    width: 83.2,
+    height: 36.8,
+    top: 0,
+    right: 0,
+    transition: { duration: 0.75, ease: [0.76, 0, 0.24, 1] },
   },
 };
 const menuLinkVariant: Variants = {

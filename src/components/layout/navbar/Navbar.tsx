@@ -19,6 +19,7 @@ import {
 import { FocusTrap } from "focus-trap-react";
 import { TfiClose } from "react-icons/tfi";
 import { socialLinks } from "@/data/social-links";
+import MenuButton from "./MenuButton";
 
 type MenuLinkType = {
   name: string;
@@ -60,98 +61,105 @@ const Navbar = () => {
                 onClick={() => {
                   setShowMenu(false);
                 }}
-                className="relative z-[12]"
               >
-                {showMenu ? (
-                  <span className="size-5 rounded-full bg-black block" />
-                ) : (
-                  <Logo />
-                )}
+                <Logo />
               </div>
 
-              {/* SUB: NAVLINKS */}
-              <AnimatePresence>
-                {showMenu && (
-                  <FocusTrap>
-                    <motion.div
-                      variants={menuVariant}
-                      initial="initial"
-                      animate="animate"
-                      exit="exit"
-                      className=" bg-accent bg-opacity-[10%]  w-full h-[100dvh]  md:px-10 px-6  md:pt-32 pt-24 z-10 fixed inset-0 origin-top flex flex-col pb-8"
-                    >
-                      <button
-                        className="absolute right-[5%] top-[3%]"
-                        onClick={() => setShowMenu((prev) => !prev)}
-                      >
-                        <span className="sr-only">Close menu</span>
-                        <span className="uppercase font-semibold text-base dark:text-white">
-                          Close
-                        </span>
-                      </button>
-                      <motion.ul
-                        role="modal"
-                        variants={containerVariant}
-                        initial="initial"
-                        animate="open"
-                        exit="initial"
-                        className="flex flex-col gap-y-6  md:items-start items-center"
-                      >
-                        {NavLinks.map(({ name, link }) => {
-                          return (
-                            <li key={name} className="overflow-hidden">
-                              <MenuLink
-                                name={name}
-                                link={link}
-                                closeMenu={closeMenu}
-                                pathName={pathName}
-                              />
-                            </li>
-                          );
-                        })}
-                      </motion.ul>
-
-                      {/* SUB: Bottom content */}
-                      <div className="mt-auto flex items-center justify-around ">
-                        <button
-                          className="hover:scale-110 duration-300 transiton ease-in-out"
-                          onClick={() => setShowMenu((prev) => !prev)}
-                        >
-                          <span className="sr-only">Close menu</span>
-                          <TfiClose className="md:size-24 size-12 font-thin opacity-65" />
-                        </button>
-                        <ul className="grid grid-cols-2 md:gap-x-10 gap-x-4">
-                          {socialLinks.map((item) => (
-                            <li
-                              key={item.name}
-                              className="hover:scale-110 duration-300 transiton ease-in-out"
-                            >
-                              <a
-                                href={item.link}
-                                className="capitalize font-semibold text-lg "
-                              >
-                                {item.name}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </motion.div>
-                  </FocusTrap>
-                )}
-              </AnimatePresence>
-
               {/* SUB: SUB BUTTON */}
-              <div className="flex items-center gap-2 ">
+              <div className="flex items-center gap-2 relative">
                 <ThemeSwitch />
+                <MenuButton
+                  type="button"
+                  showMenu={showMenu}
+                  setShowMenu={setShowMenu}
+                />
+                {/* SUB: NAVLINKS */}
+                <AnimatePresence>
+                  {showMenu && (
+                    <>
+                      <motion.div
+                        variants={menuVariant}
+                        initial="closed"
+                        animate="open"
+                        exit="closed"
+                        role="modal"
+                        className=" bg-accent absolute top-0 right-0 rounded-[25px] overflow-hidden z-20"
+                      >
+                        <div className="flex flex-col pb-8 md:px-8 px-6   md:pt-28 pt-20 gap-20 w-full h-full justify-between ">
+                          <motion.ul
+                            variants={containerVariant}
+                            initial="initial"
+                            animate="open"
+                            exit="initial"
+                            className="flex flex-col gap-y-6  md:items-start items-center"
+                          >
+                            {NavLinks.map(({ name, link }) => {
+                              return (
+                                <li key={name} className="overflow-hidden">
+                                  <MenuLink
+                                    name={name}
+                                    link={link}
+                                    closeMenu={closeMenu}
+                                    pathName={pathName}
+                                  />
+                                </li>
+                              );
+                            })}
+                          </motion.ul>
 
-                <button
-                  className="hover:scale-110 duration-300 transiton ease-in-out"
-                  onClick={() => setShowMenu((prev) => !prev)}
-                >
-                  <span className="sr-only">Show menu</span>
-                  <Menu size={30} className="dark:text-white" />
-                </button>
+                          {/* SUB: Bottom content */}
+                          <motion.div
+                            variants={menuLinkVariant}
+                            initial="initial"
+                            animate={{
+                              y: 0,
+                              transition: {
+                                duration: 0.7,
+                                delay: 0.75,
+                                ease: [0, 0.55, 0.45, 1],
+                              },
+                            }}
+                            transition={{ delay: 3.5 }}
+                            exit="initial"
+                            className="mt-auto flex items-center justify-around gap-10"
+                          >
+                            <button
+                              className="hover:scale-110 duration-300 transiton ease-in-out"
+                              onClick={() => setShowMenu((prev) => !prev)}
+                            >
+                              <span className="sr-only">Close menu</span>
+                              <TfiClose className="md:size-12 size-8 font-thin opacity-65" />
+                            </button>
+                            <ul className="grid grid-cols-2 md:gap-x-4 gap-x-2">
+                              {socialLinks.map((item) => (
+                                <li
+                                  key={item.name}
+                                  className="hover:scale-110 duration-300 transiton ease-in-out"
+                                >
+                                  <a
+                                    href={item.link}
+                                    className="capitalize font-semibold text-base "
+                                  >
+                                    {item.name}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
+                        aria-hidden="true"
+                        onClick={() => setShowMenu(false)}
+                        className="bg-background/60  backdrop-blur-xl  fixed inset-0 w-full h-screen"
+                      />
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </nav>
@@ -167,7 +175,7 @@ const MenuLink = ({ link, name, pathName, closeMenu }: MenuLinkType) => {
       <Link
         href={link}
         className={cn(
-          "text-4xl md:text-8xl uppercase hover:tracking-widest focus-within:tracking-widest duration-300 transiton ease-in-out",
+          "text-3xl md:text-5xl uppercase hover:tracking-widest focus-within:tracking-widest duration-300 transiton ease-in-out",
           pathName === link && "text-white "
         )}
         onClick={closeMenu}

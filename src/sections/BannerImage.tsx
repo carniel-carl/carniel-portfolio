@@ -4,6 +4,7 @@ import { useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import bgImage from "@/assests/images/profile-pic.jpg";
 
 const BannerImage = () => {
   const container = useRef<HTMLDivElement | null>(null);
@@ -22,10 +23,11 @@ const BannerImage = () => {
       <div className="fixed top-[-10vh] left-0 h-[120vh] w-full">
         <motion.div style={{ y }} className="relative w-full h-full">
           <Image
-            src="/images/profile-pic.jpg"
+            src={bgImage}
             alt="profile"
             fill
             className="object-cover object-[15%_35%] opacity-20"
+            placeholder="blur"
           />
         </motion.div>
       </div>

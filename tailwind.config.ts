@@ -62,6 +62,9 @@ const config: Config = {
         nunito: "var(--nunito)",
         montserrat: "var(--montserrat)",
       },
+      transform: {
+        "rotate-x-90": "rotateX(-90deg)",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
