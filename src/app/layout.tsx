@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { Montserrat, Nunito_Sans, Poppins } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import ThemeWrapper from "@/context/theme-provider";
-import MainLayout from "@/components/layout/MainLayout";
 import Navbar from "@/components/layout/navbar/Navbar";
 import Footer from "@/components/layout/Footer";
 

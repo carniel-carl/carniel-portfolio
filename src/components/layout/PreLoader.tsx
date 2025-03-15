@@ -1,6 +1,5 @@
 "use client";
 import { motion, Variants } from "framer-motion";
-import Image from "next/image";
 import { useEffect, useState, Dispatch, SetStateAction } from "react";
 
 const container: Variants = {
