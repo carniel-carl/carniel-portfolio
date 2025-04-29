@@ -10,6 +10,8 @@ import {
   slideUpVariant,
 } from "@/components/animations/general";
 
+import profile from "@/assests/images/profile-pic.jpg";
+
 const About = () => {
   return (
     <motion.section
@@ -24,10 +26,12 @@ const About = () => {
       <motion.div variants={slideLeftVariant} className="w-fit relative">
         <div className="relative lg:w-[21rem] lg:h-[28rem] md:w-[18rem]  md:h-[22rem] w-[19rem] h-[18rem] about-profile__after">
           <Image
-            src="/images/profile-pic.jpg"
+            src={profile}
             alt="profile pic"
             fill
             className="object-cover rounded-2xl scale-95"
+            priority
+            placeholder="blur"
           />
         </div>
       </motion.div>

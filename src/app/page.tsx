@@ -1,31 +1,32 @@
 "use client";
 import { staggerVariant } from "@/components/animations/general";
-import { AnimatePresence, motion } from "framer-motion";
-import MaxWidth from "@/components/general/MaxWidth";
 import AnimatedLetters from "@/components/general/AnimatedLetters";
+import MaxWidth from "@/components/general/MaxWidth";
+import { AnimatePresence, motion } from "framer-motion";
 // import BannerImage from "@/sections/BannerImage";
-import Marquee from "react-fast-marquee";
-import { useState } from "react";
 import PreLoader from "@/components/layout/PreLoader";
-import Image from "next/image";
+import { CornerRightUp } from "lucide-react";
+import { useState } from "react";
+import Marquee from "react-fast-marquee";
 
 const HomePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   return (
     <>
-      <AnimatePresence mode="sync">
+      <AnimatePresence mode="wait">
         {isLoading ? (
           <motion.div key="preload">
             <PreLoader setIsLoading={setIsLoading} />
           </motion.div>
         ) : (
-          <div className="w-screen min-h-[calc(100svh-8rem)] my-8 overflow-x-hidden">
+          <div className="w-screen mt-8 overflow-x-hidden">
             <motion.div
               variants={staggerVariant}
               initial="initial"
               animate="visible"
+              className=""
             >
-              <MaxWidth>
+              <MaxWidth className="relative">
                 <motion.h4
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0, transition: { duration: 0.3 } }}
@@ -34,37 +35,37 @@ const HomePage = () => {
                   Hello, I&apos;m
                 </motion.h4>
                 <BannerTop title="Carniel" />
+                <div className="fixed right-5 md:right-20 top-20 md:top-20 z-[20] animate-bounce">
+                  <CornerRightUp className="text-accent opacity-70 size-5" />
+                </div>
               </MaxWidth>
+
               <div>
                 <BannerCenter title="Frontend" playMarquee={true} />
-                {/* <BannerCenter
-            title="Developer"
-            playMarquee={true}
-            direction="right"
-          /> */}
+                <BannerCenter
+                  title="Developer"
+                  playMarquee={true}
+                  direction="right"
+                />
               </div>
-              <MaxWidth className="mt-4">
-                {!isLoading && (
-                  <motion.div
-                    className="relative lg:w-[21rem] lg:h-[21rem] md:w-[18rem] md:h-[18rem] w-[19rem] h-[19rem] rounded-full overflow-hidden  border-2 border-accent ml-auto"
-                    layoutId="main-image-1"
-                    transition={{
-                      ease: [0.76, 0, 0.24, 1],
-                      duration: 1.6,
-                    }}
-                  >
-                    <div className="absolute inset-0 z-10 w-full h-full bg-background/40" />
-                    <Image
-                      src="/images/profile-pic.jpg"
-                      alt="profile pic"
-                      fill
-                      className="object-cover"
-                    />
-                  </motion.div>
-                )}
-              </MaxWidth>
+              {/* <MaxWidth className="mt-4">
+                <motion.div
+                  className="relative lg:w-[21rem] lg:h-[21rem] md:w-[18rem] md:h-[18rem] w-[19rem] h-[19rem] rounded-full overflow-hidden  border-2 border-accent ml-auto"
+                  transition={{
+                    ease: [0.76, 0, 0.24, 1],
+                    duration: 1.6,
+                  }}
+                >
+                  <div className="absolute inset-0 z-10 w-full h-full bg-background/40" />
+                  <Image
+                    src="/images/profile-pic.jpg"
+                    alt="profile pic"
+                    fill
+                    className="object-cover"
+                  />
+                </motion.div>
+              </MaxWidth> */}
               {/* <BannerImage /> */}
-              <div className="h-[30dvh]">hell0</div>
             </motion.div>
           </div>
         )}
@@ -113,18 +114,18 @@ const BannerCenter = ({
 }) => {
   return (
     <>
-      <Marquee speed={80} direction={direction} play={playMarquee}>
+      <Marquee speed={50} direction={direction} play={playMarquee}>
         <motion.p
           initial={{ y: 200 }}
           animate={{ y: 0 }}
           transition={{ ease: [0.6, 0.01, -0.05, 0.9], duration: 1 }}
-          className=" flex items-center gap-[2rem] mx-8 font-black md:text-[15rem] text-[6rem] leading-none "
+          className=" flex items-center gap-[2.5rem] mx-10 font-black md:text-[15rem] text-[9rem] leading-none "
         >
           <span className="text-accent flex items-center">
             <AnimatedLetters text={title} />
           </span>
           <span className="text-foreground/80 flex items-center">
-            <AnimatedLetters text="Developer" disabled />
+            <AnimatedLetters text={title} disabled />
           </span>
         </motion.p>
       </Marquee>

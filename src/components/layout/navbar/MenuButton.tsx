@@ -8,7 +8,7 @@ interface IAProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const MenuButton = ({ showMenu, setShowMenu }: IAProps) => {
   return (
     <button
-      className="block rounded-[25px] w-[5.2rem] h-[2.3rem] uppercase font-semibold border-none overflow-hidden group relative z-30"
+      className="block rounded-[25px] w-[5.2rem] h-[2.3rem] uppercase font-semibold border-none overflow-hidden group relative z-[400]"
       onClick={() => setShowMenu((prev) => !prev)}
     >
       <span className="sr-only">{showMenu ? "Close menu" : "Open Menu"}</span>

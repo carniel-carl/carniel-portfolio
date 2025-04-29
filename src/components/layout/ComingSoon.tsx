@@ -2,7 +2,7 @@ import Image from "next/image";
 
 const ComingSoon = () => {
   return (
-    <div className="relative w-[20rem] h-[15rem]">
+    <div className="relative w-[20rem] h-[18rem]">
       <Image
         src="/images/coming-soon.png"
         alt="coming soon"

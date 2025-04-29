@@ -49,7 +49,7 @@ const Navbar = () => {
 
   return (
     <>
-      <header className=" text-black bg-background/10 backdrop-blur-sm fixed md:py-3 py-2 z-[20] w-full top-0">
+      <header className=" text-black bg-background/10 backdrop-blur-sm fixed md:py-3 py-2 z-[100] w-full top-0">
         <MaxWidth>
           <nav className="flex items-center md:gap-x-8 gap-x-4">
             <div
@@ -86,7 +86,7 @@ const Navbar = () => {
                             animate="open"
                             exit="closed"
                             role="modal"
-                            className=" bg-accent absolute top-0 right-0 rounded-[25px] overflow-hidden z-20"
+                            className=" bg-accent absolute top-0 right-0 rounded-[25px] overflow-hidden z-[200]"
                           >
                             <div className="flex flex-col pb-8 md:px-8 px-6   md:pt-28 pt-20 gap-20 w-full h-full justify-between ">
                               <motion.ul

@@ -104,7 +104,7 @@
     overflow: hidden !important;
   }
   .divider {
-    @apply w-16 border-b-[0.4rem] border-dotted mx-auto border-foreground/40 my-[12svh];
+    @apply w-14 border-b-[0.4rem] border-dotted mx-auto border-foreground/40 my-[12svh];
   }
 
   .about-profile__after {

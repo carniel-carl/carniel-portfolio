@@ -35,10 +35,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${poppins.className} ${montserrat.variable}  ${nunito.variable} antialiased overscroll-none`}
+        className={`${poppins.className} ${montserrat.variable}  ${nunito.variable} antialiased overscroll-none relative min-h-screen`}
       >
         <ThemeWrapper>
-          <div className="grid grid-rows-[4.5rem_1fr]">
+          <div className="grid grid-rows-[3.5rem_1fr]">
             <div>
               <Navbar />
             </div>
