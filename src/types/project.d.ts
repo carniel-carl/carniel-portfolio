@@ -1,11 +1,11 @@
 type ProjectDataType = {
-  tag: string;
+  tag?: string;
   name: string;
   img: string;
-  live: string;
-  code: string;
+  live?: string;
+  code?: string;
   description: string;
-  stack: string[];
+  stack?: string[];
 };
 
 type ProjectCardTypes = {

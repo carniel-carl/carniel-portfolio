@@ -6,7 +6,6 @@ const featuredProjectData: ProjectDataType[] = [
     name: "Creator Economy IQ",
     img: "/images/projects/jollofdiary.png",
     live: "https://www.thejollofdiary.com/",
-    code: "https://github.com/trgst/trgst_frontend",
     description:
       "Creator Economy IQ is a premier data and business insights resource platform, illuminating the business and commercial aspects of the African creator economy.",
     stack: [
@@ -21,9 +20,45 @@ const featuredProjectData: ProjectDataType[] = [
   },
   {
     tag: "ECommerce",
+    name: "Othrika",
+    img: "/images/projects/othrika.png",
+    live: "https://greensreviews.vercel.app/",
+
+    description:
+      "Make money selling old clothes/thrifts online with Othrika Ecommerce platform, managed by a custom built inventory admin dashboard.",
+    stack: [
+      "Nextjs",
+      "Typescript",
+      "NextAuth",
+      "Google Auth",
+      "TailwindCss",
+      "ShadCn",
+      "MongoDb",
+      "Prisma",
+      "Paystack",
+    ],
+  },
+  {
+    tag: "Landing",
+    name: "TechnoClean Dry Cleaners",
+    img: "/images/projects/technoclean.png",
+    live: "https://greensreviews.vercel.app/",
+    description:
+      "A professional dry cleaning and laundry service website that offers convenient online booking, eco-friendly cleaning methods, and doorstep pickup and delivery for a seamless customer experience.",
+    stack: [
+      "Nextjs",
+      "TailwindCss",
+      "Typescript",
+      "ShadCn",
+      "NextAuth",
+      "motion/react",
+    ],
+  },
+  {
+    tag: "ECommerce",
     name: "Greens review",
     img: "/images/projects/greens.png",
-    live: "https://www.greensreviews.store/",
+    live: "https://greensreviews.vercel.app/",
     code: "https://github.com/carniel-carl/greenspace",
     description:
       "An Ecommerce platform to sell phone cables, managed by a custom built inventory admin dashboard.",
@@ -68,7 +103,7 @@ const otherProject = [
     code: "https://github.com/carniel-carl/todo",
     description:
       "A Demo project built with react for task management with persistent data storage.",
-    stack: ["ReactJs", "SASS/SCSS", "State Management"],
+    // stack: ["ReactJs", "SASS/SCSS", "State Management"],
   },
 ];
 

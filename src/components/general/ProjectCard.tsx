@@ -9,7 +9,10 @@ import Link from "next/link";
 import React, { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { staggerContainer } from "@/components/animations/portfolio-page";
-import { slideLeftVariant, slideRightVariant } from "../animations/general";
+import {
+  slideLeftVariant,
+  slideRightVariant,
+} from "@/components/animations/general";
 
 type PropsVariantType = "left" | "right";
 
@@ -109,7 +112,7 @@ const ProjectImage = () => {
         src={project.img}
         alt={project.name}
         fill
-        className="object-cover rounded-md filter grayscale brightness-10 group-hover:filter-none group-hover:brightness-10 transition duration-500"
+        className="object-cover rounded-md"
       />
     </div>
   );
@@ -123,9 +126,14 @@ const ProjectTag = () => {
 // HDR: Project Action
 const ProjectActionButton: React.FC<{
   children: ReactNode;
-  href: string;
+  href?: string;
 }> = ({ children, href }) => {
-  return <Link href={href}>{children}</Link>;
+  if (!href) return null;
+  return (
+    <a target="_blank" href={href || "#"}>
+      {children}
+    </a>
+  );
 };
 
 ProjectCard.Tag = ProjectTag;
