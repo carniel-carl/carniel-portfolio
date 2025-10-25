@@ -22,7 +22,7 @@ const featuredProjectData: ProjectDataType[] = [
     tag: "ECommerce",
     name: "Othrika",
     img: "/images/projects/othrika.png",
-    live: "https://greensreviews.vercel.app/",
+    live: "https://othrika.com/",
 
     description:
       "Make money selling old clothes/thrifts online with Othrika Ecommerce platform, managed by a custom built inventory admin dashboard.",
@@ -42,7 +42,7 @@ const featuredProjectData: ProjectDataType[] = [
     tag: "Landing",
     name: "TechnoClean Dry Cleaners",
     img: "/images/projects/technoclean.png",
-    live: "https://greensreviews.vercel.app/",
+    live: "https://technocleanltd.com/",
     description:
       "A professional dry cleaning and laundry service website that offers convenient online booking, eco-friendly cleaning methods, and doorstep pickup and delivery for a seamless customer experience.",
     stack: [
@@ -87,7 +87,7 @@ const featuredProjectData: ProjectDataType[] = [
     tag: "Web3",
     name: "Pouch Swap",
     img: "/images/projects/pouchswap.png",
-    live: "https://www.pouchswap.xyz/",
+    live: "https://www.pouchswap.com/",
     code: "https://github.com/Bravark/pouch-swap-web",
     description:
       "The fastest, safest and cheapest token swapping and bridging protocol.",

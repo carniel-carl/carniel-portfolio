@@ -59,7 +59,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        nunito: "var(--nunito)",
+        nunito: "var(--nunito) sans-serif",
         montserrat: "var(--montserrat)",
       },
       transform: {

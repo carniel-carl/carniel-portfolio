@@ -1,18 +1,17 @@
 "use client";
+import {
+  slideLeftVariant,
+  slideRightVariant,
+} from "@/components/animations/general";
+import { staggerContainer } from "@/components/animations/portfolio-page";
 import ProjectCardContext, {
   useProjectCardContext,
 } from "@/context/project-card-context";
 import { cn } from "@/lib/utils";
 import { ProjectCardTypes } from "@/types/project";
-import Image from "next/image";
-import Link from "next/link";
-import React, { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { staggerContainer } from "@/components/animations/portfolio-page";
-import {
-  slideLeftVariant,
-  slideRightVariant,
-} from "@/components/animations/general";
+import Image from "next/image";
+import React, { ReactNode } from "react";
 
 type PropsVariantType = "left" | "right";
 
