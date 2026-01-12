@@ -5,7 +5,7 @@ const featuredProjectData: ProjectDataType[] = [
     tag: "Blog",
     name: "Creator Economy IQ",
     img: "/images/projects/jollofdiary.png",
-    live: "https://www.thejollofdiary.com/",
+    live: "https://www.creatoreconomyiq.com/",
     description:
       "Creator Economy IQ is a premier data and business insights resource platform, illuminating the business and commercial aspects of the African creator economy.",
     stack: [
