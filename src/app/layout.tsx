@@ -3,8 +3,6 @@ import type { Metadata } from "next";
 import { Montserrat, Nunito_Sans, Poppins } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import ThemeWrapper from "@/context/theme-provider";
-import Navbar from "@/components/layout/navbar/Navbar";
-import Footer from "@/components/layout/Footer";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -35,16 +33,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${poppins.className} ${montserrat.variable}  ${nunito.variable} antialiased overscroll-none relative min-h-screen`}
+        className={`${poppins.className} ${montserrat.variable} ${nunito.variable} antialiased overscroll-none relative min-h-screen`}
       >
         <ThemeWrapper>
-          <div className="grid grid-rows-[3.5rem_1fr]">
-            <div>
-              <Navbar />
-            </div>
-            <main className="row-start-2 row-end-3">{children}</main>
-          </div>
-          <Footer />
+          {children}
           <Toaster richColors position="top-center" />
         </ThemeWrapper>
       </body>

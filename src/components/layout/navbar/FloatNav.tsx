@@ -2,6 +2,7 @@
 
 import React, { useEffect, useCallback } from "react";
 import { IconType } from "react-icons";
+import { navLinksData } from "@/data/navlinks";
 
 interface NavLink {
   title: string;
@@ -13,7 +14,7 @@ interface NavLinksData {
   id: string;
   links: NavLink[];
 }
-const FloatNav = ({ data }: { data: NavLinksData }) => {
+const FloatNav = ({ data = navLinksData }: { data?: NavLinksData }) => {
   // const [showFloatNav, setShowFloatNav] = useState(false);
 
   // TIMER FOR SHOWING FLOATING NAVIGATION
