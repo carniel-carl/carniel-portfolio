@@ -3,8 +3,8 @@
 import { slideUpVariant } from "@/components/animations/general";
 import { staggerContainer } from "@/components/animations/portfolio-page";
 import { motion } from "framer-motion";
-import { LucideProps } from "lucide-react";
-import { IconType } from "react-icons";
+import { type LucideIcon } from "lucide-react";
+import { type IconType } from "react-icons";
 import { getIcon } from "@/lib/icon-map";
 
 interface SkillData {
@@ -61,7 +61,7 @@ const SkillCard = ({
   Icon,
 }: {
   title: string;
-  Icon: React.FC<LucideProps> | IconType | null;
+  Icon: LucideIcon | IconType | null;
 }) => {
   return (
     <div className="flex flex-col items-center gap-2 p-[1.2em] lg:w-24 md:w-20 w-20 overflow-hidden rounded-lg text-foreground border-t-0 border-b-2 !border-b-accent bg-background shadow-md">

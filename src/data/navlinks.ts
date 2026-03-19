@@ -2,8 +2,20 @@ import { BsChatDotsFill } from "react-icons/bs";
 import { FaTools } from "react-icons/fa";
 import { GoPersonFill } from "react-icons/go";
 import { MdWork } from "react-icons/md";
+import {
+  LayoutDashboard,
+  FolderKanban,
+  Wrench,
+  UserCircle,
+  PenSquare,
+  Share2,
+  Users,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
 
-export const NavLinks = [
+const NavLinks = [
   {
     name: "Blog",
     link: "/blog",
@@ -18,7 +30,7 @@ export const NavLinks = [
   // },
 ];
 
-export const navLinksData = {
+const navLinksData = {
   id: ".portfolio",
   links: [
     {
@@ -43,3 +55,15 @@ export const navLinksData = {
     },
   ],
 };
+
+const adminNavigation = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/projects", label: "Projects", icon: FolderKanban },
+  { href: "/admin/skills", label: "Skills", icon: Wrench },
+  { href: "/admin/about", label: "About", icon: UserCircle },
+  { href: "/admin/blog", label: "Blog", icon: PenSquare },
+  { href: "/admin/social", label: "Social Links", icon: Share2 },
+  { href: "/admin/users", label: "Users", icon: Users },
+];
+
+export { NavLinks, navLinksData, adminNavigation };

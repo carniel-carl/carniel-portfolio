@@ -3,11 +3,11 @@ import ProjectsClient from "./ProjectsClient";
 
 const Projects = async () => {
   const featured = await prisma.project.findMany({
-    where: { featured: true },
+    where: { featured: true, visible: { not: false } },
     orderBy: { order: "asc" },
   });
   const other = await prisma.project.findMany({
-    where: { featured: false },
+    where: { featured: false, visible: { not: false } },
     orderBy: { order: "asc" },
   });
 

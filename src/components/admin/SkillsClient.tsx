@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,8 +23,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { iconList } from "@/lib/icon-map";
+import { iconNames, getIcon } from "@/lib/icon-map";
 import { createSkill, updateSkill, deleteSkill } from "@/lib/actions/skills";
+
+const MAX_VISIBLE_ICONS = 60;
 
 interface Skill {
   id: string;
@@ -42,14 +44,14 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
   const [form, setForm] = useState({
     title: "",
     iconName: "",
-    iconLib: "",
+    iconLib: "lucide",
     order: 0,
   });
   const [iconSearch, setIconSearch] = useState("");
 
   const openCreate = () => {
     setEditingSkill(null);
-    setForm({ title: "", iconName: "", iconLib: "", order: skills.length });
+    setForm({ title: "", iconName: "", iconLib: "lucide", order: skills.length });
     setIconSearch("");
     setDialogOpen(true);
   };
@@ -100,9 +102,13 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
     setDeleteId(null);
   };
 
-  const filteredIcons = iconList.filter((icon) =>
-    icon.name.toLowerCase().includes(iconSearch.toLowerCase())
-  );
+  const filteredIcons = useMemo(() => {
+    const query = iconSearch.toLowerCase().trim();
+    if (!query) return iconNames.slice(0, MAX_VISIBLE_ICONS);
+    return iconNames
+      .filter((name) => name.toLowerCase().includes(query))
+      .slice(0, MAX_VISIBLE_ICONS);
+  }, [iconSearch]);
 
   return (
     <div>
@@ -116,8 +122,7 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {skills.map((skill) => {
-          const iconEntry = iconList.find((i) => i.name === skill.iconName);
-          const IconComponent = iconEntry?.icon;
+          const IconComponent = getIcon(skill.iconName);
           return (
             <div
               key={skill.id}
@@ -174,33 +179,47 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
             <div className="space-y-2">
               <Label>Icon</Label>
               <Input
-                placeholder="Search icons..."
+                placeholder="Search Lucide icons... (e.g. Code, Globe, Database)"
                 value={iconSearch}
                 onChange={(e) => setIconSearch(e.target.value)}
               />
               <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-2 border rounded">
-                {filteredIcons.map((entry) => (
-                  <button
-                    type="button"
-                    key={entry.name}
-                    onClick={() =>
-                      setForm({
-                        ...form,
-                        iconName: entry.name,
-                        iconLib: entry.lib,
-                      })
-                    }
-                    className={`p-2 rounded flex flex-col items-center gap-1 hover:bg-muted transition-colors ${
-                      form.iconName === entry.name
-                        ? "bg-primary/10 ring-2 ring-primary"
-                        : ""
-                    }`}
-                    title={entry.name}
-                  >
-                    <entry.icon className="size-5" />
-                  </button>
-                ))}
+                {filteredIcons.map((name) => {
+                  const Icon = getIcon(name);
+                  if (!Icon) return null;
+                  return (
+                    <button
+                      type="button"
+                      key={name}
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          iconName: name,
+                          iconLib: "lucide",
+                        })
+                      }
+                      className={`p-2 rounded flex flex-col items-center gap-1 hover:bg-muted transition-colors ${
+                        form.iconName === name
+                          ? "bg-primary/10 ring-2 ring-primary"
+                          : ""
+                      }`}
+                      title={name}
+                    >
+                      <Icon className="size-5" />
+                    </button>
+                  );
+                })}
+                {filteredIcons.length === 0 && (
+                  <p className="col-span-6 text-center text-sm text-muted-foreground py-4">
+                    No icons found. Try a different search.
+                  </p>
+                )}
               </div>
+              {iconSearch && filteredIcons.length === MAX_VISIBLE_ICONS && (
+                <p className="text-xs text-muted-foreground">
+                  Showing first {MAX_VISIBLE_ICONS} results. Type more to narrow down.
+                </p>
+              )}
               {form.iconName && (
                 <p className="text-xs text-muted-foreground">
                   Selected: {form.iconName}

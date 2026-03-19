@@ -1,3 +1,4 @@
+import { icons, type LucideIcon } from "lucide-react";
 import { FaReact, FaPython } from "react-icons/fa";
 import { BsGit, BsGithub } from "react-icons/bs";
 import {
@@ -22,9 +23,10 @@ import {
   SiReactrouter,
   SiNextdotjs,
 } from "react-icons/si";
-import { IconType } from "react-icons";
+import { type IconType } from "react-icons";
 
-export const iconMap: Record<string, IconType> = {
+// Legacy react-icons map (for existing skills saved with these names)
+const legacyIcons: Record<string, IconType> = {
   FaReact,
   FaPython,
   BsGit,
@@ -49,19 +51,16 @@ export const iconMap: Record<string, IconType> = {
   SiNextdotjs,
 };
 
-export const iconList = Object.entries(iconMap).map(([name, icon]) => {
-  const lib = name.startsWith("Fa")
-    ? "fa"
-    : name.startsWith("Bs")
-      ? "bs"
-      : name.startsWith("Bi")
-        ? "bi"
-        : name.startsWith("Pi")
-          ? "pi"
-          : "si";
-  return { name, lib, icon };
-});
+// Full Lucide icon names for the admin picker
+export const iconNames: string[] = Object.keys(icons).sort();
 
-export function getIcon(iconName: string): IconType | null {
-  return iconMap[iconName] || null;
+// Look up an icon by name — checks Lucide first, then legacy react-icons
+export function getIcon(
+  iconName: string
+): LucideIcon | IconType | null {
+  return (
+    icons[iconName as keyof typeof icons] ??
+    legacyIcons[iconName] ??
+    null
+  );
 }

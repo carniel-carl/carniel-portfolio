@@ -1,11 +1,21 @@
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import React from "react";
 import SVGIcon from "./SVGIcon";
 
-const Logo = () => {
+const Logo = ({
+  className,
+  size = "2rem",
+}: {
+  className?: string;
+  size?: string;
+}) => {
   return (
-    <Link href="/" className="relative size-8 block text-accent">
-      <SVGIcon width="2rem" height="2rem" />
+    <Link
+      href="/"
+      className={cn("relative size-8 block text-accent", className)}
+    >
+      <SVGIcon width={size} height={size} />
       <span className="sr-only">Home</span>
     </Link>
   );

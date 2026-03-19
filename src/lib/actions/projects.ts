@@ -14,7 +14,7 @@ export async function createProject(data: {
   code?: string;
   stack?: string[];
   featured?: boolean;
-  order?: number;
+  visible?: boolean;
 }) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
@@ -22,6 +22,13 @@ export async function createProject(data: {
   if (!data.name || !data.description || !data.img) {
     throw new Error("Name, description, and image are required");
   }
+
+  // Auto-assign order: place new project at the end
+  const lastProject = await prisma.project.findFirst({
+    orderBy: { order: "desc" },
+    select: { order: true },
+  });
+  const nextOrder = (lastProject?.order ?? -1) + 1;
 
   const project = await prisma.project.create({
     data: {
@@ -34,7 +41,8 @@ export async function createProject(data: {
       code: data.code || null,
       stack: data.stack || [],
       featured: data.featured || false,
-      order: data.order || 0,
+      visible: data.visible ?? true,
+      order: nextOrder,
     },
   });
 
@@ -55,7 +63,7 @@ export async function updateProject(
     code?: string;
     stack?: string[];
     featured?: boolean;
-    order?: number;
+    visible?: boolean;
   }
 ) {
   const session = await auth();
@@ -73,7 +81,7 @@ export async function updateProject(
       code: data.code,
       stack: data.stack,
       featured: data.featured,
-      order: data.order,
+      visible: data.visible,
     },
   });
 
@@ -86,7 +94,79 @@ export async function deleteProject(id: string) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
-  await prisma.project.delete({ where: { id } });
+  const deleted = await prisma.project.delete({ where: { id } });
+
+  // Close the gap: shift down all projects that were after the deleted one
+  await prisma.project.updateMany({
+    where: { order: { gt: deleted.order } },
+    data: { order: { decrement: 1 } },
+  });
+
+  revalidatePath("/admin/projects");
+  revalidatePath("/");
+}
+
+/**
+ * Move a project from its current position to a new position.
+ * All other projects shift to fill the gap / make room.
+ */
+export async function reorderProject(id: string, newOrder: number) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const project = await prisma.project.findUnique({
+    where: { id },
+    select: { order: true },
+  });
+  if (!project) throw new Error("Project not found");
+
+  const oldOrder = project.order;
+  if (oldOrder === newOrder) return;
+
+  if (newOrder < oldOrder) {
+    // Moving up: shift projects in [newOrder, oldOrder-1] down by 1
+    await prisma.project.updateMany({
+      where: {
+        order: { gte: newOrder, lt: oldOrder },
+        id: { not: id },
+      },
+      data: { order: { increment: 1 } },
+    });
+  } else {
+    // Moving down: shift projects in [oldOrder+1, newOrder] up by 1
+    await prisma.project.updateMany({
+      where: {
+        order: { gt: oldOrder, lte: newOrder },
+        id: { not: id },
+      },
+      data: { order: { decrement: 1 } },
+    });
+  }
+
+  await prisma.project.update({
+    where: { id },
+    data: { order: newOrder },
+  });
+
+  revalidatePath("/admin/projects");
+  revalidatePath("/");
+}
+
+export async function toggleProjectVisibility(id: string) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const project = await prisma.project.findUnique({
+    where: { id },
+    select: { visible: true },
+  });
+  if (!project) throw new Error("Project not found");
+
+  await prisma.project.update({
+    where: { id },
+    data: { visible: !project.visible },
+  });
+
   revalidatePath("/admin/projects");
   revalidatePath("/");
 }

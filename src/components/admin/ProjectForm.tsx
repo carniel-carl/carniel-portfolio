@@ -25,7 +25,7 @@ interface ProjectFormData {
   code: string;
   stack: string[];
   featured: boolean;
-  order: number;
+  visible: boolean;
 }
 
 interface ProjectFormProps {
@@ -48,7 +48,7 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
       code: "",
       stack: [],
       featured: false,
-      order: 0,
+      visible: true,
     }
   );
 
@@ -226,16 +226,14 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
           />
           <Label>Featured Project</Label>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="order">Display Order</Label>
-          <Input
-            id="order"
-            type="number"
-            value={form.order}
-            onChange={(e) =>
-              setForm({ ...form, order: parseInt(e.target.value) || 0 })
+        <div className="flex items-center gap-3">
+          <Switch
+            checked={form.visible}
+            onCheckedChange={(checked) =>
+              setForm({ ...form, visible: checked })
             }
           />
+          <Label>Visible on Site</Label>
         </div>
       </div>
 

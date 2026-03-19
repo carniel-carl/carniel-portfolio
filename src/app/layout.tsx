@@ -31,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${poppins.className} ${montserrat.variable} ${nunito.variable} antialiased overscroll-none relative min-h-screen`}
       >
