@@ -10,7 +10,11 @@ import { useState } from "react";
 import Marquee from "react-fast-marquee";
 
 const HomePage = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    if (typeof window === "undefined") return true;
+    // Only show preloader on full page loads, not client-side navigation
+    return performance.now() < 2000;
+  });
   return (
     <>
       <AnimatePresence mode="wait">

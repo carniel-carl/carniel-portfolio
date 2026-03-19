@@ -11,7 +11,10 @@ const MainLayout = ({
 }: Readonly<{
   children: React.ReactNode;
 }>) => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return performance.now() < 2000;
+  });
   return (
     <>
       <AnimatePresence mode="sync">

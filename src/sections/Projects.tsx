@@ -23,12 +23,10 @@ const Projects = async () => {
   });
 
   return (
-    <section id="projects">
-      <ProjectsClient
-        featured={featured.map(mapProject)}
-        other={other.map(mapProject)}
-      />
-    </section>
+    <ProjectsClient
+      featured={featured.map(mapProject)}
+      other={other.map(mapProject)}
+    />
   );
 };
 

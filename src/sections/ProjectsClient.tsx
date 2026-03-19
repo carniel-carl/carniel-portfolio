@@ -19,7 +19,7 @@ const ProjectsClient = ({ featured, other }: ProjectsClientProps) => {
   const [currTab, setCurrTab] = useState<"featured" | "other">("featured");
 
   return (
-    <div className="portfolio flex flex-col">
+    <section id="projects" className="portfolio flex flex-col">
       <motion.h2
         variants={slideUpVariant}
         initial="hidden"
@@ -130,7 +130,7 @@ const ProjectsClient = ({ featured, other }: ProjectsClientProps) => {
             );
           })}
       </div>
-    </div>
+    </section>
   );
 };
 

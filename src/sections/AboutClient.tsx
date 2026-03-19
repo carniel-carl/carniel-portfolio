@@ -66,16 +66,33 @@ const AboutClient = ({ about }: AboutClientProps) => {
           variants={slideRightVariant}
           className="text-lg mb-8 mt-8 max-w-[40rem] w-full text-foreground/70 font-medium"
         >
-          {parse(DOMPurify.sanitize(bio, {
-            ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "ul", "li", "br", "h1", "h2", "h3", "h4", "ol"],
-            ALLOWED_ATTR: ["href", "target", "rel"],
-          }))}
+          {parse(
+            DOMPurify.sanitize(bio, {
+              ALLOWED_TAGS: [
+                "b",
+                "i",
+                "em",
+                "strong",
+                "a",
+                "p",
+                "ul",
+                "li",
+                "br",
+                "h1",
+                "h2",
+                "h3",
+                "h4",
+                "ol",
+              ],
+              ALLOWED_ATTR: ["href", "target", "rel"],
+            }),
+          )}
         </motion.div>
 
         <motion.div variants={slideUpVariant}>
           <a
             href={resumeUrl}
-            className={`${buttonVariants()} py-6 rounded-md`}
+            className={`${buttonVariants()} py-6 `}
             download="chimezie-resume"
             target="_blank"
           >
