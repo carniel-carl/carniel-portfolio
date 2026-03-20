@@ -14,11 +14,11 @@ import { adminNavigation } from "@/data/navlinks";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-const AdminSidebar = ({ session }: { session: Session | null }) => {
+const AdminSidebar = () => {
   const { setOpenMobile } = useSidebar();
   const pathName = usePathname();
 
-  const isSuperAdmin = session?.user?.isAdmin;
+  // const isSuperAdmin = session?.user?.isAdmin;
 
   const getIsActive = (url: string) => {
     const isActive =

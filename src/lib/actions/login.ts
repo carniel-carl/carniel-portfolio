@@ -12,22 +12,19 @@ const handleLogin = async ({
   password: string;
 }) => {
   try {
+    // redirectTo lets AuthJS set the session cookie AND redirect atomically
     await signIn("credentials", {
       email,
       password,
-      redirect: false,
+      redirectTo: "/admin",
     });
-
-    return { message: "Login successfully", error: false };
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Invalid email or password" };
+      return { error: true, message: "Invalid email or password" };
     }
 
-    return {
-      message: "Something went wrong",
-      error: true,
-    };
+    // Re-throw NEXT_REDIRECT (thrown by AuthJS on success) and other errors
+    throw error;
   }
 };
 
