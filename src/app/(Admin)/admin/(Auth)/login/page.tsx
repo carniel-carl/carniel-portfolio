@@ -34,11 +34,13 @@ export default function LoginPage() {
 
     setLoading(false);
 
+    console.log("result", result);
     if (result?.error) {
       setError("Invalid email or password");
     } else if (result?.ok) {
+      console.log("==== I am redirecting ====");
       router.push("/admin");
-      router.refresh();
+      // router.refresh();
     } else {
       setError("Unexpected response: " + JSON.stringify(result));
     }

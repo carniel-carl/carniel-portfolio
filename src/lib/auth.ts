@@ -16,12 +16,7 @@ declare module "next-auth/jwt" {
   }
 }
 
-export const {
-  handlers,
-  signIn,
-  signOut,
-  auth,
-} = NextAuth({
+export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
       name: "credentials",
@@ -41,7 +36,7 @@ export const {
 
           const isValid = await bcrypt.compare(
             credentials.password as string,
-            user.password
+            user.password,
           );
 
           if (!isValid) return null;
@@ -65,6 +60,7 @@ export const {
   session: {
     strategy: "jwt",
   },
+  debug: process.env.NODE_ENV !== "production",
   trustHost: true,
   secret: process.env.AUTH_SECRET,
   callbacks: {
