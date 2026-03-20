@@ -1,10 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { loginAction } from "./actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -12,6 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { handleLogin } from "@/lib/actions/login";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,20 +21,23 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const navigate = useRouter();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    try {
-      const result = await loginAction(email, password);
-      if (result?.error) {
-        setError(result.error);
-        setLoading(false);
-      }
-      // If no error, the server action redirects to /admin
-    } catch {
-      // redirect throws — this is expected on success
+    const result = await handleLogin({ email, password });
+
+    if (result.error) {
+      toast.error(result.message);
+      setError(result.message || "Something went wrong");
+      setLoading(false);
+    } else {
+      toast.success(result.message);
+      navigate.push("/admin");
+      setLoading(false);
     }
   };
 
