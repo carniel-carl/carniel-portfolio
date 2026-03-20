@@ -13,12 +13,14 @@ export default async function proxy(req: NextRequest) {
 
   if (isLoginPage) {
     if (isLoggedIn) {
+      console.log("=== I am redirecting to admin");
       return NextResponse.redirect(new URL("/admin", req.nextUrl));
     }
     return NextResponse.next();
   }
 
   if (isAdminRoute && !isLoggedIn) {
+    console.log("=== I am redirecting to login");
     return NextResponse.redirect(new URL("/admin/login", req.nextUrl));
   }
 
