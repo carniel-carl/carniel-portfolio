@@ -1,27 +1,35 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 
-export default async function proxy(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
-  const isLoggedIn = !!token;
-  const isAdminRoute = req.nextUrl.pathname.startsWith("/admin");
-  const isLoginPage = req.nextUrl.pathname === "/admin/login";
-  const isAuthApi = req.nextUrl.pathname.startsWith("/api/auth");
+async function checkAuth(request: NextRequest) {
+  try {
+    const session = await auth();
+    return { isAuthenticated: !!session, session };
+  } catch {
+    return { isAuthenticated: false, session: null };
+  }
+}
+
+export default async function middleware(request: NextRequest) {
+  const { nextUrl } = request;
+  const { isAuthenticated } = await checkAuth(request);
+
+  const isAdminRoute = nextUrl.pathname.startsWith("/admin");
+  const isLoginPage = nextUrl.pathname === "/admin/login";
+  const isAuthApi = nextUrl.pathname.startsWith("/api/auth");
 
   if (isAuthApi) return NextResponse.next();
 
   if (isLoginPage) {
-    if (isLoggedIn) {
-      console.log("=== I am redirecting to admin");
-      return NextResponse.redirect(new URL("/admin", req.nextUrl));
+    if (isAuthenticated) {
+      return NextResponse.redirect(new URL("/admin", nextUrl));
     }
     return NextResponse.next();
   }
 
-  if (isAdminRoute && !isLoggedIn) {
-    console.log("=== I am redirecting to login");
-    return NextResponse.redirect(new URL("/admin/login", req.nextUrl));
+  if (isAdminRoute && !isAuthenticated) {
+    return NextResponse.redirect(new URL("/admin/login", nextUrl));
   }
 
   return NextResponse.next();

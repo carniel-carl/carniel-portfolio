@@ -7,14 +7,14 @@ declare module "next-auth" {
   interface User {
     isAdmin?: boolean;
   }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    id?: string;
-    isAdmin?: boolean;
+  interface Session {
+    user: User & {
+      id?: string;
+      isAdmin?: boolean;
+    };
   }
 }
+
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -67,14 +67,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.isAdmin = user.isAdmin ?? false;
+        token.isAdmin = (user as { isAdmin?: boolean }).isAdmin ?? false;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        (session.user as { isAdmin?: boolean }).isAdmin = token.isAdmin;
+        session.user.isAdmin = token.isAdmin as boolean;
       }
       return session;
     },
