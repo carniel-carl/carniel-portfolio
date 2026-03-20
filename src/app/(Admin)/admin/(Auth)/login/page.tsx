@@ -36,9 +36,11 @@ export default function LoginPage() {
 
     if (result?.error) {
       setError("Invalid email or password");
-    } else {
+    } else if (result?.ok) {
       router.push("/admin");
       router.refresh();
+    } else {
+      setError("Unexpected response: " + JSON.stringify(result));
     }
   };
 
