@@ -1,9 +1,9 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import prisma from "@/lib/prisma";
-import { revalidateTag } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import prisma from "@/lib/prisma";
+import { updateTag } from "next/cache";
 
 export async function createProject(data: {
   name: string;
@@ -47,7 +47,7 @@ export async function createProject(data: {
     },
   });
 
-  revalidateTag(CACHE_TAGS.projects, "max");
+  updateTag(CACHE_TAGS.projects);
   return project;
 }
 
@@ -64,7 +64,7 @@ export async function updateProject(
     stack?: string[];
     featured?: boolean;
     visible?: boolean;
-  }
+  },
 ) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
@@ -85,7 +85,7 @@ export async function updateProject(
     },
   });
 
-  revalidateTag(CACHE_TAGS.projects, "max");
+  updateTag(CACHE_TAGS.projects);
   return project;
 }
 
@@ -101,7 +101,7 @@ export async function deleteProject(id: string) {
     data: { order: { decrement: 1 } },
   });
 
-  revalidateTag(CACHE_TAGS.projects, "max");
+  updateTag(CACHE_TAGS.projects);
 }
 
 /**
@@ -146,7 +146,7 @@ export async function reorderProject(id: string, newOrder: number) {
     data: { order: newOrder },
   });
 
-  revalidateTag(CACHE_TAGS.projects, "max");
+  updateTag(CACHE_TAGS.projects);
 }
 
 export async function toggleProjectVisibility(id: string) {
@@ -164,5 +164,5 @@ export async function toggleProjectVisibility(id: string) {
     data: { visible: !project.visible },
   });
 
-  revalidateTag(CACHE_TAGS.projects, "max");
+  updateTag(CACHE_TAGS.projects);
 }
