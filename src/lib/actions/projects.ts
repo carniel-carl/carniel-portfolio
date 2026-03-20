@@ -147,7 +147,7 @@ export async function reorderProject(id: string, newOrder: number) {
   });
 
   updateTag(CACHE_TAGS.projects);
-  revalidatePath("/portfolio");
+  revalidatePath("/portfolio", "page");
 }
 
 export async function toggleProjectVisibility(id: string) {
