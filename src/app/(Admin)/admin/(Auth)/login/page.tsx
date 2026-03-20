@@ -36,7 +36,7 @@ export default function LoginPage() {
       setLoading(false);
     } else {
       toast.success(result.message);
-      navigate.push("/admin");
+      window.location.href = "/admin";
       setLoading(false);
     }
   };
