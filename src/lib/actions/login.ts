@@ -2,6 +2,7 @@
 
 import { AuthError } from "next-auth";
 import { signIn } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 // HDR: LOGIN USERS WITH CREDENTIALS
 const handleLogin = async ({
@@ -17,18 +18,16 @@ const handleLogin = async ({
       password,
       redirect: false,
     });
-
-    return { message: "Login successfully", error: false };
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Invalid email or password" };
+      return { error: true, message: "Invalid email or password" };
     }
 
-    return {
-      message: "Something went wrong",
-      error: true,
-    };
+    throw error;
   }
+
+  // redirect must be called OUTSIDE try/catch — it throws NEXT_REDIRECT
+  redirect("/admin");
 };
 
 export { handleLogin };
