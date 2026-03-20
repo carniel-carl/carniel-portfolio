@@ -51,7 +51,12 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
 
   const openCreate = () => {
     setEditingSkill(null);
-    setForm({ title: "", iconName: "", iconLib: "lucide", order: skills.length });
+    setForm({
+      title: "",
+      iconName: "",
+      iconLib: "lucide",
+      order: skills.length,
+    });
     setIconSearch("");
     setDialogOpen(true);
   };
@@ -115,7 +120,7 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">Skills</h2>
         <Button onClick={openCreate}>
-          <Plus className="size-4 mr-2" />
+          <Plus className="size-4" />
           Add Skill
         </Button>
       </div>
@@ -130,7 +135,9 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
             >
               {IconComponent && <IconComponent className="size-6 opacity-70" />}
               <span className="text-sm text-center">{skill.title}</span>
-              <span className="text-xs text-muted-foreground">#{skill.order}</span>
+              <span className="text-xs text-muted-foreground">
+                #{skill.order}
+              </span>
               <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                 <button
                   onClick={() => openEdit(skill)}
@@ -217,7 +224,8 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
               </div>
               {iconSearch && filteredIcons.length === MAX_VISIBLE_ICONS && (
                 <p className="text-xs text-muted-foreground">
-                  Showing first {MAX_VISIBLE_ICONS} results. Type more to narrow down.
+                  Showing first {MAX_VISIBLE_ICONS} results. Type more to narrow
+                  down.
                 </p>
               )}
               {form.iconName && (

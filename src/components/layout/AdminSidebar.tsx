@@ -44,9 +44,9 @@ const AdminSidebar = ({ session }: { session: Session | null }) => {
                     href={item.href}
                     className={cn(
                       getIsActive(item.href)
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium hover:bg-sidebar-accent/80"
+                        ? "bg-sidebar-primary text-sidebar-accent-foreground font-medium hover:bg-sidebar-primary/80"
                         : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-secondary",
-                      "gap-2 transition-colors",
+                      "gap-2 transition-colors pl-4",
                     )}
                   >
                     {item.icon && (

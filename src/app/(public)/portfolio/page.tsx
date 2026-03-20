@@ -13,23 +13,14 @@ const PortfolioPage = () => {
       <FloatNavDynamic />
       <ScrollToTop />
       <MaxWidth className="lg:!max-w-[65rem] md:!max-w-[40rem] mb-24 w-[90%] mx-auto ">
-        <Suspense
-          fallback={<div className="h-96 animate-pulse bg-muted rounded" />}
-        >
+        <Suspense fallback={null}>
           <About />
         </Suspense>
         <div className="divider" />
-        <Suspense
-          fallback={<div className="h-96 animate-pulse bg-muted rounded" />}
-        >
-          <Projects />
-        </Suspense>
+
+        <Projects />
         <div className="divider" />
-        <Suspense
-          fallback={<div className="h-96 animate-pulse bg-muted rounded" />}
-        >
-          <Skills />
-        </Suspense>
+        <Skills />
         <div className="divider" />
         <Contact />
       </MaxWidth>

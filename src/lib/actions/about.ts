@@ -2,7 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 export async function updateAbout(data: {
   bio: string;
@@ -22,7 +23,7 @@ export async function updateAbout(data: {
         resumeUrl: data.resumeUrl || "",
       },
     });
-    revalidatePath("/");
+    revalidateTag(CACHE_TAGS.about, "max");
     return about;
   }
 
@@ -35,6 +36,6 @@ export async function updateAbout(data: {
     },
   });
 
-  revalidatePath("/");
+  revalidateTag(CACHE_TAGS.about, "max");
   return about;
 }

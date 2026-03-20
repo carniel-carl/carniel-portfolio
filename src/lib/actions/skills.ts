@@ -2,7 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 export async function createSkill(data: {
   title: string;
@@ -26,8 +27,7 @@ export async function createSkill(data: {
     },
   });
 
-  revalidatePath("/admin/skills");
-  revalidatePath("/");
+  revalidateTag(CACHE_TAGS.skills, "max");
   return skill;
 }
 
@@ -53,8 +53,7 @@ export async function updateSkill(
     },
   });
 
-  revalidatePath("/admin/skills");
-  revalidatePath("/");
+  revalidateTag(CACHE_TAGS.skills, "max");
   return skill;
 }
 
@@ -63,6 +62,5 @@ export async function deleteSkill(id: string) {
   if (!session) throw new Error("Unauthorized");
 
   await prisma.skill.delete({ where: { id } });
-  revalidatePath("/admin/skills");
-  revalidatePath("/");
+  revalidateTag(CACHE_TAGS.skills, "max");
 }

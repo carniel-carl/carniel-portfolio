@@ -13,8 +13,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import Image from "next/image";
-import Logo from "./general/Logo";
+import Logo from "@/components/general/Logo";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -22,7 +21,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader className="mt-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="group-data-[collapsible=icon]:p-0! mt-2 flex items-center gap-1 hover:bg-transparent">
+            <SidebarMenuButton className="group-data-[collapsible=icon]:p-0! mt-2 flex items-center gap-1 hover:bg-transparent hover:text-sidebar-foreground">
               <Logo className="size-auto" size="1.5rem" />
               <span className="font-semibold text-2xl ml-1">Carniel</span>
             </SidebarMenuButton>

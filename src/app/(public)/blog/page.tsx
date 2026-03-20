@@ -1,6 +1,6 @@
-export const dynamic = "force-dynamic";
-
+import { cacheTag, cacheLife } from "next/cache";
 import prisma from "@/lib/prisma";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
@@ -10,8 +10,12 @@ export const metadata: Metadata = {
   description: "Read my latest blog posts",
 };
 
-export default async function BlogPage() {
-  const posts = await prisma.blogPost.findMany({
+async function getPosts() {
+  "use cache";
+  cacheTag(CACHE_TAGS.blog);
+  cacheLife("max");
+
+  return prisma.blogPost.findMany({
     where: { published: true },
     orderBy: { publishedAt: "desc" },
     select: {
@@ -23,8 +27,12 @@ export default async function BlogPage() {
       publishedAt: true,
     },
   });
+}
 
-  if (posts.length === 0) {
+export default async function BlogPage() {
+  const posts = await getPosts();
+
+  if (!posts.length) {
     return (
       <div className="w-full min-h-[calc(100svh-8rem)] flex items-center justify-center">
         <div className="text-center">

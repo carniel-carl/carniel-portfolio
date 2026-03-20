@@ -2,7 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 function slugify(text: string): string {
   return text
@@ -47,8 +48,7 @@ export async function createBlogPost(data: {
     },
   });
 
-  revalidatePath("/admin/blog");
-  revalidatePath("/blog");
+  revalidateTag(CACHE_TAGS.blog, "max");
   return post;
 }
 
@@ -69,6 +69,15 @@ export async function updateBlogPost(
   const existing = await prisma.blogPost.findUnique({ where: { id } });
   if (!existing) throw new Error("Not found");
 
+  // If slug changed, check for conflicts with other posts
+  let slug = data.slug;
+  if (slug !== existing.slug) {
+    const conflict = await prisma.blogPost.findUnique({ where: { slug } });
+    if (conflict) {
+      slug = `${slug}-${Date.now()}`;
+    }
+  }
+
   let publishedAt = existing.publishedAt;
   if (data.published && !existing.publishedAt) {
     publishedAt = new Date();
@@ -81,7 +90,7 @@ export async function updateBlogPost(
     where: { id },
     data: {
       title: data.title,
-      slug: data.slug,
+      slug,
       content: data.content,
       excerpt: data.excerpt,
       coverImage: data.coverImage,
@@ -90,8 +99,7 @@ export async function updateBlogPost(
     },
   });
 
-  revalidatePath("/admin/blog");
-  revalidatePath("/blog");
+  revalidateTag(CACHE_TAGS.blog, "max");
   return post;
 }
 
@@ -100,6 +108,5 @@ export async function deleteBlogPost(id: string) {
   if (!session) throw new Error("Unauthorized");
 
   await prisma.blogPost.delete({ where: { id } });
-  revalidatePath("/admin/blog");
-  revalidatePath("/blog");
+  revalidateTag(CACHE_TAGS.blog, "max");
 }

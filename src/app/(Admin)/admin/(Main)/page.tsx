@@ -1,16 +1,22 @@
+"use cache";
+import { cacheTag, cacheLife } from "next/cache";
 import prisma from "@/lib/prisma";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { CACHE_TAGS } from "@/lib/cache-tags";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FolderKanban, Wrench, PenSquare, Share2 } from "lucide-react";
 import Link from "next/link";
 
 export default async function AdminDashboard() {
+  cacheTag(
+    CACHE_TAGS.projects,
+    CACHE_TAGS.skills,
+    CACHE_TAGS.blog,
+    CACHE_TAGS.social
+  );
+  cacheLife("max");
+
   const [projectCount, skillCount, postCount, publishedCount, socialCount] =
-    await Promise.all([
+    await prisma.$transaction([
       prisma.project.count(),
       prisma.skill.count(),
       prisma.blogPost.count(),

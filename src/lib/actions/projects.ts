@@ -2,7 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 export async function createProject(data: {
   name: string;
@@ -46,8 +47,7 @@ export async function createProject(data: {
     },
   });
 
-  revalidatePath("/admin/projects");
-  revalidatePath("/");
+  revalidateTag(CACHE_TAGS.projects, "max");
   return project;
 }
 
@@ -85,8 +85,7 @@ export async function updateProject(
     },
   });
 
-  revalidatePath("/admin/projects");
-  revalidatePath("/");
+  revalidateTag(CACHE_TAGS.projects, "max");
   return project;
 }
 
@@ -102,8 +101,7 @@ export async function deleteProject(id: string) {
     data: { order: { decrement: 1 } },
   });
 
-  revalidatePath("/admin/projects");
-  revalidatePath("/");
+  revalidateTag(CACHE_TAGS.projects, "max");
 }
 
 /**
@@ -148,8 +146,7 @@ export async function reorderProject(id: string, newOrder: number) {
     data: { order: newOrder },
   });
 
-  revalidatePath("/admin/projects");
-  revalidatePath("/");
+  revalidateTag(CACHE_TAGS.projects, "max");
 }
 
 export async function toggleProjectVisibility(id: string) {
@@ -167,6 +164,5 @@ export async function toggleProjectVisibility(id: string) {
     data: { visible: !project.visible },
   });
 
-  revalidatePath("/admin/projects");
-  revalidatePath("/");
+  revalidateTag(CACHE_TAGS.projects, "max");
 }

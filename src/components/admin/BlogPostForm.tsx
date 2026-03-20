@@ -60,7 +60,7 @@ export default function BlogPostForm({
     setForm({
       ...form,
       title,
-      slug: isEdit ? form.slug : slugify(title),
+      slug: slugify(title),
     });
   };
 
@@ -102,15 +102,9 @@ export default function BlogPostForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="slug">Slug</Label>
-        <Input
-          id="slug"
-          value={form.slug}
-          onChange={(e) => setForm({ ...form, slug: e.target.value })}
-          className="text-muted-foreground"
-        />
-        <p className="text-xs text-muted-foreground">
-          URL: /blog/{form.slug || "..."}
+        <Label>Slug</Label>
+        <p className="text-sm text-muted-foreground">
+          /blog/{form.slug || "..."}
         </p>
       </div>
 

@@ -2,7 +2,7 @@
 
 import PreLoader from "@/components/layout/PreLoader";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Navbar from "./navbar/Navbar";
 import Footer from "./Footer";
 
@@ -37,7 +37,9 @@ const MainLayout = ({
               </motion.div>
               <main className="row-start-2 row-end-3">{children}</main>
             </div>
-            <Footer />
+            <Suspense fallback={null}>
+              <Footer />
+            </Suspense>
           </>
         )}
       </AnimatePresence>

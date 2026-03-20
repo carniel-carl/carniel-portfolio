@@ -10,12 +10,14 @@ const BackButton = ({
   onClick,
   className,
   text,
+  size = "default",
 }: {
   variant?: "primary" | "secondary" | "close";
   showText?: boolean;
   onClick?: () => void;
   className?: string;
   text?: string;
+  size?: "sm" | "lg" | "default" | "icon" | null | undefined;
 }) => {
   const navigate = useRouter();
 
@@ -31,10 +33,11 @@ const BackButton = ({
       variant="ghost"
       onClick={clickHandler}
       className={cn(
-        "w-fit text-muted-foreground font-montserrat rounded-full !p-3 h-fit",
+        "w-fit text-muted-foreground font-montserrat rounded-full",
         className,
       )}
       type="button"
+      size={size}
     >
       {variant === "primary" && (
         <>
