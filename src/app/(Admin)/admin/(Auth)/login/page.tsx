@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
-
+import { loginAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,22 +24,15 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
-    setLoading(false);
-
-    console.log("result", result);
-    if (result?.error) {
-      setError("Invalid email or password");
-    } else if (result?.ok) {
-      window.location.href = "/admin";
-      // router.refresh();
-    } else {
-      setError("Unexpected response: " + JSON.stringify(result));
+    try {
+      const result = await loginAction(email, password);
+      if (result?.error) {
+        setError(result.error);
+        setLoading(false);
+      }
+      // If no error, the server action redirects to /admin
+    } catch {
+      // redirect throws — this is expected on success
     }
   };
 
