@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
-import { updateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 export async function createProject(data: {
   name: string;
@@ -147,6 +147,7 @@ export async function reorderProject(id: string, newOrder: number) {
   });
 
   updateTag(CACHE_TAGS.projects);
+  revalidatePath("/portfolio");
 }
 
 export async function toggleProjectVisibility(id: string) {
