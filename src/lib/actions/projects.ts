@@ -3,7 +3,21 @@
 import { auth } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
-import { revalidateTag, updateTag } from "next/cache";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
+
+/**
+ * Invalidate both the Runtime Cache (use cache: remote) and
+ * the CDN/ISR page cache for all pages that display projects.
+ */
+function invalidateProjectCaches() {
+  // 1. Runtime Cache: purge the "projects" tag entry
+  updateTag(CACHE_TAGS.projects);
+  revalidateTag(CACHE_TAGS.projects, "max");
+
+  // 2. CDN/ISR Page Cache: explicitly invalidate the portfolio page
+  //    (PPR pages cache the full response at the CDN level separately)
+  revalidatePath("/portfolio");
+}
 
 export async function createProject(data: {
   name: string;
@@ -47,8 +61,7 @@ export async function createProject(data: {
     },
   });
 
-  updateTag(CACHE_TAGS.projects);
-  revalidateTag(CACHE_TAGS.projects, "max");
+  invalidateProjectCaches();
   return project;
 }
 
@@ -86,8 +99,7 @@ export async function updateProject(
     },
   });
 
-  updateTag(CACHE_TAGS.projects);
-  revalidateTag(CACHE_TAGS.projects, "max");
+  invalidateProjectCaches();
   return project;
 }
 
@@ -103,8 +115,7 @@ export async function deleteProject(id: string) {
     data: { order: { decrement: 1 } },
   });
 
-  updateTag(CACHE_TAGS.projects);
-  revalidateTag(CACHE_TAGS.projects, "max");
+  invalidateProjectCaches();
 }
 
 /**
@@ -149,8 +160,7 @@ export async function reorderProject(id: string, newOrder: number) {
     data: { order: newOrder },
   });
 
-  updateTag(CACHE_TAGS.projects);
-  revalidateTag(CACHE_TAGS.projects, "max");
+  invalidateProjectCaches();
 }
 
 export async function toggleProjectVisibility(id: string) {
@@ -168,6 +178,5 @@ export async function toggleProjectVisibility(id: string) {
     data: { visible: !project.visible },
   });
 
-  updateTag(CACHE_TAGS.projects);
-  revalidateTag(CACHE_TAGS.projects, "max");
+  invalidateProjectCaches();
 }
