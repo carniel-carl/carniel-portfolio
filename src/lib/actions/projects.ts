@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import { updateTag } from "next/cache";
+import { dangerouslyDeleteByTag, invalidateByTag } from "@vercel/functions";
 
 export async function createProject(data: {
   name: string;
@@ -147,6 +148,7 @@ export async function reorderProject(id: string, newOrder: number) {
   });
 
   updateTag(CACHE_TAGS.projects);
+  await dangerouslyDeleteByTag(CACHE_TAGS.projects);
 }
 
 export async function toggleProjectVisibility(id: string) {
@@ -165,4 +167,5 @@ export async function toggleProjectVisibility(id: string) {
   });
 
   updateTag(CACHE_TAGS.projects);
+  await invalidateByTag(CACHE_TAGS.projects);
 }

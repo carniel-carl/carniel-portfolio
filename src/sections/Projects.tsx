@@ -6,7 +6,7 @@ import ProjectsClient from "@/sections/ProjectsClient";
 const Projects = async () => {
   "use cache: remote";
   cacheTag(CACHE_TAGS.projects);
-  cacheLife("hours");
+  cacheLife("max");
   const featured = await prisma.project.findMany({
     where: { featured: true, visible: { not: false } },
     orderBy: { order: "asc" },
