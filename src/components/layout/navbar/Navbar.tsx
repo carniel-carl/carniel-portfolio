@@ -17,8 +17,12 @@ import {
 } from "@/components/animations/navbar-animation";
 import { FocusTrap } from "focus-trap-react";
 import { TfiClose } from "react-icons/tfi";
-import { socialLinks } from "@/data/social-links";
 import MenuButton from "./MenuButton";
+
+type SocialLink = {
+  name: string;
+  link: string;
+};
 
 type MenuLinkType = {
   name: string;
@@ -27,7 +31,7 @@ type MenuLinkType = {
   closeMenu: () => void;
 };
 
-const Navbar = () => {
+const Navbar = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
   const pathName = usePathname();
   const [showMenu, setShowMenu] = useState(false);
 
@@ -54,7 +58,7 @@ const Navbar = () => {
           <nav className="flex items-center md:gap-x-8 gap-x-4">
             <div
               className={cn(
-                "flex items-center justify-between gap-x-5 gap-y-10  py-2 flex-1 "
+                "flex items-center justify-between gap-x-5 gap-y-10  py-2 flex-1 ",
               )}
             >
               {/* SUB: LOGO */}
@@ -141,7 +145,9 @@ const Navbar = () => {
                                     >
                                       <a
                                         href={item.link}
-                                        className="capitalize font-semibold text-base "
+                                        className="capitalize font-semibold text-base"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                       >
                                         {item.name}
                                       </a>
@@ -181,7 +187,7 @@ const MenuLink = ({ link, name, pathName, closeMenu }: MenuLinkType) => {
         href={link}
         className={cn(
           "text-4xl md:text-5xl uppercase hover:tracking-widest focus-within:tracking-widest duration-300 transiton ease-in-out",
-          pathName === link && "text-white "
+          pathName === link && "text-white ",
         )}
         onClick={closeMenu}
       >

@@ -2,7 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 export async function updateSocialLinks(
   data: { name: string; link: string }[]
@@ -18,6 +19,6 @@ export async function updateSocialLinks(
     });
   }
 
-  revalidatePath("/");
+  revalidateTag(CACHE_TAGS.social, "max");
   return prisma.socialLink.findMany();
 }

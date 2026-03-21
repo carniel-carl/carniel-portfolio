@@ -6,15 +6,18 @@ import { AnimatePresence, motion } from "framer-motion";
 // import BannerImage from "@/sections/BannerImage";
 import PreLoader from "@/components/layout/PreLoader";
 import { CornerRightUp } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Marquee from "react-fast-marquee";
 
 const HomePage = () => {
-  const [isLoading, setIsLoading] = useState(() => {
-    if (typeof window === "undefined") return true;
-    // Only show preloader on full page loads, not client-side navigation
-    return performance.now() < 2000;
-  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Skip preloader on client-side navigation (page already loaded)
+    if (performance.now() > 2000) {
+      setIsLoading(false);
+    }
+  }, []);
   return (
     <>
       <AnimatePresence mode="wait">
