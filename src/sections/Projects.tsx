@@ -1,12 +1,12 @@
-// import { cacheTag, cacheLife } from "next/cache";
-// import { CACHE_TAGS } from "@/lib/cache-tags";
+import { cacheTag, cacheLife } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import ProjectsClient from "@/sections/ProjectsClient";
 
 const Projects = async () => {
-  // "use cache: remote";
-  // cacheTag(CACHE_TAGS.projects);
-  // cacheLife("max");
+  "use cache: remote";
+  cacheTag(CACHE_TAGS.projects);
+  cacheLife("max");
   const featured = await prisma.project.findMany({
     where: { featured: true, visible: { not: false } },
     orderBy: { order: "asc" },
