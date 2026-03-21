@@ -4,7 +4,7 @@ import { CACHE_TAGS } from "@/lib/cache-tags";
 import ProjectsClient from "@/components/admin/ProjectsClient";
 
 async function getProjects() {
-  "use cache";
+  "use cache: remote";
   cacheTag(CACHE_TAGS.projects);
   cacheLife("max");
 
@@ -36,10 +36,6 @@ export default async function ProjectsPage({
   const { featured, other } = await getProjects();
 
   return (
-    <ProjectsClient
-      featured={featured}
-      other={other}
-      activeTab={activeTab}
-    />
+    <ProjectsClient featured={featured} other={other} activeTab={activeTab} />
   );
 }
