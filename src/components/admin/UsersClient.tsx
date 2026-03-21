@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { DataTable } from "@/components/ui/data-table";
 import {
   Card,
   CardDescription,
@@ -32,14 +34,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Plus, Trash2, Shield, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 import { registerUser, updateUser, deleteUser } from "@/lib/actions/users";
@@ -116,6 +110,110 @@ export default function UsersClient({ users, currentUserEmail }: UsersClientProp
       );
     }
   };
+
+  const columns = useMemo<ColumnDef<User>[]>(() => {
+    const cols: ColumnDef<User>[] = [
+      {
+        accessorKey: "name",
+        header: "Name",
+        cell: ({ row }) => {
+          const isCurrentUser = row.original.email === currentUserEmail;
+          return (
+            <span className="font-medium">
+              {row.original.name || "—"}
+              {isCurrentUser && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  (you)
+                </span>
+              )}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "email",
+        header: "Email",
+      },
+      {
+        accessorKey: "isAdmin",
+        header: "Role",
+        cell: ({ row }) =>
+          row.getValue("isAdmin") ? (
+            <Badge variant="default">Super Admin</Badge>
+          ) : (
+            <Badge variant="secondary">Admin</Badge>
+          ),
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Joined",
+        cell: ({ row }) =>
+          new Date(row.getValue("createdAt")).toLocaleDateString(),
+      },
+    ];
+
+    if (currentUserIsSuper) {
+      cols.push({
+        id: "actions",
+        header: () => <span className="text-right block">Actions</span>,
+        cell: ({ row }) => {
+          const isCurrentUser = row.original.email === currentUserEmail;
+          if (isCurrentUser) return null;
+
+          return (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  handleToggleAdmin(row.original.id, row.original.isAdmin)
+                }
+                title={
+                  row.original.isAdmin
+                    ? "Remove super admin"
+                    : "Make super admin"
+                }
+              >
+                {row.original.isAdmin ? (
+                  <ShieldOff className="size-4" />
+                ) : (
+                  <Shield className="size-4" />
+                )}
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="size-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Delete {row.original.name || row.original.email}?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently remove this admin account. This
+                      action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleDelete(row.original.id)}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          );
+        },
+      });
+    }
+
+    return cols;
+  }, [currentUserIsSuper, currentUserEmail]);
 
   return (
     <div>
@@ -209,103 +307,7 @@ export default function UsersClient({ users, currentUserEmail }: UsersClientProp
         </Card>
       )}
 
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Joined</TableHead>
-              {currentUserIsSuper && (
-                <TableHead className="text-right">Actions</TableHead>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => {
-              const isCurrentUser = user.email === currentUserEmail;
-              return (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">
-                    {user.name || "—"}
-                    {isCurrentUser && (
-                      <span className="text-xs text-muted-foreground ml-2">
-                        (you)
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    {user.isAdmin ? (
-                      <Badge variant="default">Super Admin</Badge>
-                    ) : (
-                      <Badge variant="secondary">Admin</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  {currentUserIsSuper && (
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {!isCurrentUser && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                handleToggleAdmin(user.id, user.isAdmin)
-                              }
-                              title={
-                                user.isAdmin
-                                  ? "Remove super admin"
-                                  : "Make super admin"
-                              }
-                            >
-                              {user.isAdmin ? (
-                                <ShieldOff className="size-4" />
-                              ) : (
-                                <Shield className="size-4" />
-                              )}
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                  <Trash2 className="size-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    Delete {user.name || user.email}?
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will permanently remove this admin
-                                    account. This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDelete(user.id)}
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Card>
+      <DataTable columns={columns} data={users} paginated={false} />
     </div>
   );
 }

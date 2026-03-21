@@ -1,20 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
+import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,115 +118,122 @@ export default function ProjectsClient({
     }
   };
 
-  const renderTable = (projects: Project[]) => (
-    <div className="border rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-16">Image</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Tag</TableHead>
-            <TableHead>Visible</TableHead>
-            <TableHead className="w-20">Order</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {projects.map((project, index) => (
-            <TableRow
-              key={project.id}
-              className={!project.visible ? "opacity-50" : undefined}
-            >
-              <TableCell>
-                <div className="relative w-12 h-8 rounded overflow-hidden">
-                  <Image
-                    src={project.img}
-                    alt={project.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </TableCell>
-              <TableCell className="font-medium">{project.name}</TableCell>
-              <TableCell>
-                {project.tag && (
-                  <Badge variant="secondary">{project.tag}</Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleToggleVisibility(project.id)}
-                  title={project.visible ? "Hide project" : "Show project"}
-                >
-                  {project.visible ? (
-                    <Eye className="size-4" />
-                  ) : (
-                    <EyeOff className="size-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm w-6 text-center">
-                    {project.order}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-7"
-                    disabled={
-                      index === projects.length - 1 ||
-                      !!reordering ||
-                      !project.visible ||
-                      !projects[index + 1]?.visible
-                    }
-                    onClick={() => handleMoveDown(project, index)}
-                  >
-                    <ArrowDown className="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-7"
-                    disabled={index === 0 || !!reordering || !project.visible}
-                    onClick={() => handleMoveUp(project, index)}
-                  >
-                    <ArrowUp className="size-3.5" />
-                  </Button>
-                </div>
-              </TableCell>
-              <TableCell className="text-right space-x-2">
-                <Link href={`/admin/projects/${project.id}/edit`}>
-                  <Button variant="outline" size="icon">
-                    <Pencil className="size-4" />
-                  </Button>
-                </Link>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => setDeleteId(project.id)}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-          {projects.length === 0 && (
-            <TableRow>
-              <TableCell
-                colSpan={6}
-                className="text-center text-muted-foreground py-8"
-              >
-                No projects in this category.
-              </TableCell>
-            </TableRow>
+  const createColumns = (projects: Project[]): ColumnDef<Project>[] => [
+    {
+      accessorKey: "img",
+      header: "Image",
+      cell: ({ row }) => (
+        <div className="relative w-12 h-8 rounded overflow-hidden">
+          <Image
+            src={row.getValue("img")}
+            alt={row.original.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        </div>
+      ),
+    },
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.getValue("name")}</span>
+      ),
+    },
+    {
+      accessorKey: "tag",
+      header: "Tag",
+      cell: ({ row }) => {
+        const tag = row.getValue("tag") as string | null;
+        return tag ? <Badge variant="secondary">{tag}</Badge> : null;
+      },
+    },
+    {
+      accessorKey: "visible",
+      header: "Visible",
+      cell: ({ row }) => (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => handleToggleVisibility(row.original.id)}
+          title={row.original.visible ? "Hide project" : "Show project"}
+        >
+          {row.original.visible ? (
+            <Eye className="size-4" />
+          ) : (
+            <EyeOff className="size-4 text-muted-foreground" />
           )}
-        </TableBody>
-      </Table>
-    </div>
+        </Button>
+      ),
+    },
+    {
+      accessorKey: "order",
+      header: "Order",
+      cell: ({ row }) => {
+        const index = projects.findIndex((p) => p.id === row.original.id);
+        return (
+          <div className="flex items-center gap-1">
+            <span className="text-sm w-6 text-center">
+              {row.getValue("order")}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7"
+              disabled={
+                index === projects.length - 1 ||
+                !!reordering ||
+                !row.original.visible ||
+                !projects[index + 1]?.visible
+              }
+              onClick={() => handleMoveDown(row.original, index)}
+            >
+              <ArrowDown className="size-3.5" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7"
+              disabled={index === 0 || !!reordering || !row.original.visible}
+              onClick={() => handleMoveUp(row.original, index)}
+            >
+              <ArrowUp className="size-3.5" />
+            </Button>
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: () => <span className="text-right block">Actions</span>,
+      cell: ({ row }) => (
+        <div className="text-right space-x-2">
+          <Link href={`/admin/projects/${row.original.id}/edit`}>
+            <Button variant="outline" size="icon">
+              <Pencil className="size-4" />
+            </Button>
+          </Link>
+          <Button
+            variant="destructive"
+            size="icon"
+            onClick={() => setDeleteId(row.original.id)}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const featuredColumns = useMemo(
+    () => createColumns(featured),
+    [featured, reordering],
   );
+  const otherColumns = useMemo(() => createColumns(other), [other, reordering]);
+
+  const getRowClassName = (project: Project) =>
+    !project.visible ? "opacity-30 hover:bg-transparent" : undefined;
 
   return (
     <div>
@@ -254,10 +255,20 @@ export default function ProjectsClient({
           <TabsTrigger value="other">Other ({other.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="featured" className="mt-4">
-          {renderTable(featured)}
+          <DataTable
+            columns={featuredColumns}
+            data={featured}
+            paginated={false}
+            getRowClassName={getRowClassName}
+          />
         </TabsContent>
         <TabsContent value="other" className="mt-4">
-          {renderTable(other)}
+          <DataTable
+            columns={otherColumns}
+            data={other}
+            paginated={false}
+            getRowClassName={getRowClassName}
+          />
         </TabsContent>
       </Tabs>
 

@@ -1,18 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +46,67 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
     setDeleteId(null);
   };
 
+  const columns = useMemo<ColumnDef<BlogPost>[]>(
+    () => [
+      {
+        accessorKey: "title",
+        header: "Title",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.getValue("title")}</span>
+        ),
+      },
+      {
+        accessorKey: "slug",
+        header: "Slug",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-sm">
+            {row.getValue("slug")}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "published",
+        header: "Status",
+        cell: ({ row }) =>
+          row.getValue("published") ? (
+            <Badge>Published</Badge>
+          ) : (
+            <Badge variant="secondary">Draft</Badge>
+          ),
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Created",
+        cell: ({ row }) => (
+          <span className="text-sm">
+            {new Date(row.getValue("createdAt")).toLocaleDateString()}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: () => <span className="text-right block">Actions</span>,
+        cell: ({ row }) => (
+          <div className="text-right space-x-2">
+            <Link href={`/admin/blog/${row.original.id}/edit`}>
+              <Button variant="ghost" size="icon">
+                <Pencil className="size-4" />
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDeleteId(row.original.id)}
+            >
+              <Trash2 className="size-4 text-destructive" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -64,63 +119,7 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
         </Link>
       </div>
 
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {posts.map((post) => (
-              <TableRow key={post.id}>
-                <TableCell className="font-medium">{post.title}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">
-                  {post.slug}
-                </TableCell>
-                <TableCell>
-                  {post.published ? (
-                    <Badge>Published</Badge>
-                  ) : (
-                    <Badge variant="secondary">Draft</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {new Date(post.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Link href={`/admin/blog/${post.id}/edit`}>
-                    <Button variant="ghost" size="icon">
-                      <Pencil className="size-4" />
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDeleteId(post.id)}
-                  >
-                    <Trash2 className="size-4 text-destructive" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {posts.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center text-muted-foreground py-8"
-                >
-                  No blog posts yet. Write your first post.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable columns={columns} data={posts} paginated={false} />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
