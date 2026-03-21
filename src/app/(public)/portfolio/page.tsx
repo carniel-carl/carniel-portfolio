@@ -18,9 +18,13 @@ const PortfolioPage = () => {
         </Suspense>
         <div className="divider" />
 
-        <Projects />
+        <Suspense fallback={null}>
+          <Projects />
+        </Suspense>
         <div className="divider" />
-        <Skills />
+        <Suspense fallback={null}>
+          <Skills />
+        </Suspense>
         <div className="divider" />
         <Contact />
       </MaxWidth>

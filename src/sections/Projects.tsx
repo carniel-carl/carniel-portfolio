@@ -1,12 +1,12 @@
-"use cache";
-import { cacheTag, cacheLife } from "next/cache";
+// import { cacheTag, cacheLife } from "next/cache";
+// import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import ProjectsClient from "@/sections/ProjectsClient";
 
 const Projects = async () => {
-  cacheTag(CACHE_TAGS.projects);
-  cacheLife("max");
+  // "use cache: remote";
+  // cacheTag(CACHE_TAGS.projects);
+  // cacheLife("max");
   const featured = await prisma.project.findMany({
     where: { featured: true, visible: { not: false } },
     orderBy: { order: "asc" },
@@ -15,6 +15,8 @@ const Projects = async () => {
     where: { featured: false, visible: { not: false } },
     orderBy: { order: "asc" },
   });
+
+  console.log("=====I rendered Projects=======");
 
   // Map Prisma models to the ProjectDataType shape the client expects
   const mapProject = (p: (typeof featured)[number]) => ({
