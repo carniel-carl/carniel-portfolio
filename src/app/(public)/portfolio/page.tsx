@@ -43,39 +43,31 @@ const PortfolioPage = async ({
   const { featured, other } = await getProjects();
   return (
     <div className="w-screen min-h-[calc(100svh-2rem)] overflow-x-hidden">
-      {/* <FloatNavDynamic /> */}
+      <FloatNavDynamic />
       <ScrollToTop />
       <MaxWidth className="lg:!max-w-[65rem] md:!max-w-[40rem] mb-24 w-[90%] mx-auto ">
+        <Suspense fallback={null}>
+          <About />
+        </Suspense>
+
         <div className="divider" />
         <ProjectsClient
           featured={featured}
           other={other}
           activeTab={activeTab}
         />
+        <Suspense fallback={null}>
+          <Projects />
+        </Suspense>
+        <div className="divider" />
+        <Suspense fallback={null}>
+          <Skills />
+        </Suspense>
+        <div className="divider" />
+        <Contact />
       </MaxWidth>
     </div>
   );
 };
 
 export default PortfolioPage;
-
-const TestPage = () => {
-  return (
-    <>
-      <Suspense fallback={null}>
-        <About />
-      </Suspense>
-      <div className="divider" />
-
-      <Suspense fallback={null}>
-        <Projects />
-      </Suspense>
-      <div className="divider" />
-      <Suspense fallback={null}>
-        <Skills />
-      </Suspense>
-      <div className="divider" />
-      <Contact />
-    </>
-  );
-};
