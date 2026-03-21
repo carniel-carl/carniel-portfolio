@@ -19,7 +19,11 @@ interface AboutData {
   resumeUrl: string;
 }
 
-export default function AboutClient({ about: initialAbout }: { about: AboutData }) {
+export default function AboutClient({
+  about: initialAbout,
+}: {
+  about: AboutData;
+}) {
   const [about, setAbout] = useState<AboutData>(initialAbout);
   const [saving, setSaving] = useState(false);
 
@@ -55,6 +59,8 @@ export default function AboutClient({ about: initialAbout }: { about: AboutData 
                 alt="Profile"
                 fill
                 className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                loading="eager"
               />
               <button
                 onClick={() => setAbout({ ...about, profilePicUrl: "" })}
@@ -72,7 +78,9 @@ export default function AboutClient({ about: initialAbout }: { about: AboutData 
                 toast.success("Image uploaded");
               }
             }}
-            onUploadError={(err) => { toast.error(err.message); }}
+            onUploadError={(err) => {
+              toast.error(err.message);
+            }}
           />
           <Input
             placeholder="Or enter URL: /images/profile-pic.jpg"
@@ -99,7 +107,9 @@ export default function AboutClient({ about: initialAbout }: { about: AboutData 
                 toast.success("Resume uploaded");
               }
             }}
-            onUploadError={(err) => { toast.error(err.message); }}
+            onUploadError={(err) => {
+              toast.error(err.message);
+            }}
           />
           <Input
             placeholder="Or enter URL: /chimezie-resume.pdf"

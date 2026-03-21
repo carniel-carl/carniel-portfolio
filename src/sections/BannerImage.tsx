@@ -28,6 +28,7 @@ const BannerImage = () => {
             fill
             className="object-cover object-[15%_35%] opacity-20"
             placeholder="blur"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         </motion.div>
       </div>
