@@ -3,8 +3,7 @@
 import { auth } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
-import { updateTag } from "next/cache";
-import { dangerouslyDeleteByTag, invalidateByTag } from "@vercel/functions";
+import { revalidateTag, updateTag } from "next/cache";
 
 export async function createProject(data: {
   name: string;
@@ -49,6 +48,7 @@ export async function createProject(data: {
   });
 
   updateTag(CACHE_TAGS.projects);
+  revalidateTag(CACHE_TAGS.projects, "max");
   return project;
 }
 
@@ -87,6 +87,7 @@ export async function updateProject(
   });
 
   updateTag(CACHE_TAGS.projects);
+  revalidateTag(CACHE_TAGS.projects, "max");
   return project;
 }
 
@@ -103,6 +104,7 @@ export async function deleteProject(id: string) {
   });
 
   updateTag(CACHE_TAGS.projects);
+  revalidateTag(CACHE_TAGS.projects, "max");
 }
 
 /**
@@ -148,7 +150,7 @@ export async function reorderProject(id: string, newOrder: number) {
   });
 
   updateTag(CACHE_TAGS.projects);
-  await dangerouslyDeleteByTag(CACHE_TAGS.projects);
+  revalidateTag(CACHE_TAGS.projects, "max");
 }
 
 export async function toggleProjectVisibility(id: string) {
@@ -167,5 +169,5 @@ export async function toggleProjectVisibility(id: string) {
   });
 
   updateTag(CACHE_TAGS.projects);
-  await invalidateByTag(CACHE_TAGS.projects);
+  revalidateTag(CACHE_TAGS.projects, "max");
 }
