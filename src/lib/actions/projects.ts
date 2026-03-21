@@ -3,20 +3,50 @@
 import { auth } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
-import { revalidatePath, revalidateTag, updateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 
-/**
- * Invalidate both the Runtime Cache (use cache: remote) and
- * the CDN/ISR page cache for all pages that display projects.
- */
+export const getCachedFeaturedProjects = unstable_cache(
+  async () => {
+    return prisma.project.findMany({
+      where: { featured: true, visible: { not: false } },
+      orderBy: { order: "asc" },
+    });
+  },
+  ["featured-projects"],
+  { tags: [CACHE_TAGS.projects] }
+);
+
+export const getCachedOtherProjects = unstable_cache(
+  async () => {
+    return prisma.project.findMany({
+      where: { featured: false, visible: { not: false } },
+      orderBy: { order: "asc" },
+    });
+  },
+  ["other-projects"],
+  { tags: [CACHE_TAGS.projects] }
+);
+
+export const getCachedAllProjects = unstable_cache(
+  async () => {
+    const [featured, other] = await prisma.$transaction([
+      prisma.project.findMany({
+        where: { featured: true },
+        orderBy: { order: "asc" },
+      }),
+      prisma.project.findMany({
+        where: { featured: false },
+        orderBy: { order: "asc" },
+      }),
+    ]);
+    return { featured, other };
+  },
+  ["all-projects"],
+  { tags: [CACHE_TAGS.projects] }
+);
+
 function invalidateProjectCaches() {
-  // 1. Runtime Cache: purge the "projects" tag entry
-  updateTag(CACHE_TAGS.projects);
   revalidateTag(CACHE_TAGS.projects, "max");
-
-  // 2. CDN/ISR Page Cache: explicitly invalidate the portfolio page
-  //    (PPR pages cache the full response at the CDN level separately)
-  revalidatePath("/portfolio");
 }
 
 export async function createProject(data: {

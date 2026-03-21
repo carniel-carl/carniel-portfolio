@@ -1,6 +1,5 @@
-import { cacheTag, cacheLife } from "next/cache";
+import { getCachedPost } from "@/lib/actions/blog";
 import prisma from "@/lib/prisma";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -8,14 +7,6 @@ import { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import parse from "html-react-parser";
 import DOMPurify from "isomorphic-dompurify";
-
-async function getPost(slug: string) {
-  "use cache";
-  cacheTag(CACHE_TAGS.blog);
-  cacheLife("max");
-
-  return prisma.blogPost.findUnique({ where: { slug } });
-}
 
 export async function generateStaticParams() {
   const posts = await prisma.blogPost.findMany({
@@ -34,7 +25,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPost(slug);
+  const post = await getCachedPost(slug);
 
   if (!post) return { title: "Post Not Found" };
 
@@ -62,7 +53,7 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = await getPost(slug);
+  const post = await getCachedPost(slug);
 
   if (!post || !post.published) notFound();
 

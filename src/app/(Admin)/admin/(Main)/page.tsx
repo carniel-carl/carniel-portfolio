@@ -1,28 +1,36 @@
-"use cache";
-import { cacheTag, cacheLife } from "next/cache";
+import { unstable_cache } from "next/cache";
 import prisma from "@/lib/prisma";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FolderKanban, Wrench, PenSquare, Share2 } from "lucide-react";
 import Link from "next/link";
 
-export default async function AdminDashboard() {
-  cacheTag(
-    CACHE_TAGS.projects,
-    CACHE_TAGS.skills,
-    CACHE_TAGS.blog,
-    CACHE_TAGS.social
-  );
-  cacheLife("max");
+const getCachedDashboardStats = unstable_cache(
+  async () => {
+    const [projectCount, skillCount, postCount, publishedCount, socialCount] =
+      await prisma.$transaction([
+        prisma.project.count(),
+        prisma.skill.count(),
+        prisma.blogPost.count(),
+        prisma.blogPost.count({ where: { published: true } }),
+        prisma.socialLink.count(),
+      ]);
+    return { projectCount, skillCount, postCount, publishedCount, socialCount };
+  },
+  ["dashboard-stats"],
+  {
+    tags: [
+      CACHE_TAGS.projects,
+      CACHE_TAGS.skills,
+      CACHE_TAGS.blog,
+      CACHE_TAGS.social,
+    ],
+  }
+);
 
-  const [projectCount, skillCount, postCount, publishedCount, socialCount] =
-    await prisma.$transaction([
-      prisma.project.count(),
-      prisma.skill.count(),
-      prisma.blogPost.count(),
-      prisma.blogPost.count({ where: { published: true } }),
-      prisma.socialLink.count(),
-    ]);
+export default async function AdminDashboard() {
+  const { projectCount, skillCount, postCount, publishedCount, socialCount } =
+    await getCachedDashboardStats();
 
   const stats = [
     {

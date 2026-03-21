@@ -2,8 +2,16 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+
+export const getCachedSkills = unstable_cache(
+  async () => {
+    return prisma.skill.findMany({ orderBy: { order: "asc" } });
+  },
+  ["skills-list"],
+  { tags: [CACHE_TAGS.skills] }
+);
 
 export async function createSkill(data: {
   title: string;

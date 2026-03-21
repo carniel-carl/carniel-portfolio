@@ -2,8 +2,30 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+
+export const getCachedAbout = unstable_cache(
+  async () => {
+    return prisma.about.findFirst();
+  },
+  ["about"],
+  { tags: [CACHE_TAGS.about] }
+);
+
+export const getCachedAboutForAdmin = unstable_cache(
+  async () => {
+    let about = await prisma.about.findFirst();
+    if (!about) {
+      about = await prisma.about.create({
+        data: { bio: "", profilePicUrl: "", resumeUrl: "" },
+      });
+    }
+    return JSON.parse(JSON.stringify(about));
+  },
+  ["about-admin"],
+  { tags: [CACHE_TAGS.about] }
+);
 
 export async function updateAbout(data: {
   bio: string;

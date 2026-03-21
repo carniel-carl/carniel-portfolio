@@ -1,13 +1,8 @@
-import { cacheTag, cacheLife } from "next/cache";
-import { CACHE_TAGS } from "@/lib/cache-tags";
-import prisma from "@/lib/prisma";
+import { getCachedAbout } from "@/lib/actions/about";
 import AboutClient from "@/sections/AboutClient";
 
 const About = async () => {
-  "use cache: remote";
-  cacheTag(CACHE_TAGS.about);
-  cacheLife("max");
-  const about = await prisma.about.findFirst();
+  const about = await getCachedAbout();
 
   return (
     <AboutClient

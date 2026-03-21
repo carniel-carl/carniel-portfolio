@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 
 function slugify(text: string): string {
@@ -13,6 +13,44 @@ function slugify(text: string): string {
     .replace(/[\s_]+/g, "-")
     .replace(/-+/g, "-");
 }
+
+export const getCachedPublishedPosts = unstable_cache(
+  async () => {
+    return prisma.blogPost.findMany({
+      where: { published: true },
+      orderBy: { publishedAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        excerpt: true,
+        coverImage: true,
+        publishedAt: true,
+      },
+    });
+  },
+  ["published-posts"],
+  { tags: [CACHE_TAGS.blog] }
+);
+
+export const getCachedPost = unstable_cache(
+  async (slug: string) => {
+    return prisma.blogPost.findUnique({ where: { slug } });
+  },
+  ["blog-post"],
+  { tags: [CACHE_TAGS.blog] }
+);
+
+export const getCachedAllPosts = unstable_cache(
+  async () => {
+    const posts = await prisma.blogPost.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    return JSON.parse(JSON.stringify(posts));
+  },
+  ["all-posts"],
+  { tags: [CACHE_TAGS.blog] }
+);
 
 export async function createBlogPost(data: {
   title: string;

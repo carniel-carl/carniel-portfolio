@@ -1,6 +1,4 @@
-import { cacheTag, cacheLife } from "next/cache";
-import prisma from "@/lib/prisma";
-import { CACHE_TAGS } from "@/lib/cache-tags";
+import { getCachedPublishedPosts } from "@/lib/actions/blog";
 import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
@@ -10,27 +8,8 @@ export const metadata: Metadata = {
   description: "Read my latest blog posts",
 };
 
-async function getPosts() {
-  "use cache";
-  cacheTag(CACHE_TAGS.blog);
-  cacheLife("max");
-
-  return prisma.blogPost.findMany({
-    where: { published: true },
-    orderBy: { publishedAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      excerpt: true,
-      coverImage: true,
-      publishedAt: true,
-    },
-  });
-}
-
 export default async function BlogPage() {
-  const posts = await getPosts();
+  const posts = await getCachedPublishedPosts();
 
   if (!posts.length) {
     return (
