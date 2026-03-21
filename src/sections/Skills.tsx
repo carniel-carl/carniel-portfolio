@@ -1,5 +1,6 @@
 import { getCachedSkills } from "@/lib/actions/skills";
 import SkillsClient from "@/sections/SkillsClient";
+import { cacheTag } from "next/cache";
 
 const Skills = async () => {
   const skills = await getCachedSkills();

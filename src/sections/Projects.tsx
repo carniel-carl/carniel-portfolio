@@ -3,6 +3,7 @@ import {
   getCachedOtherProjects,
 } from "@/lib/actions/projects";
 import ProjectsClient from "@/sections/ProjectsClient";
+import { cacheTag } from "next/cache";
 
 const Projects = async ({ tab }: { tab?: string }) => {
   const featured = await getCachedFeaturedProjects();

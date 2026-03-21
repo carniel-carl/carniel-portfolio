@@ -1,5 +1,6 @@
 import { getCachedAbout } from "@/lib/actions/about";
 import AboutClient from "@/sections/AboutClient";
+import { cacheTag } from "next/cache";
 
 const About = async () => {
   const about = await getCachedAbout();
