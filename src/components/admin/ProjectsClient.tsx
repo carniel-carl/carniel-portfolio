@@ -25,7 +25,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   deleteProject,
@@ -74,6 +82,7 @@ export default function ProjectsClient({
       toast.error("Failed to delete project");
     }
     setDeleteId(null);
+    router.refresh();
   };
 
   const handleMoveUp = async (project: Project, index: number) => {
@@ -88,6 +97,7 @@ export default function ProjectsClient({
       toast.error("Failed to reorder");
     }
     setReordering(null);
+    router.refresh();
   };
 
   const handleMoveDown = async (project: Project, index: number) => {
@@ -102,6 +112,7 @@ export default function ProjectsClient({
       toast.error("Failed to reorder");
     }
     setReordering(null);
+    router.refresh();
   };
 
   const handleToggleVisibility = async (id: string) => {
@@ -235,9 +246,7 @@ export default function ProjectsClient({
           <TabsTrigger value="featured">
             Featured ({featured.length})
           </TabsTrigger>
-          <TabsTrigger value="other">
-            Other ({other.length})
-          </TabsTrigger>
+          <TabsTrigger value="other">Other ({other.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="featured" className="mt-4">
           {renderTable(featured)}
