@@ -6,10 +6,9 @@ import AboutClient from "@/sections/AboutClient";
 const About = async () => {
   "use cache: remote";
   cacheTag(CACHE_TAGS.about);
-  cacheLife("max");
+  cacheLife("hours");
   const about = await prisma.about.findFirst();
 
-  console.log("=====I rendered About=======");
   return (
     <AboutClient
       about={
