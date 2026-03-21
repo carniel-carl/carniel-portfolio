@@ -7,16 +7,26 @@ import { Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { slideUpVariant } from "@/components/animations/general";
-import { useState } from "react";
 import { ProjectDataType } from "@/types/project";
+import { useRouter, usePathname } from "next/navigation";
 
 interface ProjectsClientProps {
   featured: ProjectDataType[];
   other: ProjectDataType[];
+  tab?: "featured" | "other";
 }
 
-const ProjectsClient = ({ featured, other }: ProjectsClientProps) => {
-  const [currTab, setCurrTab] = useState<"featured" | "other">("featured");
+const ProjectsClient = ({ featured, other, tab }: ProjectsClientProps) => {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleTabChange = (newTab: "featured" | "other") => {
+    if (newTab === "featured") {
+      router.replace(pathname, { scroll: false });
+    } else {
+      router.replace(`${pathname}?tab=${newTab}`, { scroll: false });
+    }
+  };
 
   return (
     <section id="projects" className="portfolio flex flex-col">
@@ -33,15 +43,15 @@ const ProjectsClient = ({ featured, other }: ProjectsClientProps) => {
       <div className="mb-12">
         <nav className="flex md:justify-center justify-start gap-3">
           <Button
-            onClick={() => setCurrTab("featured")}
-            variant={currTab === "featured" ? "default" : "secondary"}
+            onClick={() => handleTabChange("featured")}
+            variant={tab === "featured" || !tab ? "default" : "secondary"}
             className={cn("py-1 px-4")}
           >
             Featured
           </Button>
           <Button
-            variant={currTab === "other" ? "default" : "secondary"}
-            onClick={() => setCurrTab("other")}
+            variant={tab === "other" ? "default" : "secondary"}
+            onClick={() => handleTabChange("other")}
             className={cn("py-1 px-4")}
           >
             Other Projects
@@ -49,7 +59,7 @@ const ProjectsClient = ({ featured, other }: ProjectsClientProps) => {
         </nav>
       </div>
       <div className="lg:space-y-32 md:space-y-24 space-y-12">
-        {currTab === "featured" &&
+        {tab === "featured" &&
           featured.map((project, index) => {
             const variant = index % 2 === 0 ? "right" : "left";
             return (
@@ -89,7 +99,7 @@ const ProjectsClient = ({ featured, other }: ProjectsClientProps) => {
               />
             );
           })}
-        {currTab === "other" &&
+        {tab === "other" &&
           other.map((project, index) => {
             const variant = index % 2 === 0 ? "right" : "left";
             return (

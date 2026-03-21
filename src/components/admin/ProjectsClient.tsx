@@ -161,7 +161,7 @@ export default function ProjectsClient({
               </TableCell>
               <TableCell>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="icon"
                   onClick={() => handleToggleVisibility(project.id)}
                   title={project.visible ? "Hide project" : "Show project"}
@@ -175,41 +175,46 @@ export default function ProjectsClient({
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    disabled={index === 0 || !!reordering}
-                    onClick={() => handleMoveUp(project, index)}
-                  >
-                    <ArrowUp className="size-3.5" />
-                  </Button>
                   <span className="text-sm w-6 text-center">
                     {project.order}
                   </span>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
                     className="size-7"
-                    disabled={index === projects.length - 1 || !!reordering}
+                    disabled={
+                      index === projects.length - 1 ||
+                      !!reordering ||
+                      !project.visible ||
+                      !projects[index + 1]?.visible
+                    }
                     onClick={() => handleMoveDown(project, index)}
                   >
                     <ArrowDown className="size-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-7"
+                    disabled={index === 0 || !!reordering || !project.visible}
+                    onClick={() => handleMoveUp(project, index)}
+                  >
+                    <ArrowUp className="size-3.5" />
                   </Button>
                 </div>
               </TableCell>
               <TableCell className="text-right space-x-2">
                 <Link href={`/admin/projects/${project.id}/edit`}>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="outline" size="icon">
                     <Pencil className="size-4" />
                   </Button>
                 </Link>
                 <Button
-                  variant="ghost"
+                  variant="destructive"
                   size="icon"
                   onClick={() => setDeleteId(project.id)}
                 >
-                  <Trash2 className="size-4 text-destructive" />
+                  <Trash2 className="size-4" />
                 </Button>
               </TableCell>
             </TableRow>

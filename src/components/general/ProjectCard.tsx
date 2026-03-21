@@ -34,7 +34,7 @@ const ProjectCard = ({
         viewport={{ once: true, amount: 0.4 }}
         className={cn(
           "grid grid-cols-1 gap-y-4",
-          isRight ? "md:grid-cols-[1fr_1.3fr]" : "md:grid-cols-[1.3fr_1fr]"
+          isRight ? "md:grid-cols-[1fr_1.3fr]" : "md:grid-cols-[1.3fr_1fr]",
         )}
       >
         <motion.div
@@ -43,7 +43,7 @@ const ProjectCard = ({
             "flex flex-col gap-4 py-4 relative md:-right-[1.5rem] z-[3]",
             isRight
               ? "md:right-[1.5rem] order-1  md:text-right md:items-end"
-              : "order-1 md:-order-1"
+              : "order-1 md:-order-1",
           )}
         >
           {info}
@@ -87,7 +87,7 @@ const ProjectStack: React.FC<{
     <ul
       className={cn(
         "flex flex-wrap gap-x-12 gap-y-2 opacity-90 list-disc pl-5 disc ",
-        isRight ? "md:justify-end" : ""
+        isRight ? "md:justify-end" : "",
       )}
     >
       {project.stack?.map((item, index) => (
@@ -112,6 +112,7 @@ const ProjectImage = () => {
         alt={project.name}
         fill
         className="object-cover rounded-md"
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
       />
     </div>
   );
