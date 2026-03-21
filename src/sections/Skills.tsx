@@ -6,7 +6,7 @@ import SkillsClient from "@/sections/SkillsClient";
 const Skills = async () => {
   // "use cache: remote";
   // cacheTag(CACHE_TAGS.skills);
-  // cacheLife("hours");
+  // cacheLife("max");
   const skills = await prisma.skill.findMany({ orderBy: { order: "asc" } });
 
   return (
