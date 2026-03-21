@@ -7,7 +7,13 @@ import Projects from "@/sections/Projects";
 import Skills from "@/sections/Skills";
 import { Suspense } from "react";
 
-const PortfolioPage = () => {
+const PortfolioPage = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ query: string }>;
+}) => {
+  const { query } = await searchParams;
+  console.log(query);
   return (
     <div className="w-screen min-h-[calc(100svh-2rem)] overflow-x-hidden">
       <FloatNavDynamic />
