@@ -9,7 +9,7 @@ import { revalidatePath, revalidateTag, updateTag } from "next/cache";
  * Invalidate both the Runtime Cache (use cache: remote) and
  * the CDN/ISR page cache for all pages that display projects.
  */
-function invalidateProjectCaches() {
+const invalidateProjectCaches = () => {
   // 1. Runtime Cache: purge the "projects" tag entry
   updateTag(CACHE_TAGS.projects);
   revalidateTag(CACHE_TAGS.projects, "max");
@@ -17,7 +17,7 @@ function invalidateProjectCaches() {
   // 2. CDN/ISR Page Cache: explicitly invalidate the portfolio page
   //    (PPR pages cache the full response at the CDN level separately)
   revalidatePath("/portfolio");
-}
+};
 
 export async function createProject(data: {
   name: string;

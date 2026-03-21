@@ -1,5 +1,6 @@
 import Navbar from "@/components/layout/navbar/Navbar";
 import Footer from "@/components/layout/Footer";
+import { Suspense } from "react";
 
 export default function PublicLayout({
   children,
@@ -12,7 +13,9 @@ export default function PublicLayout({
         <div>
           <Navbar />
         </div>
-        <main className="row-start-2 row-end-3">{children}</main>
+        <main className="row-start-2 row-end-3">
+          <Suspense fallback={null}>{children}</Suspense>
+        </main>
       </div>
       <Footer />
     </>
