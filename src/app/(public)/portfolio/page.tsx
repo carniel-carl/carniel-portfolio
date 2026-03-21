@@ -10,10 +10,9 @@ import { Suspense } from "react";
 const PortfolioPage = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ query: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) => {
-  const { query } = await searchParams;
-  console.log(query);
+  const { tab } = await searchParams;
   return (
     <div className="w-screen min-h-[calc(100svh-2rem)] overflow-x-hidden">
       <FloatNavDynamic />
@@ -25,7 +24,7 @@ const PortfolioPage = async ({
         <div className="divider" />
 
         <Suspense fallback={null}>
-          <Projects />
+          <Projects tab={tab} />
         </Suspense>
         <div className="divider" />
         <Suspense fallback={null}>

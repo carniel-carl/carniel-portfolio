@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,23 +21,21 @@ interface AboutData {
 
 export default function AboutClient({ about: initialAbout }: { about: AboutData }) {
   const [about, setAbout] = useState<AboutData>(initialAbout);
-  const [saving, setSaving] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  const handleSave = async () => {
-    setSaving(true);
-
-    try {
-      await updateAbout({
-        bio: about.bio,
-        profilePicUrl: about.profilePicUrl,
-        resumeUrl: about.resumeUrl,
-      });
-      toast.success("About section updated");
-    } catch {
-      toast.error("Failed to update");
-    }
-
-    setSaving(false);
+  const handleSave = () => {
+    startTransition(async () => {
+      try {
+        await updateAbout({
+          bio: about.bio,
+          profilePicUrl: about.profilePicUrl,
+          resumeUrl: about.resumeUrl,
+        });
+        toast.success("About section updated");
+      } catch {
+        toast.error("Failed to update");
+      }
+    });
   };
 
   return (
@@ -118,8 +116,8 @@ export default function AboutClient({ about: initialAbout }: { about: AboutData 
           />
         </div>
 
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : "Save Changes"}
+        <Button onClick={handleSave} disabled={isPending}>
+          {isPending ? "Saving..." : "Save Changes"}
         </Button>
       </div>
     </div>

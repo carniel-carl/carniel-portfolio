@@ -4,7 +4,7 @@ import {
 } from "@/lib/actions/projects";
 import ProjectsClient from "@/sections/ProjectsClient";
 
-const Projects = async () => {
+const Projects = async ({ tab }: { tab?: string }) => {
   const featured = await getCachedFeaturedProjects();
   const other = await getCachedOtherProjects();
 
@@ -23,6 +23,7 @@ const Projects = async () => {
     <ProjectsClient
       featured={featured.map(mapProject)}
       other={other.map(mapProject)}
+      initialTab={tab}
     />
   );
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -39,17 +39,24 @@ interface BlogPost {
 export default function BlogClient({ posts }: { posts: BlogPost[] }) {
   const router = useRouter();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [optimisticPosts, setOptimisticPosts] = useOptimistic(posts);
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteId) return;
-    try {
-      await deleteBlogPost(deleteId);
-      toast.success("Post deleted");
-      router.refresh();
-    } catch {
-      toast.error("Failed to delete");
-    }
+    const id = deleteId;
     setDeleteId(null);
+
+    startTransition(async () => {
+      setOptimisticPosts((prev) => prev.filter((p) => p.id !== id));
+      try {
+        await deleteBlogPost(id);
+        toast.success("Post deleted");
+      } catch {
+        toast.error("Failed to delete");
+      }
+      router.refresh();
+    });
   };
 
   return (
@@ -76,7 +83,7 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {posts.map((post) => (
+            {optimisticPosts.map((post) => (
               <TableRow key={post.id}>
                 <TableCell className="font-medium">{post.title}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">
@@ -108,7 +115,7 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
                 </TableCell>
               </TableRow>
             ))}
-            {posts.length === 0 && (
+            {optimisticPosts.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={5}

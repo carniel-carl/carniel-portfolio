@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
@@ -66,7 +66,10 @@ export default function ProjectsClient({
   const router = useRouter();
   const pathname = usePathname();
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [reordering, setReordering] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const [optimisticFeatured, setOptimisticFeatured] = useOptimistic(featured);
+  const [optimisticOther, setOptimisticOther] = useOptimistic(other);
 
   const handleTabChange = (value: string) => {
     router.push(`${pathname}?tab=${value}`);
@@ -74,54 +77,91 @@ export default function ProjectsClient({
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    try {
-      await deleteProject(deleteId);
-      toast.success("Project deleted");
-      router.refresh();
-    } catch {
-      toast.error("Failed to delete project");
-    }
+    const id = deleteId;
     setDeleteId(null);
-    router.refresh();
-  };
 
-  const handleMoveUp = async (project: Project, index: number) => {
-    if (index === 0) return;
-    const projects = project.featured ? featured : other;
-    setReordering(project.id);
-    try {
-      const targetOrder = projects[index - 1].order;
-      await reorderProject(project.id, targetOrder);
+    startTransition(async () => {
+      setOptimisticFeatured((prev) => prev.filter((p) => p.id !== id));
+      setOptimisticOther((prev) => prev.filter((p) => p.id !== id));
+      try {
+        await deleteProject(id);
+        toast.success("Project deleted");
+      } catch {
+        toast.error("Failed to delete project");
+      }
       router.refresh();
-    } catch {
-      toast.error("Failed to reorder");
-    }
-    setReordering(null);
-    router.refresh();
+    });
   };
 
-  const handleMoveDown = async (project: Project, index: number) => {
+  const handleMoveUp = (project: Project, index: number) => {
+    if (index === 0) return;
+    const setOptimistic = project.featured
+      ? setOptimisticFeatured
+      : setOptimisticOther;
+
+    startTransition(async () => {
+      setOptimistic((prev) => {
+        const next = [...prev];
+        const prevOrder = next[index - 1].order;
+        const currOrder = next[index].order;
+        next[index - 1] = { ...next[index - 1], order: currOrder };
+        next[index] = { ...next[index], order: prevOrder };
+        [next[index - 1], next[index]] = [next[index], next[index - 1]];
+        return next;
+      });
+      const projects = project.featured ? featured : other;
+      try {
+        const targetOrder = projects[index - 1].order;
+        await reorderProject(project.id, targetOrder);
+      } catch {
+        toast.error("Failed to reorder");
+      }
+      router.refresh();
+    });
+  };
+
+  const handleMoveDown = (project: Project, index: number) => {
     const projects = project.featured ? featured : other;
     if (index === projects.length - 1) return;
-    setReordering(project.id);
-    try {
-      const targetOrder = projects[index + 1].order;
-      await reorderProject(project.id, targetOrder);
+    const setOptimistic = project.featured
+      ? setOptimisticFeatured
+      : setOptimisticOther;
+
+    startTransition(async () => {
+      setOptimistic((prev) => {
+        const next = [...prev];
+        const nextOrder = next[index + 1].order;
+        const currOrder = next[index].order;
+        next[index + 1] = { ...next[index + 1], order: currOrder };
+        next[index] = { ...next[index], order: nextOrder };
+        [next[index], next[index + 1]] = [next[index + 1], next[index]];
+        return next;
+      });
+      try {
+        const targetOrder = projects[index + 1].order;
+        await reorderProject(project.id, targetOrder);
+      } catch {
+        toast.error("Failed to reorder");
+      }
       router.refresh();
-    } catch {
-      toast.error("Failed to reorder");
-    }
-    setReordering(null);
-    router.refresh();
+    });
   };
 
-  const handleToggleVisibility = async (id: string) => {
-    try {
-      await toggleProjectVisibility(id);
+  const handleToggleVisibility = (id: string) => {
+    startTransition(async () => {
+      setOptimisticFeatured((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, visible: !p.visible } : p))
+      );
+      setOptimisticOther((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, visible: !p.visible } : p))
+      );
+      try {
+        await toggleProjectVisibility(id);
+      } catch {
+        toast.error("Failed to update visibility");
+      }
       router.refresh();
-    } catch {
-      toast.error("Failed to update visibility");
-    }
+    });
   };
 
   const renderTable = (projects: Project[]) => (
@@ -179,7 +219,7 @@ export default function ProjectsClient({
                     variant="ghost"
                     size="icon"
                     className="size-7"
-                    disabled={index === 0 || !!reordering}
+                    disabled={index === 0 || isPending}
                     onClick={() => handleMoveUp(project, index)}
                   >
                     <ArrowUp className="size-3.5" />
@@ -191,7 +231,7 @@ export default function ProjectsClient({
                     variant="ghost"
                     size="icon"
                     className="size-7"
-                    disabled={index === projects.length - 1 || !!reordering}
+                    disabled={index === projects.length - 1 || isPending}
                     onClick={() => handleMoveDown(project, index)}
                   >
                     <ArrowDown className="size-3.5" />
@@ -244,15 +284,17 @@ export default function ProjectsClient({
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="featured">
-            Featured ({featured.length})
+            Featured ({optimisticFeatured.length})
           </TabsTrigger>
-          <TabsTrigger value="other">Other ({other.length})</TabsTrigger>
+          <TabsTrigger value="other">
+            Other ({optimisticOther.length})
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="featured" className="mt-4">
-          {renderTable(featured)}
+          {renderTable(optimisticFeatured)}
         </TabsContent>
         <TabsContent value="other" className="mt-4">
-          {renderTable(other)}
+          {renderTable(optimisticOther)}
         </TabsContent>
       </Tabs>
 

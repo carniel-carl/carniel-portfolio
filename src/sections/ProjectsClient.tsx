@@ -13,10 +13,13 @@ import { ProjectDataType } from "@/types/project";
 interface ProjectsClientProps {
   featured: ProjectDataType[];
   other: ProjectDataType[];
+  initialTab?: string;
 }
 
-const ProjectsClient = ({ featured, other }: ProjectsClientProps) => {
-  const [currTab, setCurrTab] = useState<"featured" | "other">("featured");
+const ProjectsClient = ({ featured, other, initialTab }: ProjectsClientProps) => {
+  const [currTab, setCurrTab] = useState<"featured" | "other">(
+    initialTab === "other" ? "other" : "featured"
+  );
 
   return (
     <section id="projects" className="portfolio flex flex-col">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useOptimistic, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,8 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
     order: 0,
   });
   const [iconSearch, setIconSearch] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const [optimisticSkills, setOptimisticSkills] = useOptimistic(skills);
 
   const openCreate = () => {
     setEditingSkill(null);
@@ -55,7 +57,7 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
       title: "",
       iconName: "",
       iconLib: "lucide",
-      order: skills.length,
+      order: optimisticSkills.length,
     });
     setIconSearch("");
     setDialogOpen(true);
@@ -73,38 +75,59 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
     setDialogOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.iconName) {
       toast.error("Title and icon are required");
       return;
     }
 
-    try {
+    setDialogOpen(false);
+
+    startTransition(async () => {
       if (editingSkill) {
-        await updateSkill(editingSkill.id, form);
-        toast.success("Skill updated");
+        setOptimisticSkills((prev) =>
+          prev.map((s) =>
+            s.id === editingSkill.id ? { ...s, ...form } : s
+          )
+        );
+        try {
+          await updateSkill(editingSkill.id, form);
+          toast.success("Skill updated");
+        } catch {
+          toast.error("Something went wrong");
+        }
       } else {
-        await createSkill(form);
-        toast.success("Skill created");
+        setOptimisticSkills((prev) => [
+          ...prev,
+          { id: `temp-${Date.now()}`, ...form },
+        ]);
+        try {
+          await createSkill(form);
+          toast.success("Skill created");
+        } catch {
+          toast.error("Something went wrong");
+        }
       }
-      setDialogOpen(false);
       router.refresh();
-    } catch {
-      toast.error("Something went wrong");
-    }
+    });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteId) return;
-    try {
-      await deleteSkill(deleteId);
-      toast.success("Skill deleted");
-      router.refresh();
-    } catch {
-      toast.error("Failed to delete");
-    }
+    const id = deleteId;
     setDeleteId(null);
+
+    startTransition(async () => {
+      setOptimisticSkills((prev) => prev.filter((s) => s.id !== id));
+      try {
+        await deleteSkill(id);
+        toast.success("Skill deleted");
+      } catch {
+        toast.error("Failed to delete");
+      }
+      router.refresh();
+    });
   };
 
   const filteredIcons = useMemo(() => {
@@ -126,7 +149,7 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {skills.map((skill) => {
+        {optimisticSkills.map((skill) => {
           const IconComponent = getIcon(skill.iconName);
           return (
             <div
@@ -235,7 +258,7 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
               )}
             </div>
             <div className="flex gap-3">
-              <Button type="submit">
+              <Button type="submit" disabled={isPending}>
                 {editingSkill ? "Update" : "Create"}
               </Button>
               <Button
