@@ -30,10 +30,5 @@ export function trackEvent(
   }
 
   if (!token) return;
-  console.log(
-    `%c[Mixpanel:Tracked] ${event}`,
-    "color: #7c3aed; font-weight: bold;",
-    payload,
-  );
   mixpanel.track(event, payload);
 }
