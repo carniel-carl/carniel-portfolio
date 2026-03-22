@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LocationChart,
   RegionChart,
+  SocialClicksChart,
   TopBlogPostsChart,
   TopProjectsChart,
 } from "@/components/admin/AnalyticsCharts";
@@ -11,11 +12,15 @@ import {
   getLocationsByRegion,
   getTopBlogPosts,
   getTopProjects,
+  getSocialClicks,
   getDateRange,
 } from "@/lib/mixpanel-server";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
+import { RefreshAnalyticsButton } from "@/components/admin/RefreshAnalyticsButton";
 import {
   Eye,
+  Home,
   FileText,
   Download,
   Share2,
@@ -27,23 +32,40 @@ import { cn } from "@/lib/utils";
 
 async function getAnalyticsData() {
   "use cache";
+  cacheTag(CACHE_TAGS.analytics);
   cacheLife("hours");
 
   const { from_date, to_date } = getDateRange(30);
 
-  const [eventCounts, locations, regions, topPosts, topProjects] =
+  const [eventCounts, locations, regions, socialClicks, topPosts, topProjects] =
     await Promise.all([
       getEventCounts(from_date, to_date),
       getPortfolioLocations(from_date, to_date),
       getLocationsByRegion(from_date, to_date),
+      getSocialClicks(from_date, to_date),
       getTopBlogPosts(from_date, to_date),
       getTopProjects(from_date, to_date),
     ]);
 
-  return { eventCounts, locations, regions, topPosts, topProjects };
+  return {
+    eventCounts,
+    locations,
+    regions,
+    socialClicks,
+    topPosts,
+    topProjects,
+  };
 }
 
-const eventToIcon: Record<string, { icon: typeof Eye; color: string; bg: string }> = {
+const eventToIcon: Record<
+  string,
+  { icon: typeof Eye; color: string; bg: string }
+> = {
+  "Home Viewed": {
+    icon: Home,
+    color: "text-[#8b5cf6]",
+    bg: "bg-[#c4b5fd]/10",
+  },
   "Portfolio Viewed": {
     icon: Eye,
     color: "text-[#7c3aed]",
@@ -82,15 +104,26 @@ const eventToIcon: Record<string, { icon: typeof Eye; color: string; bg: string 
 };
 
 export default async function AnalyticsPage() {
-  const { eventCounts, locations, regions, topPosts, topProjects } =
-    await getAnalyticsData();
+  const {
+    eventCounts,
+    locations,
+    regions,
+    socialClicks,
+    topPosts,
+    topProjects,
+  } = await getAnalyticsData();
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Analytics</h2>
-      <p className="text-sm text-muted-foreground mb-6">
-        Last 30 days — cached hourly
-      </p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold">Analytics</h2>
+          <p className="text-sm text-muted-foreground">
+            Last 30 days — cached hourly
+          </p>
+        </div>
+        <RefreshAnalyticsButton />
+      </div>
 
       {/* Overview cards */}
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(200px,1fr))] mb-8">
@@ -103,7 +136,7 @@ export default async function AnalyticsPage() {
           const Icon = meta.icon;
           return (
             <Card key={item.event}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
                 <CardTitle className="text-xs font-medium text-muted-foreground">
                   {item.event}
                 </CardTitle>
@@ -125,9 +158,13 @@ export default async function AnalyticsPage() {
         <RegionChart data={regions} />
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-2 mb-6">
+        <SocialClicksChart data={socialClicks} />
+        <TopProjectsChart data={topProjects} />
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <TopBlogPostsChart data={topPosts} />
-        <TopProjectsChart data={topProjects} />
       </div>
     </div>
   );
