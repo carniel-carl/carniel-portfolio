@@ -1,3 +1,6 @@
+@import "../styles/_variables.scss";
+@import "../styles/_keyframe-animations.scss";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -21,7 +24,7 @@
     --primary-foreground: 0 0% 100%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
+    --muted: 240 4.8% 95%;
     --muted-foreground: 240 3.8% 46.1%;
     --accent: 38 80% 53%;
     --accent-foreground: 0 0% 10%;
@@ -77,7 +80,7 @@
     --primary-foreground: 0 0% 10%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 15%;
+    --muted: 0 0% 12%;
     --muted-foreground: 240 5% 64.9%;
     --accent: 176 79% 37%;
     --accent-foreground: 0 0% 98%;
@@ -587,6 +590,23 @@
   float: left;
   height: 0;
   pointer-events: none;
+}
+
+/* Admin editor - mobile toolbar fixed to bottom of viewport */
+@media (max-width: 480px) {
+  .admin-editor-wrapper {
+    padding-bottom: calc(2.75rem + env(safe-area-inset-bottom, 0px));
+  }
+  .admin-editor-wrapper .tiptap-toolbar.tiptap-toolbar[data-variant="fixed"] {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0;
+    right: 0;
+    top: auto !important;
+    z-index: 40;
+    border-top: 1px solid hsl(var(--border));
+    background: hsl(var(--muted));
+  }
 }
 
 @keyframes loading-1 {

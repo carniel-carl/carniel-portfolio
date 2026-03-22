@@ -7,7 +7,7 @@ export function SiteHeader({ children }: { children?: React.ReactNode }) {
   return (
     <header
       className={cn(
-        "flex shrink-0 fixed w-full top-0 right-0  bg-sidebar z-10 items-center gap-2 border-b transition-[width,height] ease-linear py-2",
+        "flex shrink-0 fixed w-full top-0 right-0  bg-sidebar z-50 items-center gap-2 border-b transition-[width,height] ease-linear py-2",
         "bg-sidebar/80 backdrop-blur md:w-[var(--dashboard-header-width)]",
       )}
     >
