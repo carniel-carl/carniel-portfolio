@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { deleteBlogPost } from "@/lib/actions/blog";
 
@@ -28,6 +28,8 @@ interface BlogPost {
   published: boolean;
   publishedAt: string | null;
   createdAt: string;
+  category: { id: string; name: string } | null;
+  author: { name: string | null } | null;
 }
 
 export default function BlogClient({ posts }: { posts: BlogPost[] }) {
@@ -56,11 +58,20 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
         ),
       },
       {
-        accessorKey: "slug",
-        header: "Slug",
+        id: "category",
+        header: "Category",
         cell: ({ row }) => (
-          <span className="text-muted-foreground text-sm">
-            {row.getValue("slug")}
+          <Badge variant="outline">
+            {row.original.category?.name ?? "Others"}
+          </Badge>
+        ),
+      },
+      {
+        id: "author",
+        header: "Author",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {row.original.author?.name ?? "Unknown"}
           </span>
         ),
       },
@@ -88,6 +99,11 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
         header: () => <span className="text-right block">Actions</span>,
         cell: ({ row }) => (
           <div className="text-right space-x-2">
+            <Link href={`/admin/blog/${row.original.id}/preview`}>
+              <Button variant="ghost" size="icon">
+                <Eye className="size-4" />
+              </Button>
+            </Link>
             <Link href={`/admin/blog/${row.original.id}/edit`}>
               <Button variant="ghost" size="icon">
                 <Pencil className="size-4" />
@@ -104,22 +120,32 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
         ),
       },
     ],
-    []
+    [],
   );
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">Blog Posts</h2>
-        <Link href="/admin/blog/new">
-          <Button>
-            <Plus className="size-4 mr-2" />
-            New Post
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/blog/categories">
+            <Button variant="outline">Manage Categories</Button>
+          </Link>
+          <Link href="/admin/blog/new">
+            <Button>
+              <Plus className="size-4 mr-2" />
+              New Post
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      <DataTable columns={columns} data={posts} paginated={false} />
+      <DataTable
+        columns={columns}
+        data={posts}
+        paginated={true}
+        enableFiltering={true}
+      />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>

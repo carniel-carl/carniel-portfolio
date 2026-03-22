@@ -6,4 +6,5 @@ export const CACHE_TAGS = {
   social: "social",
   users: "users",
   dashboard: "dashboard",
+  categories: "categories",
 } as const;

@@ -1,20 +1,62 @@
 import { cacheTag, cacheLife } from "next/cache";
 import prisma from "@/lib/prisma";
 import { CACHE_TAGS } from "@/lib/cache-tags";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
-import parse from "html-react-parser";
-import DOMPurify from "isomorphic-dompurify";
+import BlogPostContent from "@/components/blog/BlogPostContent";
+import BlogCard from "@/components/blog/BlogCard";
 
 async function getPost(slug: string) {
   "use cache";
   cacheTag(CACHE_TAGS.blog);
   cacheLife("max");
 
-  return prisma.blogPost.findUnique({ where: { slug } });
+  return prisma.blogPost.findUnique({
+    where: { slug },
+    include: {
+      category: { select: { name: true, slug: true } },
+      author: { select: { name: true } },
+    },
+  });
+}
+
+async function getRelatedPosts(
+  postId: string,
+  categoryId: string | null,
+  tags: string[],
+) {
+  "use cache";
+  cacheTag(CACHE_TAGS.blog);
+  cacheLife("max");
+
+  const orConditions = [];
+  if (categoryId) orConditions.push({ categoryId });
+  if (tags.length > 0) orConditions.push({ tags: { hasSome: tags } });
+
+  if (orConditions.length === 0) return [];
+
+  return prisma.blogPost.findMany({
+    where: {
+      published: true,
+      id: { not: postId },
+      OR: orConditions,
+    },
+    orderBy: { publishedAt: "desc" },
+    take: 4,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      excerpt: true,
+      coverImage: true,
+      publishedAt: true,
+      tags: true,
+      category: { select: { name: true, slug: true } },
+      author: { select: { name: true } },
+    },
+  });
 }
 
 export async function generateStaticParams() {
@@ -41,20 +83,9 @@ export async function generateMetadata({
   return {
     title: `${post.title} | Blog`,
     description: post.excerpt || post.title,
+    keywords: post.tags.length > 0 ? post.tags : undefined,
   };
 }
-
-const ALLOWED_TAGS = [
-  "b", "i", "em", "strong", "a", "p", "ul", "ol", "li",
-  "img", "iframe", "h1", "h2", "h3", "h4", "h5", "h6",
-  "br", "blockquote", "code", "pre", "u", "s", "sub", "sup",
-  "hr", "table", "thead", "tbody", "tr", "th", "td",
-];
-
-const ALLOWED_ATTR = [
-  "href", "src", "alt", "width", "height",
-  "allowfullscreen", "target", "rel", "class", "style", "id",
-];
 
 export default async function BlogPostPage({
   params,
@@ -66,46 +97,38 @@ export default async function BlogPostPage({
 
   if (!post || !post.published) notFound();
 
+  const relatedPosts = await getRelatedPosts(
+    post.id,
+    post.categoryId,
+    post.tags,
+  );
+
   return (
-    <article className="w-[90%] max-w-3xl mx-auto py-12">
-      <Link
-        href="/blog"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-      >
-        <ArrowLeft className="size-4" />
-        Back to Blog
-      </Link>
-
-      {post.coverImage && (
-        <div className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden mb-8">
-          <Image
-            src={post.coverImage}
-            alt={post.title}
-            fill
-            className="object-cover"
-            priority
-          />
-        </div>
-      )}
-
-      <header className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold mb-3 font-nunito">
-          {post.title}
-        </h1>
-        {post.publishedAt && (
-          <time className="text-sm text-muted-foreground">
-            {new Date(post.publishedAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </time>
-        )}
-      </header>
-
-      <div className="tiptap-content prose prose-lg dark:prose-invert max-w-none">
-        {parse(DOMPurify.sanitize(post.content, { ALLOWED_TAGS, ALLOWED_ATTR }))}
+    <div>
+      <div className="w-[90%] max-w-3xl mx-auto pt-12">
+        <Link
+          href="/blog"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        >
+          <ArrowLeft className="size-4" />
+          Back to Blog
+        </Link>
       </div>
-    </article>
+
+      <BlogPostContent post={post} />
+
+      {relatedPosts.length > 0 && (
+        <section className="w-[90%] max-w-4xl mx-auto py-12 border-t mt-12">
+          <h2 className="text-2xl font-bold mb-6 font-nunito">
+            Related Posts
+          </h2>
+          <div className="grid gap-8 md:grid-cols-2">
+            {relatedPosts.map((relatedPost) => (
+              <BlogCard key={relatedPost.id} post={relatedPost} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   );
 }

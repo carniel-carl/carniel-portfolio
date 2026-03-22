@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import AdminHeaderDropdown from "./AdminHeaderDropdown";
 
 const AdminHeader = async () => {
   const session = await auth();
@@ -16,7 +15,6 @@ const AdminHeader = async () => {
           </span>
         </p>
       </div>
-      <AdminHeaderDropdown />
     </div>
   );
 };

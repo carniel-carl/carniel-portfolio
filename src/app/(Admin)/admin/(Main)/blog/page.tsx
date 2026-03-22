@@ -10,6 +10,10 @@ async function getPosts() {
 
   const posts = await prisma.blogPost.findMany({
     orderBy: { createdAt: "desc" },
+    include: {
+      category: { select: { id: true, name: true } },
+      author: { select: { name: true } },
+    },
   });
 
   return JSON.parse(JSON.stringify(posts));
