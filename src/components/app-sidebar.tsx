@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { signOut } from "next-auth/react";
+import { ExternalLink, LogOut } from "lucide-react";
 
 import AdminThemeSwitcher from "@/components/general/AdminThemeSwitcher";
 import {
@@ -30,6 +33,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>{props.children}</SidebarContent>
       <SidebarFooter className="mb-4">
+        <SidebarMenu className="flex flex-col gap-1">
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Preview Site" size="lg">
+              <Link
+                href="/"
+                target="_blank"
+                className="gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-secondary transition-colors pl-4"
+              >
+                <ExternalLink className="!size-5" />
+                <span>Preview Site</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Sign Out"
+              size="lg"
+              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+              className="gap-2 text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10 transition-colors pl-4"
+            >
+              <LogOut className="!size-5" />
+              <span>Sign Out</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
         <AdminThemeSwitcher />
       </SidebarFooter>
       <SidebarRail />

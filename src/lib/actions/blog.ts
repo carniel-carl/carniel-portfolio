@@ -1,9 +1,9 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import prisma from "@/lib/prisma";
-import { revalidateTag } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import prisma from "@/lib/prisma";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
 
 function slugify(text: string): string {
   return text
@@ -14,6 +14,12 @@ function slugify(text: string): string {
     .replace(/-+/g, "-");
 }
 
+const invalidateBlogCaches = () => {
+  updateTag(CACHE_TAGS.blog);
+  revalidateTag(CACHE_TAGS.blog, "max");
+  revalidatePath("/blog");
+};
+
 export async function createBlogPost(data: {
   title: string;
   slug?: string;
@@ -21,9 +27,11 @@ export async function createBlogPost(data: {
   excerpt?: string;
   coverImage?: string;
   published?: boolean;
+  categoryId: string;
+  tags?: string[];
 }) {
   const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  if (!session?.user?.id) throw new Error("Unauthorized");
 
   if (!data.title || !data.content) {
     throw new Error("Title and content are required");
@@ -45,10 +53,13 @@ export async function createBlogPost(data: {
       coverImage: data.coverImage || null,
       published: data.published || false,
       publishedAt: data.published ? new Date() : null,
+      authorId: session.user.id,
+      categoryId: data.categoryId,
+      tags: data.tags || [],
     },
   });
 
-  revalidateTag(CACHE_TAGS.blog, "max");
+  invalidateBlogCaches();
   return post;
 }
 
@@ -61,7 +72,9 @@ export async function updateBlogPost(
     excerpt?: string;
     coverImage?: string;
     published?: boolean;
-  }
+    categoryId?: string;
+    tags?: string[];
+  },
 ) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
@@ -96,10 +109,12 @@ export async function updateBlogPost(
       coverImage: data.coverImage,
       published: data.published,
       publishedAt,
+      ...(data.categoryId && { categoryId: data.categoryId }),
+      ...(data.tags !== undefined && { tags: data.tags }),
     },
   });
 
-  revalidateTag(CACHE_TAGS.blog, "max");
+  invalidateBlogCaches();
   return post;
 }
 
@@ -108,5 +123,5 @@ export async function deleteBlogPost(id: string) {
   if (!session) throw new Error("Unauthorized");
 
   await prisma.blogPost.delete({ where: { id } });
-  revalidateTag(CACHE_TAGS.blog, "max");
+  invalidateBlogCaches();
 }

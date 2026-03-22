@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useForm, useWatch } from "react-hook-form";
@@ -17,7 +18,14 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { UploadButton } from "@uploadthing/react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
@@ -36,11 +44,14 @@ interface BlogFormData {
   excerpt: string | null;
   coverImage: string | null;
   published: boolean;
+  categoryId: string | null;
+  tags: string[];
 }
 
 interface BlogPostFormProps {
   initialData?: BlogFormData;
   isEdit?: boolean;
+  categories: { id: string; name: string }[];
 }
 
 function slugify(text: string): string {
@@ -55,8 +66,16 @@ function slugify(text: string): string {
 export default function BlogPostForm({
   initialData,
   isEdit,
+  categories,
 }: BlogPostFormProps) {
   const router = useRouter();
+  const [newTag, setNewTag] = useState("");
+
+  // Find the "Others" category ID for default
+  const othersCategory = categories.find(
+    (c) => c.name.toLowerCase() === "others",
+  );
+  const defaultCategoryId = othersCategory?.id ?? categories[0]?.id ?? "";
 
   const form = useForm<BlogPostFormValues>({
     resolver: zodResolver(blogPostFormSchema),
@@ -68,6 +87,8 @@ export default function BlogPostForm({
           excerpt: initialData.excerpt ?? "",
           coverImage: initialData.coverImage ?? "",
           published: initialData.published ?? false,
+          categoryId: initialData.categoryId ?? defaultCategoryId,
+          tags: initialData.tags ?? [],
         }
       : {
           title: "",
@@ -76,12 +97,32 @@ export default function BlogPostForm({
           excerpt: "",
           coverImage: "",
           published: false,
+          categoryId: defaultCategoryId,
+          tags: [],
         },
   });
 
   const handleTitleChange = (title: string) => {
     form.setValue("title", title);
     form.setValue("slug", slugify(title));
+  };
+
+  const addTag = () => {
+    if (newTag.trim()) {
+      const current = form.getValues("tags");
+      if (!current.includes(newTag.trim())) {
+        form.setValue("tags", [...current, newTag.trim()]);
+      }
+      setNewTag("");
+    }
+  };
+
+  const removeTag = (index: number) => {
+    const current = form.getValues("tags");
+    form.setValue(
+      "tags",
+      current.filter((_, i) => i !== index),
+    );
   };
 
   const onSubmit = async (values: BlogPostFormValues) => {
@@ -107,6 +148,11 @@ export default function BlogPostForm({
   const slug = useWatch({
     control: form.control,
     name: "slug",
+  });
+
+  const watchedTags = useWatch({
+    control: form.control,
+    name: "tags",
   });
 
   return (
@@ -136,6 +182,31 @@ export default function BlogPostForm({
           <Label>Slug</Label>
           <p className="text-sm text-muted-foreground">/blog/{slug || "..."}</p>
         </div>
+
+        <FormField
+          control={form.control}
+          name="categoryId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
@@ -218,6 +289,39 @@ export default function BlogPostForm({
             </FormItem>
           )}
         />
+
+        <div className="space-y-2">
+          <Label>Tags</Label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="e.g. React, CSS, Frontend"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addTag();
+                }
+              }}
+            />
+            <Button type="button" variant="secondary" onClick={addTag}>
+              <Plus className="size-4" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {watchedTags.map((tag, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-md text-sm"
+              >
+                {tag}
+                <button type="button" onClick={() => removeTag(i)}>
+                  <X className="size-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
 
         <FormField
           control={form.control}
