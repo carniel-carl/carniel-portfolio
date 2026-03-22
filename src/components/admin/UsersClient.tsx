@@ -37,6 +37,7 @@ import {
 import { Plus, Trash2, Shield, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 import { registerUser, updateUser, deleteUser } from "@/lib/actions/users";
+import dayjs from "dayjs";
 
 type User = {
   id: string;
@@ -51,7 +52,10 @@ interface UsersClientProps {
   currentUserEmail: string;
 }
 
-export default function UsersClient({ users, currentUserEmail }: UsersClientProps) {
+export default function UsersClient({
+  users,
+  currentUserEmail,
+}: UsersClientProps) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -63,7 +67,7 @@ export default function UsersClient({ users, currentUserEmail }: UsersClientProp
   const [submitting, setSubmitting] = useState(false);
 
   const currentUserIsSuper = users.find(
-    (u) => u.email === currentUserEmail
+    (u) => u.email === currentUserEmail,
   )?.isAdmin;
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -78,7 +82,7 @@ export default function UsersClient({ users, currentUserEmail }: UsersClientProp
       router.refresh();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to register user"
+        err instanceof Error ? err.message : "Failed to register user",
       );
     }
 
@@ -91,9 +95,7 @@ export default function UsersClient({ users, currentUserEmail }: UsersClientProp
       toast.success("User deleted");
       router.refresh();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to delete user"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to delete user");
     }
   };
 
@@ -101,13 +103,11 @@ export default function UsersClient({ users, currentUserEmail }: UsersClientProp
     try {
       await updateUser(id, { isAdmin: !currentIsAdmin });
       toast.success(
-        `User ${!currentIsAdmin ? "promoted to" : "removed from"} super admin`
+        `User ${!currentIsAdmin ? "promoted to" : "removed from"} super admin`,
       );
       router.refresh();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to update user"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to update user");
     }
   };
 
@@ -148,7 +148,7 @@ export default function UsersClient({ users, currentUserEmail }: UsersClientProp
         accessorKey: "createdAt",
         header: "Joined",
         cell: ({ row }) =>
-          new Date(row.getValue("createdAt")).toLocaleDateString(),
+          dayjs(row.getValue("createdAt")).format("MMM DD, YYYY"),
       },
     ];
 
@@ -223,7 +223,7 @@ export default function UsersClient({ users, currentUserEmail }: UsersClientProp
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="size-4 mr-2" />
+                <Plus className="size-4" />
                 Register Admin
               </Button>
             </DialogTrigger>

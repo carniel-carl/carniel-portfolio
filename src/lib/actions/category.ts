@@ -13,7 +13,11 @@ const invalidateCategoryCaches = () => {
   revalidatePath("/blog");
 };
 
-export async function createCategory(data: { name: string; slug: string }) {
+export async function createCategory(data: {
+  name: string;
+  slug: string;
+  color: string;
+}) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
@@ -25,6 +29,7 @@ export async function createCategory(data: { name: string; slug: string }) {
     data: {
       name: data.name,
       slug: data.slug,
+      color: data.color,
     },
   });
 
@@ -34,7 +39,7 @@ export async function createCategory(data: { name: string; slug: string }) {
 
 export async function updateCategory(
   id: string,
-  data: { name: string; slug: string },
+  data: { name: string; slug: string; color: string },
 ) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
@@ -47,6 +52,7 @@ export async function updateCategory(
     data: {
       name: data.name,
       slug: data.slug,
+      color: data.color,
     },
   });
 

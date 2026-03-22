@@ -18,6 +18,7 @@ import {
 import { FocusTrap } from "focus-trap-react";
 import { TfiClose } from "react-icons/tfi";
 import MenuButton from "./MenuButton";
+import { trackEvent } from "@/lib/mixpanel";
 
 type SocialLink = {
   name: string;
@@ -148,6 +149,13 @@ const Navbar = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
                                         className="capitalize font-semibold text-base"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        onClick={() =>
+                                          trackEvent("Social Link Clicked", {
+                                            platform: item.name,
+                                            url: item.link,
+                                            source_page: "navbar",
+                                          })
+                                        }
                                       >
                                         {item.name}
                                       </a>

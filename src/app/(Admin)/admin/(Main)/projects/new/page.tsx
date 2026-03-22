@@ -1,9 +1,10 @@
 import ProjectForm from "@/components/admin/ProjectForm";
+import PageHeader from "@/components/general/PageHeader";
 
 export default function NewProjectPage() {
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Add New Project</h2>
+    <div className="space-y-6">
+      <PageHeader showBackBtn title="Add New Project" />
       <ProjectForm />
     </div>
   );

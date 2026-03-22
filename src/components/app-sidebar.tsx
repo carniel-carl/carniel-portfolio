@@ -17,6 +17,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import Logo from "@/components/general/Logo";
+import routes from "@/lib/routes";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -50,7 +51,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton
               tooltip="Sign Out"
               size="lg"
-              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+              onClick={() => signOut({ callbackUrl: routes.admin.login })}
               className="gap-2 text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10 transition-colors pl-4"
             >
               <LogOut className="!size-5" />

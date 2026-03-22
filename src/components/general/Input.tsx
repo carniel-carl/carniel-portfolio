@@ -1,4 +1,4 @@
-import React, {
+import {
   DetailedHTMLProps,
   ForwardedRef,
   forwardRef,
@@ -6,11 +6,10 @@ import React, {
   useState,
 } from "react";
 
-interface InputProps
-  extends DetailedHTMLProps<
-    InputHTMLAttributes<HTMLInputElement>,
-    HTMLInputElement
-  > {
+interface InputProps extends DetailedHTMLProps<
+  InputHTMLAttributes<HTMLInputElement>,
+  HTMLInputElement
+> {
   // error?: string | null;
   label: string;
   // variant: "primary" | "search" | "regular";
@@ -19,7 +18,7 @@ interface InputProps
 const Input = forwardRef(
   (
     { className, label, ...props }: InputProps,
-    ref: ForwardedRef<HTMLInputElement>
+    ref: ForwardedRef<HTMLInputElement>,
   ) => {
     const [showPassword] = useState(false);
 
@@ -46,7 +45,7 @@ const Input = forwardRef(
         </label>
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = "Input";

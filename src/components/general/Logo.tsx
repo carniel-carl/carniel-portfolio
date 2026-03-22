@@ -13,7 +13,10 @@ const Logo = ({
   return (
     <Link
       href="/"
-      className={cn("relative size-8 block text-accent", className)}
+      className={cn(
+        "relative size-8 flex items-center justify-center text-accent",
+        className,
+      )}
     >
       <SVGIcon width={size} height={size} />
       <span className="sr-only">Home</span>

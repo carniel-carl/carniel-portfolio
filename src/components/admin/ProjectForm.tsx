@@ -157,7 +157,7 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
             <FormItem>
               <FormLabel>Description *</FormLabel>
               <FormControl>
-                <Textarea rows={4} {...field} />
+                <Textarea className="resize-none h-24" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -6,6 +6,10 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
+import {
+  ButtonGroup,
+  ButtonGroupSeparator,
+} from "@/components/ui/button-group";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
@@ -34,6 +38,7 @@ import {
   reorderProject,
   toggleProjectVisibility,
 } from "@/lib/actions/projects";
+import { Card } from "../ui/card";
 
 interface Project {
   id: string;
@@ -177,29 +182,32 @@ export default function ProjectsClient({
             <span className="text-sm w-6 text-center">
               {row.getValue("order")}
             </span>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-7"
-              disabled={
-                index === projects.length - 1 ||
-                !!reordering ||
-                !row.original.visible ||
-                !projects[index + 1]?.visible
-              }
-              onClick={() => handleMoveDown(row.original, index)}
-            >
-              <ArrowDown className="size-3.5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-7"
-              disabled={index === 0 || !!reordering || !row.original.visible}
-              onClick={() => handleMoveUp(row.original, index)}
-            >
-              <ArrowUp className="size-3.5" />
-            </Button>
+            <ButtonGroup>
+              <Button
+                variant="secondary"
+                // size="icon"
+                className="size-8"
+                disabled={
+                  index === projects.length - 1 ||
+                  !!reordering ||
+                  !row.original.visible ||
+                  !projects[index + 1]?.visible
+                }
+                onClick={() => handleMoveDown(row.original, index)}
+              >
+                <ArrowDown className="size-3.5" />
+              </Button>
+              <ButtonGroupSeparator />
+              <Button
+                variant="secondary"
+                // size="icon"
+                className="size-8"
+                disabled={index === 0 || !!reordering || !row.original.visible}
+                onClick={() => handleMoveUp(row.original, index)}
+              >
+                <ArrowUp className="size-3.5" />
+              </Button>
+            </ButtonGroup>
           </div>
         );
       },
@@ -254,22 +262,25 @@ export default function ProjectsClient({
           </TabsTrigger>
           <TabsTrigger value="other">Other ({other.length})</TabsTrigger>
         </TabsList>
-        <TabsContent value="featured" className="mt-4">
-          <DataTable
-            columns={featuredColumns}
-            data={featured}
-            paginated={false}
-            getRowClassName={getRowClassName}
-          />
-        </TabsContent>
-        <TabsContent value="other" className="mt-4">
-          <DataTable
-            columns={otherColumns}
-            data={other}
-            paginated={false}
-            getRowClassName={getRowClassName}
-          />
-        </TabsContent>
+        <Card className="p-6 mt-4">
+          <TabsContent value="featured">
+            <DataTable
+              columns={featuredColumns}
+              data={featured}
+              paginated={false}
+              getRowClassName={getRowClassName}
+              enableFiltering
+            />
+          </TabsContent>
+          <TabsContent value="other">
+            <DataTable
+              columns={otherColumns}
+              data={other}
+              paginated={false}
+              getRowClassName={getRowClassName}
+            />
+          </TabsContent>
+        </Card>
       </Tabs>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

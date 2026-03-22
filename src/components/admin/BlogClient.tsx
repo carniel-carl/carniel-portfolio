@@ -1,12 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ColumnDef } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { DataTable } from "@/components/ui/data-table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,9 +10,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Eye } from "lucide-react";
-import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
 import { deleteBlogPost } from "@/lib/actions/blog";
+import routes from "@/lib/routes";
+import { cn } from "@/lib/utils";
+import { ColumnDef } from "@tanstack/react-table";
+import dayjs from "dayjs";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 interface BlogPost {
   id: string;
@@ -28,7 +32,7 @@ interface BlogPost {
   published: boolean;
   publishedAt: string | null;
   createdAt: string;
-  category: { id: string; name: string } | null;
+  category: { id: string; name: string; color: string } | null;
   author: { name: string | null } | null;
 }
 
@@ -61,7 +65,13 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
         id: "category",
         header: "Category",
         cell: ({ row }) => (
-          <Badge variant="outline">
+          <Badge
+            variant="outline"
+            style={{
+              borderColor: row.original.category?.color,
+              color: row.original.category?.color,
+            }}
+          >
             {row.original.category?.name ?? "Others"}
           </Badge>
         ),
@@ -90,7 +100,7 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
         header: "Created",
         cell: ({ row }) => (
           <span className="text-sm">
-            {new Date(row.getValue("createdAt")).toLocaleDateString()}
+            {dayjs(row.getValue("createdAt")).format("DD MMM YYYY")}
           </span>
         ),
       },
@@ -100,21 +110,21 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
         cell: ({ row }) => (
           <div className="text-right space-x-2">
             <Link href={`/admin/blog/${row.original.id}/preview`}>
-              <Button variant="ghost" size="icon">
+              <Button variant="outline" size="icon">
                 <Eye className="size-4" />
               </Button>
             </Link>
             <Link href={`/admin/blog/${row.original.id}/edit`}>
-              <Button variant="ghost" size="icon">
+              <Button variant="outline" size="icon">
                 <Pencil className="size-4" />
               </Button>
             </Link>
             <Button
-              variant="ghost"
+              variant="destructive"
               size="icon"
               onClick={() => setDeleteId(row.original.id)}
             >
-              <Trash2 className="size-4 text-destructive" />
+              <Trash2 className="size-4" />
             </Button>
           </div>
         ),
@@ -124,28 +134,31 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
   );
 
   return (
-    <div>
+    <>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">Blog Posts</h2>
         <div className="flex items-center gap-2">
-          <Link href="/admin/blog/categories">
-            <Button variant="outline">Manage Categories</Button>
+          <Link
+            href={routes.admin.blogCategories}
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Manage Categories
           </Link>
-          <Link href="/admin/blog/new">
-            <Button>
-              <Plus className="size-4 mr-2" />
-              New Post
-            </Button>
+          <Link href={routes.admin.blogNew} className={cn(buttonVariants({}))}>
+            <Plus className="size-4" />
+            New Post
           </Link>
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={posts}
-        paginated={true}
-        enableFiltering={true}
-      />
+      <Card className="p-6">
+        <DataTable
+          columns={columns}
+          data={posts}
+          paginated={true}
+          enableFiltering={true}
+        />
+      </Card>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
@@ -161,6 +174,6 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

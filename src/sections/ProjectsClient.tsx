@@ -9,6 +9,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { slideUpVariant } from "@/components/animations/general";
 import { ProjectDataType } from "@/types/project";
 import { useRouter, usePathname } from "next/navigation";
+import { trackEvent } from "@/lib/mixpanel";
 
 interface ProjectsClientProps {
   featured: ProjectDataType[];
@@ -78,22 +79,42 @@ const ProjectsClient = ({ featured, other, tab }: ProjectsClientProps) => {
                 }
                 action={
                   <>
-                    <ProjectCard.ActionButton href={project.live}>
-                      <div
-                        className={cn(
-                          buttonVariants({ variant: "outline" }),
-                          "py-1 duration-500 ease-in-out",
-                        )}
-                      >
-                        <Radio className="size-5" />
-                        <span>Live</span>
-                        <span className="sr-only">View site</span>
-                      </div>
-                    </ProjectCard.ActionButton>
-                    <ProjectCard.ActionButton href={project.code}>
-                      <FaGithub className="size-6 hover:scale-125 ease duration-300 hover:text-accent" />
-                      <span className="sr-only">View source code</span>
-                    </ProjectCard.ActionButton>
+                    <span
+                      onClick={() =>
+                        trackEvent("Project Link Clicked", {
+                          project: project.name,
+                          link_type: "live",
+                          url: project.live,
+                        })
+                      }
+                    >
+                      <ProjectCard.ActionButton href={project.live}>
+                        <div
+                          className={cn(
+                            buttonVariants({ variant: "outline" }),
+                            "py-1 duration-500 ease-in-out",
+                          )}
+                        >
+                          <Radio className="size-5" />
+                          <span>Live</span>
+                          <span className="sr-only">View site</span>
+                        </div>
+                      </ProjectCard.ActionButton>
+                    </span>
+                    <span
+                      onClick={() =>
+                        trackEvent("Project Link Clicked", {
+                          project: project.name,
+                          link_type: "code",
+                          url: project.code,
+                        })
+                      }
+                    >
+                      <ProjectCard.ActionButton href={project.code}>
+                        <FaGithub className="size-6 hover:scale-125 ease duration-300 hover:text-accent" />
+                        <span className="sr-only">View source code</span>
+                      </ProjectCard.ActionButton>
+                    </span>
                   </>
                 }
               />
@@ -118,22 +139,42 @@ const ProjectsClient = ({ featured, other, tab }: ProjectsClientProps) => {
                 }
                 action={
                   <>
-                    <ProjectCard.ActionButton href={project.live}>
-                      <div
-                        className={cn(
-                          buttonVariants({ variant: "outline" }),
-                          "py-1 duration-500 ease-in-out",
-                        )}
-                      >
-                        <Radio className="size-5" />
-                        <span>Live</span>
-                        <span className="sr-only">View site</span>
-                      </div>
-                    </ProjectCard.ActionButton>
-                    <ProjectCard.ActionButton href={project.code}>
-                      <FaGithub className="size-6 hover:scale-125 ease duration-300 hover:text-accent" />
-                      <span className="sr-only">View source code</span>
-                    </ProjectCard.ActionButton>
+                    <span
+                      onClick={() =>
+                        trackEvent("Project Link Clicked", {
+                          project: project.name,
+                          link_type: "live",
+                          url: project.live,
+                        })
+                      }
+                    >
+                      <ProjectCard.ActionButton href={project.live}>
+                        <div
+                          className={cn(
+                            buttonVariants({ variant: "outline" }),
+                            "py-1 duration-500 ease-in-out",
+                          )}
+                        >
+                          <Radio className="size-5" />
+                          <span>Live</span>
+                          <span className="sr-only">View site</span>
+                        </div>
+                      </ProjectCard.ActionButton>
+                    </span>
+                    <span
+                      onClick={() =>
+                        trackEvent("Project Link Clicked", {
+                          project: project.name,
+                          link_type: "code",
+                          url: project.code,
+                        })
+                      }
+                    >
+                      <ProjectCard.ActionButton href={project.code}>
+                        <FaGithub className="size-6 hover:scale-125 ease duration-300 hover:text-accent" />
+                        <span className="sr-only">View source code</span>
+                      </ProjectCard.ActionButton>
+                    </span>
                   </>
                 }
               />

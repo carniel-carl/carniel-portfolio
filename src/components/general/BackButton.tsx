@@ -33,7 +33,7 @@ const BackButton = ({
       variant="ghost"
       onClick={clickHandler}
       className={cn(
-        "w-fit text-muted-foreground font-montserrat rounded-full",
+        "w-fit px-2.5 text-muted-foreground font-montserrat rounded-full",
         className,
       )}
       type="button"
