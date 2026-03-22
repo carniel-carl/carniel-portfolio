@@ -20,13 +20,10 @@ type EventCount = { event: string; count: number };
 type LocationData = { country: string; region: string; count: number };
 type BlogPostData = { slug: string; title: string; count: number };
 
-async function queryMixpanel(
-  endpoint: string,
-  params: Record<string, string>,
-) {
+async function queryMixpanel(endpoint: string, params: Record<string, string>) {
   if (!PROJECT_ID || !API_SECRET) return null;
 
-  const url = new URL(`https://mixpanel.com/api/2.0/${endpoint}`);
+  const url = new URL(`https://api-eu.mixpanel.com/api/2.0/${endpoint}`);
   url.searchParams.set("project_id", PROJECT_ID);
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
