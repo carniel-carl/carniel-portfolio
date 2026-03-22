@@ -1,6 +1,6 @@
-import prisma from "@/lib/prisma";
 import BlogPostForm from "@/components/admin/BlogPostForm";
-import BackButton from "@/components/general/BackButton";
+import PageHeader from "@/components/general/PageHeader";
+import prisma from "@/lib/prisma";
 
 export default async function NewBlogPostPage() {
   const categories = await prisma.category.findMany({
@@ -9,11 +9,8 @@ export default async function NewBlogPostPage() {
   });
 
   return (
-    <div>
-      <div className="flex items-center gap-4 mb-6">
-        <BackButton showText />
-        <h2 className="text-2xl font-bold">New Blog Post</h2>
-      </div>
+    <div className="space-y-6">
+      <PageHeader showBackBtn title="New Blog Post" />
       <BlogPostForm categories={JSON.parse(JSON.stringify(categories))} />
     </div>
   );

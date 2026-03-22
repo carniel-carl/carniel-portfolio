@@ -1,6 +1,7 @@
+import BlogPostForm from "@/components/admin/BlogPostForm";
+import PageHeader from "@/components/general/PageHeader";
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import BlogPostForm from "@/components/admin/BlogPostForm";
 
 export default async function EditBlogPostPage({
   params,
@@ -26,8 +27,8 @@ export default async function EditBlogPostPage({
   if (!post) notFound();
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Edit Blog Post</h2>
+    <div className="space-y-6">
+      <PageHeader showBackBtn title="Edit Blog Post" />
       <BlogPostForm
         initialData={JSON.parse(JSON.stringify(post))}
         isEdit

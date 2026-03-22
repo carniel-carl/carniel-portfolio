@@ -8,6 +8,7 @@ import SkillsClient from "@/sections/SkillsClient";
 import prisma from "@/lib/prisma";
 import { cacheTag, cacheLife } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import PageTracker from "@/components/analytics/PageTracker";
 import { Suspense } from "react";
 
 async function getAbout() {
@@ -84,6 +85,7 @@ const PortfolioPage = async ({
 
   return (
     <div className="w-screen min-h-[calc(100svh-2rem)] overflow-x-hidden">
+      <PageTracker event="Portfolio Viewed" />
       <FloatNavDynamic />
       <ScrollToTop />
       <MaxWidth className="lg:!max-w-[65rem] md:!max-w-[40rem] mb-24 w-[90%] mx-auto ">

@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { getContrastColor } from "@/lib/utils";
 import parse from "html-react-parser";
 import DOMPurify from "isomorphic-dompurify";
 
@@ -23,7 +26,7 @@ interface BlogPostContentProps {
     coverImage: string | null;
     publishedAt: Date | string | null;
     tags: string[];
-    category: { name: string; slug: string } | null;
+    category: { name: string; slug: string; color: string } | null;
     author: { name: string | null } | null;
   };
   preview?: boolean;
@@ -70,16 +73,29 @@ export default function BlogPostContent({
           )}
           {post.category && (
             <Link href={`/blog?category=${post.category.slug}`}>
-              <Badge variant="outline">{post.category.name}</Badge>
+              <Badge
+                className="border-0"
+                style={{
+                  backgroundColor: post.category.color,
+                  color: getContrastColor(post.category.color),
+                }}
+              >
+                {post.category.name}
+              </Badge>
             </Link>
           )}
         </div>
         {post.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
             {post.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
-                {tag}
-              </Badge>
+              <Link key={tag} href={`/blog?tag=${encodeURIComponent(tag)}`}>
+                <Badge
+                  variant="secondary"
+                  className="text-xs hover:bg-secondary/80 cursor-pointer"
+                >
+                  {tag}
+                </Badge>
+              </Link>
             ))}
           </div>
         )}

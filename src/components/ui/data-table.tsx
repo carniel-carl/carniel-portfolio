@@ -113,7 +113,7 @@ export function DataTable<TData, TValue>({
         )}
       >
         <Table>
-          <TableHeader className="bg-muted">
+          <TableHeader className="bg-secondary">
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id}>
                 {hg.headers.map((header) => (

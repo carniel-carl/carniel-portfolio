@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import Logo from "./general/Logo";
+import ThemeSwitch from "./general/ThemeSwitcher";
 
 export function SiteHeader({ children }: { children?: React.ReactNode }) {
   return (
@@ -10,7 +12,13 @@ export function SiteHeader({ children }: { children?: React.ReactNode }) {
       )}
     >
       <div className="flex w-full items-center gap-1 px-2 lg:gap-2 lg:px-6">
-        <div className="flex-1">{children}</div>
+        <div className="flex-1 flex items-center gap-2">
+          <div className="md:hidden">
+            <Logo size="1.5rem" />
+          </div>
+          {children}
+        </div>
+        <ThemeSwitch />
         <SidebarTrigger className="md:hidden" />
       </div>
     </header>

@@ -9,7 +9,7 @@ export default function PublicLayout({
 }) {
   return (
     <>
-      <div className="grid grid-rows-[3.5rem_1fr]">
+      <div className="grid grid-rows-[3.5rem_1fr] ">
         <div>
           <SocialLinks />
         </div>

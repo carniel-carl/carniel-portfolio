@@ -12,10 +12,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
       <AppSidebar children={<AdminSidebar />} />
       <SidebarInset>
         <SiteHeader children={<AdminHeader />} />
-        <MaxWidth
-          className="md:w-[96%]  mt-20 md:mt-24 mb-4"
-          children={children}
-        />
+        <MaxWidth className="md:w-[96%] mt-24 mb-4" children={children} />
       </SidebarInset>
     </SidebarProvider>
   );

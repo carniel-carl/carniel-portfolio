@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import DashboardChart from "@/components/admin/DashboardChart";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import { cn } from "@/lib/utils";
@@ -101,6 +102,18 @@ export default async function AdminDashboard() {
             </Card>
           </Link>
         ))}
+      </div>
+
+      <div className="mt-8">
+        <DashboardChart
+          data={{
+            projectCount,
+            skillCount,
+            postCount,
+            publishedCount,
+            socialCount,
+          }}
+        />
       </div>
     </div>
   );

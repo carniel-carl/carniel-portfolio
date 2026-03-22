@@ -1,28 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ColumnDef } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DataTable } from "@/components/ui/data-table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,22 +10,61 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { DataTable } from "@/components/ui/data-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   createCategory,
-  updateCategory,
   deleteCategory,
+  updateCategory,
 } from "@/lib/actions/category";
 import {
   categoryFormSchema,
   type CategoryFormValues,
 } from "@/lib/schemas/category";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ColumnDef } from "@tanstack/react-table";
+import { Check, Pencil, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import PageHeader from "@/components/general/PageHeader";
+
+const COLOR_PALETTE = [
+  "#ef4444",
+  "#f97316",
+  "#f59e0b",
+  "#22c55e",
+  "#10b981",
+  "#06b6d4",
+  "#3b82f6",
+  "#6366f1",
+  "#8b5cf6",
+  "#a855f7",
+  "#ec4899",
+  "#6b7280",
+];
 
 interface Category {
   id: string;
   name: string;
   slug: string;
+  color: string;
   createdAt: string;
   _count: { posts: number };
 }
@@ -74,18 +90,22 @@ export default function CategoryClient({
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
-    defaultValues: { name: "", slug: "" },
+    defaultValues: { name: "", slug: "", color: "#6b7280" },
   });
 
   const openCreate = () => {
     setEditingId(null);
-    form.reset({ name: "", slug: "" });
+    form.reset({ name: "", slug: "", color: "#6b7280" });
     setDialogOpen(true);
   };
 
   const openEdit = (category: Category) => {
     setEditingId(category.id);
-    form.reset({ name: category.name, slug: category.slug });
+    form.reset({
+      name: category.name,
+      slug: category.slug,
+      color: category.color,
+    });
     setDialogOpen(true);
   };
 
@@ -119,9 +139,7 @@ export default function CategoryClient({
       toast.success("Category deleted");
       router.refresh();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to delete");
     }
     setDeleteId(null);
   };
@@ -142,6 +160,16 @@ export default function CategoryClient({
           <span className="text-muted-foreground text-sm">
             {row.getValue("slug")}
           </span>
+        ),
+      },
+      {
+        accessorKey: "color",
+        header: "Color",
+        cell: ({ row }) => (
+          <span
+            className="inline-block size-5 rounded-full border"
+            style={{ backgroundColor: row.getValue("color") }}
+          />
         ),
       },
       {
@@ -194,16 +222,9 @@ export default function CategoryClient({
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Link href="/admin/blog">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="size-4" />
-            </Button>
-          </Link>
-          <h2 className="text-2xl font-bold">Categories</h2>
-        </div>
+        <PageHeader showBackBtn title="Categories" />
         <Button onClick={openCreate}>
-          <Plus className="size-4 mr-2" />
+          <Plus className="size-4 " />
           New Category
         </Button>
       </div>
@@ -236,6 +257,39 @@ export default function CategoryClient({
                 )}
               />
               <input type="hidden" {...form.register("slug")} />
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color</FormLabel>
+                    <FormControl>
+                      <div className="flex flex-wrap gap-2">
+                        {COLOR_PALETTE.map((hex) => (
+                          <button
+                            key={hex}
+                            type="button"
+                            className="size-8 rounded-full border-2 flex items-center justify-center transition-transform hover:scale-110"
+                            style={{
+                              backgroundColor: hex,
+                              borderColor:
+                                field.value === hex
+                                  ? "hsl(var(--foreground))"
+                                  : "transparent",
+                            }}
+                            onClick={() => field.onChange(hex)}
+                          >
+                            {field.value === hex && (
+                              <Check className="size-4 text-white" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <Button
                 type="submit"
                 disabled={form.formState.isSubmitting}

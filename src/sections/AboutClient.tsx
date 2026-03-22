@@ -11,6 +11,7 @@ import {
   slideUpVariant,
 } from "@/components/animations/general";
 import parse from "html-react-parser";
+import { trackEvent } from "@/lib/mixpanel";
 import DOMPurify from "isomorphic-dompurify";
 
 interface AboutClientProps {
@@ -95,6 +96,9 @@ const AboutClient = ({ about }: AboutClientProps) => {
             className={`${buttonVariants()} py-6 `}
             download="chimezie-resume"
             target="_blank"
+            onClick={() =>
+              trackEvent("Resume Downloaded", { source_page: "about" })
+            }
           >
             <span className="capitalize">Download resume</span>
             <Download />

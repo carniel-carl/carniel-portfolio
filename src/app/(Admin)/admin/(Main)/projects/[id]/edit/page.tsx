@@ -1,7 +1,7 @@
+import ProjectForm from "@/components/admin/ProjectForm";
+import PageHeader from "@/components/general/PageHeader";
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import ProjectForm from "@/components/admin/ProjectForm";
-import BackButton from "@/components/general/BackButton";
 
 export default async function EditProjectPage({
   params,
@@ -16,11 +16,8 @@ export default async function EditProjectPage({
   if (!project) notFound();
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-6">
-        <BackButton />
-        <h2 className="text-2xl font-bold">Edit Project</h2>
-      </div>
+    <div className="space-y-6">
+      <PageHeader showBackBtn title="Edit Project" />
       <ProjectForm initialData={JSON.parse(JSON.stringify(project))} isEdit />
     </div>
   );

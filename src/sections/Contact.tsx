@@ -9,6 +9,7 @@ import { BsGithub } from "react-icons/bs";
 import { HiDownload } from "react-icons/hi";
 import { useForm, ValidationError } from "@formspree/react";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/mixpanel";
 import { motion } from "framer-motion";
 import { staggerContainer } from "@/components/animations/portfolio-page";
 import {
@@ -69,6 +70,11 @@ const Contact = () => {
               className={cn(buttonVariants(), "py-6")}
               download="chimezie-resume"
               target="_blank"
+              onClick={() =>
+                trackEvent("Resume Downloaded", {
+                  source_page: "contact",
+                })
+              }
             >
               <span>Download resume</span>
               <HiDownload />
@@ -81,6 +87,13 @@ const Contact = () => {
                 "py-6 duration-500 ease-in-out"
               )}
               target="_blank"
+              onClick={() =>
+                trackEvent("Social Link Clicked", {
+                  platform: "github",
+                  url: "https://github.com/carniel-carl",
+                  source_page: "contact",
+                })
+              }
             >
               <span>Github</span>
               <BsGithub />
