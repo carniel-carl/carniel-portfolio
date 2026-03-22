@@ -1,7 +1,8 @@
 "use client";
 import { motion, Variants } from "framer-motion";
 import { useEffect, useState, Dispatch, SetStateAction } from "react";
-import Logo from "../general/Logo";
+import Logo from "@/components/general/Logo";
+import { cn } from "@/lib/utils";
 
 const container: Variants = {
   visible: {
@@ -116,11 +117,15 @@ const PreLoader = ({
   );
 };
 
-const PagePreLoader = () => {
+const PagePreLoader = ({ isCompact }: { isCompact?: boolean }) => {
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background"
+        className={cn(
+          "flex flex-col items-center justify-center bg-background",
+          isCompact && "h-full w-full min-h-[50dvh]",
+          !isCompact && "fixed inset-0 z-50",
+        )}
         initial={{ opacity: 1 }}
         exit={{ opacity: 0, transition: { duration: 0.3 } }}
       >
