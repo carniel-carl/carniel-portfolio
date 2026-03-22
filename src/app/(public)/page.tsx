@@ -8,6 +8,7 @@ import PreLoader from "@/components/layout/PreLoader";
 import { CornerRightUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import Marquee from "react-fast-marquee";
+import { trackEvent } from "@/lib/mixpanel";
 
 const HomePage = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -17,6 +18,9 @@ const HomePage = () => {
     if (performance.now() > 2000) {
       setIsLoading(false);
     }
+    trackEvent("Home Viewed", {
+      referrer: document.referrer || undefined,
+    });
   }, []);
   return (
     <>

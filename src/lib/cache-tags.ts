@@ -7,4 +7,5 @@ export const CACHE_TAGS = {
   users: "users",
   dashboard: "dashboard",
   categories: "categories",
+  analytics: "analytics",
 } as const;
