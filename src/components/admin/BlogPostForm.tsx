@@ -159,7 +159,7 @@ export default function BlogPostForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-6 max-w-3xl"
+        className="space-y-6 pb-16 md:pb-0"
       >
         <FormField
           control={form.control}
