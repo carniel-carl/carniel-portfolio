@@ -1,17 +1,24 @@
-import mixpanel from "mixpanel-browser";
+import type { OverridedMixpanel } from "mixpanel-browser";
 
 const token = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
 
-if (
-  typeof window !== "undefined" &&
-  token &&
-  process.env.NODE_ENV === "production"
-) {
-  mixpanel.init(token, {
-    track_pageview: false,
-    persistence: "localStorage",
-    api_host: "https://api-eu.mixpanel.com",
-  });
+// mixpanel-browser reads the clock when its module evaluates, which Next's
+// prerender rejects for Client Components rendered outside a Suspense
+// boundary. Load it lazily, in the browser only, on the first tracked event.
+let client: Promise<OverridedMixpanel> | null = null;
+
+function getClient() {
+  if (!client) {
+    client = import("mixpanel-browser").then(({ default: mixpanel }) => {
+      mixpanel.init(token!, {
+        track_pageview: false,
+        persistence: "localStorage",
+        api_host: "https://api-eu.mixpanel.com",
+      });
+      return mixpanel;
+    });
+  }
+  return client;
 }
 
 export function trackEvent(
@@ -29,6 +36,8 @@ export function trackEvent(
     return;
   }
 
-  if (!token) return;
-  mixpanel.track(event, payload);
+  if (!token || typeof window === "undefined") return;
+  getClient()
+    .then((mixpanel) => mixpanel.track(event, payload))
+    .catch(() => {});
 }

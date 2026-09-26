@@ -1,18 +1,21 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { staggerContainer } from "@/components/animations/portfolio-page";
+import { useRef } from "react";
 import {
-  slideLeftVariant,
-  slideRightVariant,
-  slideUpVariant,
-} from "@/components/animations/general";
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
 import parse from "html-react-parser";
-import { trackEvent } from "@/lib/mixpanel";
 import DOMPurify from "isomorphic-dompurify";
+import { trackEvent } from "@/lib/mixpanel";
+import SplitText from "@/components/motion/SplitText";
+import PillLink from "@/components/motion/PillLink";
+import Magnetic from "@/components/motion/Magnetic";
+import { useIntroReady } from "@/components/layout/Intro";
 
 interface AboutClientProps {
   about: {
@@ -22,6 +25,8 @@ interface AboutClientProps {
   } | null;
 }
 
+const EASE = [0.16, 1, 0.3, 1] as const;
+
 const AboutClient = ({ about }: AboutClientProps) => {
   const bio =
     about?.bio ||
@@ -29,43 +34,35 @@ const AboutClient = ({ about }: AboutClientProps) => {
   const profilePicUrl = about?.profilePicUrl || "/images/profile-pic.jpg";
   const resumeUrl = about?.resumeUrl || "/chimezie-resume.pdf";
 
-  return (
-    <motion.section
-      id="about"
-      className="portfolio flex md:flex-row flex-col items-center lg:gap-x-24 md:gap-x-12 gap-y-12 md:mt-20 mt-10"
-      variants={staggerContainer}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true }}
-    >
-      {/* SUB: Image Section */}
-      <motion.div variants={slideLeftVariant} className="w-fit relative">
-        <div className="relative lg:w-[21rem] lg:h-[28rem] md:w-[18rem] md:h-[22rem] w-[19rem] h-[18rem] about-profile__after">
-          <Image
-            src={profilePicUrl}
-            alt="profile pic"
-            fill
-            className="object-cover rounded-2xl scale-95"
-            priority
-          />
-        </div>
-      </motion.div>
+  const frameRef = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const ready = useIntroReady();
+  const { scrollYProgress } = useScroll({
+    target: frameRef,
+    offset: ["start end", "end start"],
+  });
+  // Image drifts inside its frame for depth while the frame scrolls normally
+  const imageY = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
 
+  return (
+    <section
+      id="about"
+      className="portfolio grid grid-cols-1 gap-12 pb-24 pt-10 md:grid-cols-12 md:gap-8 md:pb-40 md:pt-16"
+    >
       {/* SUB: Text section */}
-      <motion.div
-        className="flex flex-col items-center md:items-start text-center md:text-left"
-        variants={staggerContainer}
-      >
-        <motion.h2
-          variants={slideUpVariant}
-          className="heading-style after:content-['get_to_know_me'] font-nunito after:font-montserrat self-start"
-        >
-          About
-        </motion.h2>
+      <div className="flex flex-col md:col-span-7 md:pr-8">
+        <SplitText
+          as="h1"
+          text="About me"
+          by="char"
+          className="font-display text-[clamp(4rem,13vw,11rem)] font-semibold leading-[0.85] tracking-[-0.045em] [font-stretch:75%]"
+        />
 
         <motion.div
-          variants={slideRightVariant}
-          className="text-lg mb-8 mt-8 max-w-[40rem] w-full text-foreground/70 font-medium"
+          initial={reduce ? false : { opacity: 0, y: 30 }}
+          animate={ready ? { opacity: 1, y: 0 } : undefined}
+          transition={{ duration: 1, ease: EASE, delay: 0.2 }}
+          className="mt-10 max-w-[52ch] text-lg leading-relaxed text-foreground/75 md:mt-14 md:text-xl [&_a]:text-accent-ink [&_a]:underline [&_a]:underline-offset-4 [&_li]:ml-5 [&_li]:list-disc [&_p+p]:mt-5 [&_strong]:text-foreground"
         >
           {parse(
             DOMPurify.sanitize(bio, {
@@ -90,22 +87,52 @@ const AboutClient = ({ about }: AboutClientProps) => {
           )}
         </motion.div>
 
-        <motion.div variants={slideUpVariant}>
-          <a
-            href={resumeUrl}
-            className={`${buttonVariants()} py-6 `}
-            download="chimezie-resume"
-            target="_blank"
-            onClick={() =>
-              trackEvent("Resume Downloaded", { source_page: "about" })
-            }
-          >
-            <span className="capitalize">Download resume</span>
-            <Download />
-          </a>
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 20 }}
+          animate={ready ? { opacity: 1, y: 0 } : undefined}
+          transition={{ duration: 1, ease: EASE, delay: 0.35 }}
+          className="mt-10"
+        >
+          <Magnetic strength={0.25}>
+            <PillLink
+              href={resumeUrl}
+              icon={<Download />}
+              download="chimezie-resume"
+              onClick={() =>
+                trackEvent("Resume Downloaded", { source_page: "about" })
+              }
+            >
+              Download resume
+            </PillLink>
+          </Magnetic>
         </motion.div>
-      </motion.div>
-    </motion.section>
+      </div>
+
+      {/* SUB: Image Section */}
+      <div className="md:col-span-5 md:pt-24">
+        <motion.div
+          ref={frameRef}
+          initial={reduce ? false : { clipPath: "inset(12% 12% 12% 12% round 1.25rem)", opacity: 0 }}
+          animate={ready ? { clipPath: "inset(0% 0% 0% 0% round 1.25rem)", opacity: 1 } : undefined}
+          transition={{ duration: 1.4, ease: [0.76, 0, 0.24, 1] }}
+          className="relative aspect-[4/5] w-full overflow-hidden rounded-[1.25rem] bg-surface"
+        >
+          <motion.div
+            style={reduce ? undefined : { y: imageY }}
+            className="absolute inset-x-0 -inset-y-[10%]"
+          >
+            <Image
+              src={profilePicUrl}
+              alt="Portrait of Chimezie Nmugha"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 40vw"
+              priority
+            />
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
   );
 };
 
