@@ -2,17 +2,17 @@
   --tt-inline-code-bg-color: var(--tt-gray-light-a-100);
   --tt-inline-code-text-color: var(--tt-gray-light-a-700);
   --tt-inline-code-border-color: var(--tt-gray-light-a-200);
-  --tt-codeblock-bg: var(--tt-gray-light-a-50);
-  --tt-codeblock-text: var(--tt-gray-light-a-800);
-  --tt-codeblock-border: var(--tt-gray-light-a-200);
+  --tt-codeblock-bg: var(--code-bg);
+  --tt-codeblock-text: var(--code-text);
+  --tt-codeblock-border: var(--code-border);
 
   .dark & {
     --tt-inline-code-bg-color: var(--tt-gray-dark-a-100);
     --tt-inline-code-text-color: var(--tt-gray-dark-a-700);
     --tt-inline-code-border-color: var(--tt-gray-dark-a-200);
-    --tt-codeblock-bg: var(--tt-gray-dark-a-50);
-    --tt-codeblock-text: var(--tt-gray-dark-a-800);
-    --tt-codeblock-border: var(--tt-gray-dark-a-200);
+    --tt-codeblock-bg: var(--code-bg);
+    --tt-codeblock-text: var(--code-text);
+    --tt-codeblock-border: var(--code-border);
   }
 }
 
@@ -40,7 +40,9 @@
     margin-top: 1.5em;
     margin-bottom: 1.5em;
     padding: 1em;
-    font-size: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    overflow-x: auto;
     border-radius: 6px/0.375rem;
 
     code {
