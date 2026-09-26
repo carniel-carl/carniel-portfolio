@@ -10,7 +10,7 @@ import {
   useTransform,
 } from "framer-motion";
 import parse from "html-react-parser";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 import { trackEvent } from "@/lib/mixpanel";
 import SplitText from "@/components/motion/SplitText";
 import PillLink from "@/components/motion/PillLink";
@@ -65,8 +65,8 @@ const AboutClient = ({ about }: AboutClientProps) => {
           className="mt-10 max-w-[52ch] text-lg leading-relaxed text-foreground/75 md:mt-14 md:text-xl [&_a]:text-accent-ink [&_a]:underline [&_a]:underline-offset-4 [&_li]:ml-5 [&_li]:list-disc [&_p+p]:mt-5 [&_strong]:text-foreground"
         >
           {parse(
-            DOMPurify.sanitize(bio, {
-              ALLOWED_TAGS: [
+            sanitizeHtml(bio, {
+              allowedTags: [
                 "b",
                 "i",
                 "em",
@@ -82,7 +82,7 @@ const AboutClient = ({ about }: AboutClientProps) => {
                 "h4",
                 "ol",
               ],
-              ALLOWED_ATTR: ["href", "target", "rel"],
+              allowedAttributes: { a: ["href", "target", "rel"] },
             }),
           )}
         </motion.div>
