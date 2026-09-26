@@ -52,8 +52,8 @@ const Hero = () => {
       id="top"
       className="relative isolate min-h-[calc(100dvh-3.5rem)] overflow-hidden"
     >
-      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[1400px] flex-col px-4 pb-4 pt-8 md:px-8 md:pb-6">
-        <div className="relative grid grid-cols-1 content-start gap-10 md:flex-1 md:grid-cols-12 md:content-stretch md:gap-8">
+      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[1400px] flex-col px-4 pb-4 pt-10 md:px-8 md:pb-6 md:pt-8">
+        <div className="relative flex flex-1 flex-col gap-8 md:grid md:grid-cols-12 md:content-stretch md:gap-8">
           {/* SUB: Intro copy */}
           <motion.div
             style={reduce ? undefined : { opacity: copyOpacity }}
@@ -111,7 +111,7 @@ const Hero = () => {
           {/* SUB: Portrait, clip-revealed from the bottom edge */}
           <motion.div
             style={reduce ? undefined : { y: portraitY }}
-            className="relative z-[1] w-[56%] justify-self-end md:col-span-5 md:col-start-8 md:w-full lg:col-span-4 lg:col-start-9"
+            className="relative z-[1] flex min-h-[18rem] w-full flex-1 flex-col md:col-span-5 md:col-start-8 md:block md:min-h-0 lg:col-span-4 lg:col-start-9"
           >
             <motion.div
               initial={reduce ? false : { clipPath: "inset(100% 0% 0% 0% round 1.25rem)" }}
@@ -121,7 +121,7 @@ const Hero = () => {
                   : undefined
               }
               transition={{ duration: 1.4, ease: [0.76, 0, 0.24, 1], delay: 0.25 }}
-              className="relative aspect-[4/5] w-full overflow-hidden rounded-[1.25rem] bg-surface"
+              className="relative w-full flex-1 overflow-hidden rounded-[1.25rem] bg-surface md:aspect-[4/5] md:flex-none"
             >
               <motion.div
                 style={reduce ? undefined : { scale: imageScale }}
@@ -138,7 +138,7 @@ const Hero = () => {
                     alt="Portrait of Chimezie Nmugha"
                     fill
                     priority
-                    sizes="(max-width: 768px) 62vw, 30vw"
+                    sizes="(max-width: 768px) 100vw, 30vw"
                     className="object-cover object-[50%_30%]"
                   />
                 </motion.div>

@@ -21,12 +21,17 @@ import {
   type Placement,
 } from "@floating-ui/react";
 import {
+  AudioLines,
   CloudRain,
+  Disc3,
   Link2,
+  LoaderCircle,
+  LogOut,
   Moon,
   Music2,
   Pause,
   Play,
+  RefreshCw,
   Sparkles,
   Volume1,
   Volume2,
@@ -39,34 +44,36 @@ import { AmbientEngine, SOUNDSCAPES, type SoundscapeId } from "@/lib/ambient";
 import { useIntroDone } from "@/components/layout/Intro";
 import { usePathname } from "next/navigation";
 import routes from "@/lib/routes";
+import {
+  JUST_CONNECTED_KEY,
+  connectSpotify,
+  disconnectSpotify,
+  fetchSpotifyPlaylists,
+  fetchSpotifyProfile,
+  isSpotifyConnected,
+  loadSpotifyEmbedApi,
+  spotifySignInEnabled,
+  toSpotifyUri,
+  type SpotifyEmbedController,
+  type SpotifyPlaylist,
+} from "@/lib/spotify";
 
 type TrackId = SoundscapeId | "spotify";
 
 const ICONS: Record<SoundscapeId, typeof Moon> = {
   drift: Sparkles,
   night: Moon,
+  choir: AudioLines,
+  lofi: Disc3,
   rain: CloudRain,
   ocean: Waves,
 };
 
-// Spotify's own "Peaceful Piano" playlist; visitors can paste their own link
-const DEFAULT_SPOTIFY =
-  "https://open.spotify.com/playlist/37i9dQZF1DX4sWSpwq3LiO";
+// Spotify's own "Peaceful Piano" playlist; visitors can connect or paste their own
+const DEFAULT_SPOTIFY_URI = "spotify:playlist:37i9dQZF1DX4sWSpwq3LiO";
 const PREF_KEY = "carniel:soundscape";
-const SPOTIFY_KEY = "carniel:spotify-url";
+const SPOTIFY_KEY = "carniel:spotify-uri";
 const EDGE = 12;
-
-// open.spotify.com/{type}/{id} (optionally /intl-xx/) -> embed URL
-const toSpotifyEmbed = (url: string) => {
-  const m = url
-    .trim()
-    .match(
-      /open\.spotify\.com\/(?:intl-[a-z-]+\/)?(playlist|album|track|artist|episode|show)\/([A-Za-z0-9]+)/,
-    );
-  return m
-    ? `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator`
-    : null;
-};
 
 // Grow the panel out of the corner nearest the record
 const originFor = (p: Placement) => {
@@ -160,9 +167,21 @@ const SoundPlayer = () => {
   const [volume, setVolume] = useState(0.7);
   const [hint, setHint] = useState(false);
   const [hover, setHover] = useState(false);
-  const [spotifyUrl, setSpotifyUrl] = useState(DEFAULT_SPOTIFY);
+  const [spotifyUri, setSpotifyUri] = useState(DEFAULT_SPOTIFY_URI);
+  const [spotifyPlaying, setSpotifyPlaying] = useState(false);
   const [draftUrl, setDraftUrl] = useState("");
   const [urlError, setUrlError] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [profileName, setProfileName] = useState<string | null>(null);
+  const [playlists, setPlaylists] = useState<SpotifyPlaylist[] | null>(null);
+  const [playlistState, setPlaylistState] = useState<"idle" | "loading" | "error">("idle");
+  const spotifyHost = useRef<HTMLDivElement>(null);
+  const controller = useRef<SpotifyEmbedController | null>(null);
+  const controllerUri = useRef<string | null>(null);
+  const [spotifyReady, setSpotifyReady] = useState(false);
+
+  // Built-in soundscape or Spotify: either one drives the record's animation
+  const anyPlaying = playing || spotifyPlaying;
 
   // HDR: FLOATING PANEL (flip / shift / fit to the viewport)
   const panel = useFloating({
@@ -217,7 +236,7 @@ const SoundPlayer = () => {
   const { getReferenceProps, getFloatingProps } = useInteractions([dismiss]);
 
   // HDR: "PLAY ME" HINT (same collision logic, prefers the right side)
-  const showHint = introDone && !open && !playing && (hint || hover);
+  const showHint = introDone && !open && !anyPlaying && (hint || hover);
   const tip = useFloating({
     open: showHint,
     placement: "left",
@@ -236,11 +255,73 @@ const SoundPlayer = () => {
         (saved === "spotify" || SOUNDSCAPES.some((s) => s.id === saved))
       )
         setTrack(saved);
-      const url = localStorage.getItem(SPOTIFY_KEY);
-      if (url && toSpotifyEmbed(url)) setSpotifyUrl(url);
+      const uri = localStorage.getItem(SPOTIFY_KEY);
+      if (uri && toSpotifyUri(uri)) setSpotifyUri(uri);
+      setConnected(isSpotifyConnected());
+      // Back from Spotify sign-in: reopen straight onto the playlists
+      if (sessionStorage.getItem(JUST_CONNECTED_KEY)) {
+        sessionStorage.removeItem(JUST_CONNECTED_KEY);
+        setTrack("spotify");
+        setOpen(true);
+      }
     } catch {}
-    return () => engine.current?.stop();
+    return () => {
+      engine.current?.stop();
+      controller.current?.destroy();
+    };
   }, []);
+
+  // HDR: SPOTIFY EMBED (official iFrame API, reports play/pause)
+  useEffect(() => {
+    if (track !== "spotify" || !panelMounted || !spotifyHost.current) return;
+    if (controller.current) {
+      if (controllerUri.current !== spotifyUri) {
+        controller.current.loadUri(spotifyUri);
+        controllerUri.current = spotifyUri;
+      }
+      return;
+    }
+    let cancelled = false;
+    // The API replaces the element it is given, so hand it a node React does not own
+    const mount = document.createElement("div");
+    spotifyHost.current.appendChild(mount);
+    loadSpotifyEmbedApi().then((api) => {
+      if (cancelled) return;
+      api.createController(mount, { uri: spotifyUri, width: "100%", height: 152 }, (c) => {
+        controller.current = c;
+        controllerUri.current = spotifyUri;
+        setSpotifyReady(true);
+        c.addListener("playback_update", (e) => {
+          const isPlaying = !e.data.isPaused;
+          setSpotifyPlaying(isPlaying);
+          // Spotify started: fade out the built-in soundscape
+          if (isPlaying) {
+            engine.current?.stop();
+            setPlaying(false);
+          }
+        });
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [track, panelMounted, spotifyUri]);
+
+  // Signed-in visitors: load their profile and playlists
+  useEffect(() => {
+    if (!connected || track !== "spotify" || playlists || playlistState === "loading") return;
+    setPlaylistState("loading");
+    Promise.all([fetchSpotifyProfile(), fetchSpotifyPlaylists()])
+      .then(([name, items]) => {
+        setProfileName(name);
+        setPlaylists(items);
+        setPlaylistState("idle");
+      })
+      .catch((err: Error) => {
+        if (err.message === "not-connected") setConnected(false);
+        setPlaylistState("error");
+      });
+  }, [connected, track, playlists, playlistState]);
 
   // Nudge first-time visitors once the intro has lifted
   useEffect(() => {
@@ -296,6 +377,8 @@ const SoundPlayer = () => {
       setPlaying(false);
       return;
     }
+    controller.current?.pause();
+    setSpotifyPlaying(false);
     setPlaying(true);
     getEngine().setVolume(volume);
     await getEngine()
@@ -313,25 +396,37 @@ const SoundPlayer = () => {
     }
   };
 
+  const chooseSpotify = (uri: string) => {
+    setSpotifyUri(uri);
+    try {
+      localStorage.setItem(SPOTIFY_KEY, uri);
+    } catch {}
+  };
+
   const submitSpotify = (e: FormEvent) => {
     e.preventDefault();
-    if (!toSpotifyEmbed(draftUrl)) {
+    const uri = toSpotifyUri(draftUrl);
+    if (!uri) {
       setUrlError(true);
       return;
     }
     setUrlError(false);
-    setSpotifyUrl(draftUrl.trim());
     setDraftUrl("");
-    try {
-      localStorage.setItem(SPOTIFY_KEY, draftUrl.trim());
-    } catch {}
+    chooseSpotify(uri);
+  };
+
+  const signOut = () => {
+    disconnectSpotify();
+    setConnected(false);
+    setPlaylists(null);
+    setProfileName(null);
+    setPlaylistState("idle");
   };
 
   const currentName =
     track === "spotify"
       ? "Spotify"
       : SOUNDSCAPES.find((s) => s.id === track)!.name;
-  const spotifyEmbed = toSpotifyEmbed(spotifyUrl);
 
   return (
     <>
@@ -386,7 +481,7 @@ const SoundPlayer = () => {
             className="relative"
           >
             <AnimatePresence>
-              {playing && !reduce && <FloatingNotes />}
+              {anyPlaying && !reduce && <FloatingNotes />}
             </AnimatePresence>
 
             {/* Attention ring behind the record while hinting */}
@@ -429,7 +524,7 @@ const SoundPlayer = () => {
               aria-label={
                 open
                   ? "Close music player"
-                  : `Music player, ${playing ? `playing ${currentName}` : "paused"}`
+                  : `Music player, ${anyPlaying ? `playing ${currentName}` : "paused"}`
               }
               aria-expanded={open}
               aria-haspopup="dialog"
@@ -437,9 +532,9 @@ const SoundPlayer = () => {
             >
               {/* Vinyl */}
               <motion.span
-                animate={playing && !reduce ? { rotate: 360 } : { rotate: 0 }}
+                animate={anyPlaying && !reduce ? { rotate: 360 } : { rotate: 0 }}
                 transition={
-                  playing
+                  anyPlaying
                     ? { duration: 4, repeat: Infinity, ease: "linear" }
                     : { duration: 0.6 }
                 }
@@ -459,7 +554,7 @@ const SoundPlayer = () => {
       <FloatingPortal>
         {/* SUB: "Play me" hint / now-playing chip */}
         <AnimatePresence>
-          {(showHint || (playing && !open && introDone)) && (
+          {(showHint || (anyPlaying && !open && introDone)) && (
             <div
               key="tip"
               ref={tip.refs.setFloating}
@@ -474,12 +569,12 @@ const SoundPlayer = () => {
                 style={{ transformOrigin: originFor(tip.placement) }}
                 className={cn(
                   "flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold shadow-lg",
-                  playing
+                  anyPlaying
                     ? "border border-foreground/10 bg-background/85 font-medium text-foreground backdrop-blur-xl"
                     : "bg-accent text-accent-on",
                 )}
               >
-                {playing ? (
+                {anyPlaying ? (
                   <>
                     <span className="text-accent-ink dark:text-accent">
                       <Bars playing />
@@ -557,7 +652,8 @@ const SoundPlayer = () => {
                       {
                         id: "spotify" as const,
                         name: "Spotify",
-                        description: "Play a playlist from Spotify",
+                        description: "Connect or paste a playlist",
+                        vocal: false,
                       },
                     ].map((s, i) => {
                       const Icon = s.id === "spotify" ? SiSpotify : ICONS[s.id];
@@ -609,8 +705,18 @@ const SoundPlayer = () => {
                               <Icon className="size-4" />
                             </span>
                             <span className="relative flex min-w-0 flex-1 flex-col">
-                              <span className="text-sm font-semibold">
+                              <span className="flex items-center gap-1.5 text-sm font-semibold">
                                 {s.name}
+                                {s.vocal && (
+                                  <span
+                                    className={cn(
+                                      "rounded-full px-1.5 py-px text-[0.6rem] font-semibold uppercase tracking-wide",
+                                      active ? "bg-accent-on/15" : "bg-foreground/10 text-foreground/70",
+                                    )}
+                                  >
+                                    Vocal
+                                  </span>
+                                )}
                               </span>
                               <span
                                 className={cn(
@@ -623,9 +729,9 @@ const SoundPlayer = () => {
                                 {s.description}
                               </span>
                             </span>
-                            {active && s.id !== "spotify" && (
+                            {active && (
                               <span className="relative">
-                                <Bars playing={playing} />
+                                <Bars playing={s.id === "spotify" ? spotifyPlaying : playing} />
                               </span>
                             )}
                           </button>
@@ -634,83 +740,164 @@ const SoundPlayer = () => {
                     })}
                   </ul>
 
-                  {/* SUB: Spotify embed, only mounted when chosen */}
-                  <AnimatePresence initial={false}>
-                    {track === "spotify" && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                        className="overflow-hidden"
-                      >
-                        <div className="flex flex-col gap-2 pt-3">
-                          {spotifyEmbed && (
-                            <iframe
-                              key={spotifyEmbed}
-                              title="Spotify player"
-                              src={spotifyEmbed}
-                              height={152}
-                              loading="lazy"
-                              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                              className="w-full rounded-xl border-0 bg-foreground/5"
-                            />
-                          )}
-                          <form
-                            onSubmit={submitSpotify}
-                            className="flex flex-col gap-1.5"
-                          >
-                            <label
-                              htmlFor="spotify-url"
-                              className="text-xs font-medium text-foreground/75"
-                            >
-                              Play your own playlist
-                            </label>
-                            <div className="flex gap-1.5">
-                              <div className="relative flex-1">
-                                <Link2
-                                  className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-foreground/45"
-                                  aria-hidden="true"
-                                />
-                                <input
-                                  id="spotify-url"
-                                  type="url"
-                                  inputMode="url"
-                                  value={draftUrl}
-                                  onChange={(e) => {
-                                    setDraftUrl(e.target.value);
-                                    setUrlError(false);
-                                  }}
-                                  aria-invalid={urlError}
-                                  aria-describedby="spotify-help"
-                                  className="h-8 w-full rounded-lg border border-foreground/15 bg-transparent pl-7 pr-2 text-xs outline-none transition-colors focus:border-accent-ink"
-                                />
-                              </div>
-                              <button
-                                type="submit"
-                                className="h-8 shrink-0 rounded-lg bg-foreground px-3 text-xs font-semibold text-background active:scale-95"
-                              >
-                                Load
-                              </button>
-                            </div>
-                            <p
-                              id="spotify-help"
-                              className={cn(
-                                "text-[0.7rem] leading-snug",
-                                urlError
-                                  ? "text-destructive dark:text-red-400"
-                                  : "text-foreground/55",
-                              )}
-                            >
-                              {urlError
-                                ? "That doesn't look like a Spotify link."
-                                : "Paste a playlist, album or track link. Log in to Spotify for full tracks."}
-                            </p>
-                          </form>
-                        </div>
-                      </motion.div>
+                  {/* SUB: Spotify. Kept mounted (hidden) so playback survives switching */}
+                  <div className={cn("flex flex-col gap-3 pt-3", track !== "spotify" && "hidden")}>
+                    {!spotifySignInEnabled && process.env.NODE_ENV !== "production" && (
+                      <p className="rounded-lg border border-dashed border-foreground/25 px-3 py-2 text-[0.7rem] leading-snug text-foreground/70">
+                        Dev note: set <code className="font-mono">NEXT_PUBLIC_SPOTIFY_CLIENT_ID</code> in
+                        .env and restart the dev server to show &ldquo;Connect Spotify&rdquo;.
+                      </p>
                     )}
-                  </AnimatePresence>
+
+                    {spotifySignInEnabled && !connected && (
+                      <button
+                        type="button"
+                        onClick={() => connectSpotify()}
+                        className="flex h-10 items-center justify-center gap-2 rounded-full bg-[#1DB954] text-sm font-semibold text-[#0b1f12] transition-transform active:scale-[0.97]"
+                      >
+                        <SiSpotify className="size-4" aria-hidden="true" />
+                        Connect Spotify
+                      </button>
+                    )}
+
+                    {connected && (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-2 text-xs">
+                          <span className="truncate text-foreground/70">
+                            {profileName ? `Signed in as ${profileName}` : "Your playlists"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={signOut}
+                            className="flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-foreground/60 transition-colors hover:bg-foreground/10 hover:text-foreground"
+                          >
+                            <LogOut className="size-3" aria-hidden="true" />
+                            Disconnect
+                          </button>
+                        </div>
+
+                        {playlistState === "loading" && (
+                          <div className="flex flex-col gap-1.5" aria-label="Loading playlists">
+                            {[0, 1, 2].map((i) => (
+                              <div key={i} className="flex items-center gap-2.5 p-1">
+                                <span className="size-9 animate-pulse rounded-md bg-foreground/10" />
+                                <span className="h-3 flex-1 animate-pulse rounded bg-foreground/10" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {playlistState === "error" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPlaylists(null);
+                              setPlaylistState("idle");
+                            }}
+                            className="flex items-center gap-2 rounded-lg bg-foreground/[0.06] px-3 py-2 text-left text-xs text-foreground/75"
+                          >
+                            <RefreshCw className="size-3.5 shrink-0" aria-hidden="true" />
+                            Couldn&apos;t load your playlists. Try again.
+                          </button>
+                        )}
+
+                        {playlists && playlists.length === 0 && (
+                          <p className="text-xs text-foreground/60">
+                            No playlists yet. Paste any Spotify link below.
+                          </p>
+                        )}
+
+                        {playlists && playlists.length > 0 && (
+                          <ul className="flex max-h-44 flex-col gap-0.5 overflow-y-auto pr-1">
+                            {playlists.map((pl) => (
+                              <li key={pl.id}>
+                                <button
+                                  type="button"
+                                  onClick={() => chooseSpotify(pl.uri)}
+                                  aria-pressed={spotifyUri === pl.uri}
+                                  className={cn(
+                                    "flex w-full items-center gap-2.5 rounded-lg p-1 text-left transition-colors",
+                                    spotifyUri === pl.uri ? "bg-foreground/10" : "hover:bg-foreground/[0.06]",
+                                  )}
+                                >
+                                  {pl.image ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={pl.image} alt="" className="size-9 shrink-0 rounded-md object-cover" />
+                                  ) : (
+                                    <span className="grid size-9 shrink-0 place-items-center rounded-md bg-foreground/10">
+                                      <Music2 className="size-4 text-foreground/50" />
+                                    </span>
+                                  )}
+                                  <span className="flex min-w-0 flex-col">
+                                    <span className="truncate text-xs font-semibold">{pl.name}</span>
+                                    <span className="text-[0.7rem] text-foreground/55">
+                                      {pl.tracks} {pl.tracks === 1 ? "track" : "tracks"}
+                                    </span>
+                                  </span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Official embed, controlled via the iFrame API */}
+                    <div
+                      ref={spotifyHost}
+                      className="min-h-[152px] overflow-hidden rounded-xl bg-foreground/5 [&_iframe]:block [&_iframe]:rounded-xl"
+                    >
+                      {!spotifyReady && (
+                        <div className="grid h-[152px] place-items-center text-foreground/40">
+                          <LoaderCircle className="size-5 animate-spin" aria-label="Loading Spotify" />
+                        </div>
+                      )}
+                    </div>
+
+                    <form onSubmit={submitSpotify} className="flex flex-col gap-1.5">
+                      <label htmlFor="spotify-url" className="text-xs font-medium text-foreground/75">
+                        {connected ? "Or paste any Spotify link" : "Paste a playlist, album or track link"}
+                      </label>
+                      <div className="flex gap-1.5">
+                        <div className="relative flex-1">
+                          <Link2
+                            className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-foreground/45"
+                            aria-hidden="true"
+                          />
+                          <input
+                            id="spotify-url"
+                            type="text"
+                            inputMode="url"
+                            value={draftUrl}
+                            onChange={(e) => {
+                              setDraftUrl(e.target.value);
+                              setUrlError(false);
+                            }}
+                            aria-invalid={urlError}
+                            aria-describedby="spotify-help"
+                            className="h-8 w-full rounded-lg border border-foreground/15 bg-transparent pl-7 pr-2 text-xs outline-none transition-colors focus:border-accent-ink"
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          className="h-8 shrink-0 rounded-lg bg-foreground px-3 text-xs font-semibold text-background active:scale-95"
+                        >
+                          Load
+                        </button>
+                      </div>
+                      <p
+                        id="spotify-help"
+                        className={cn(
+                          "text-[0.7rem] leading-snug",
+                          urlError ? "text-destructive dark:text-red-400" : "text-foreground/55",
+                        )}
+                      >
+                        {urlError
+                          ? "That doesn't look like a Spotify link."
+                          : "Full tracks play when you're logged in to Spotify in this browser."}
+                      </p>
+                    </form>
+                  </div>
                 </div>
 
                 {/* SUB: Transport (built-in soundscapes only) */}

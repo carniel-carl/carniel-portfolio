@@ -1,18 +1,31 @@
 // Generative soundscapes on the Web Audio API. No audio files, nothing to
 // license, zero download. Must be started from a user gesture.
 
-export type SoundscapeId = "drift" | "night" | "rain" | "ocean";
+export type SoundscapeId = "drift" | "night" | "choir" | "lofi" | "rain" | "ocean";
 
 export const SOUNDSCAPES: {
   id: SoundscapeId;
   name: string;
   description: string;
+  // Synthesised voice (formant-shaped "aah"/"ooh"), not recorded singing
+  vocal?: boolean;
 }[] = [
   { id: "drift", name: "Drift", description: "Warm major chords and soft bells" },
   { id: "night", name: "Night", description: "Slow, dreamy minor pads" },
+  { id: "choir", name: "Choir", description: "Soft wordless voices, slowly swelling", vocal: true },
+  { id: "lofi", name: "Lo-fi", description: "Mellow keys with vinyl crackle" },
   { id: "rain", name: "Rain", description: "Gentle rainfall over a quiet pad" },
   { id: "ocean", name: "Ocean", description: "Waves rolling in and out" },
 ];
+
+// Formants (Hz, relative gain, Q) that make a sawtooth read as a sung vowel
+const VOWELS = {
+  ah: [
+    [800, 1, 9],
+    [1150, 0.5, 11],
+    [2900, 0.18, 13],
+  ],
+} as const;
 
 const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
 
@@ -183,6 +196,161 @@ export class AmbientEngine {
     return src;
   }
 
+  // Sparse random impulses: vinyl crackle or fire pops, looped
+  private crackle(density: number, amp: number) {
+    const ctx = this.ctx!;
+    const length = ctx.sampleRate * 3;
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) {
+      data[i] =
+        Math.random() < density ? (Math.random() * 2 - 1) * amp : (Math.random() * 2 - 1) * 0.003;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    return src;
+  }
+
+  // One sung note: sawtooth with vibrato through vowel formant filters
+  private sing(
+    freq: number,
+    vowel: keyof typeof VOWELS,
+    start: number,
+    dur: number,
+    peak: number,
+    into: AudioNode,
+    attack = 1.5,
+    release = 2,
+  ) {
+    const ctx = this.ctx!;
+    const src = ctx.createOscillator();
+    src.type = "sawtooth";
+    src.frequency.value = freq;
+    const vib = ctx.createOscillator();
+    vib.frequency.value = 4.6 + Math.random() * 0.8;
+    const vibDepth = ctx.createGain();
+    vibDepth.gain.value = 10;
+    vib.connect(vibDepth).connect(src.detune);
+
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0, start);
+    env.gain.linearRampToValueAtTime(peak, start + attack);
+    env.gain.setValueAtTime(peak, start + Math.max(attack, dur - release));
+    env.gain.linearRampToValueAtTime(0, start + dur);
+    VOWELS[vowel].forEach(([f, g, q]) => {
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = f;
+      bp.Q.value = q;
+      const level = ctx.createGain();
+      level.gain.value = g;
+      src.connect(bp).connect(level).connect(env);
+    });
+    env.connect(into);
+    src.start(start);
+    vib.start(start);
+    src.stop(start + dur + 0.1);
+    vib.stop(start + dur + 0.1);
+  }
+
+  // Plucked, bell-like note (music box / electric piano)
+  private pluck(freq: number, start: number, peak: number, decay: number, into: AudioNode, bright = 0.35) {
+    const ctx = this.ctx!;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0, start);
+    env.gain.linearRampToValueAtTime(peak, start + 0.008);
+    env.gain.exponentialRampToValueAtTime(0.0001, start + decay);
+    env.connect(into);
+    [
+      [1, 1],
+      [2, bright],
+      [4.2, bright * 0.2],
+    ].forEach(([mult, g]) => {
+      const osc = ctx.createOscillator();
+      const level = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq * mult;
+      level.gain.value = g;
+      osc.connect(level).connect(env);
+      osc.start(start);
+      osc.stop(start + decay + 0.05);
+    });
+  }
+
+  // Music layer through the echo bus, faded with the layer via `aux`
+  private musicAux() {
+    const aux = this.ctx!.createGain();
+    aux.gain.value = 0;
+    aux.connect(this.musicBus!);
+    return aux;
+  }
+
+  private buildExtra(id: SoundscapeId, gain: GainNode): Layer | null {
+    const ctx = this.ctx!;
+
+    if (id === "choir") {
+      const aux = this.musicAux();
+      let step = 0;
+      const seconds = 10;
+      const chord = () => {
+        const now = ctx.currentTime;
+        const notes = PADS.drift.chords[step++ % PADS.drift.chords.length];
+        notes.forEach((note) => {
+          // A small ensemble per note, slightly out of tune with each other
+          [-9, 0, 8].forEach((cents) => {
+            this.sing(hz(note + 12) * Math.pow(2, cents / 1200), "ah", now, seconds + 3.5, 0.16, aux, 3, 3.5);
+          });
+        });
+      };
+      chord();
+      const timer = setInterval(chord, seconds * 1000);
+      return { gain, aux, stop: () => clearInterval(timer) };
+    }
+
+    if (id === "lofi") {
+      const aux = this.musicAux();
+      const beat = 60 / 72;
+      const chords = [
+        [50, 53, 57, 60, 64], // Dm9
+        [43, 53, 57, 59, 64], // G13
+        [48, 52, 55, 59, 62], // Cmaj9
+        [45, 52, 55, 60, 64], // Am7(9)
+      ];
+      let bar = 0;
+      const playBar = () => {
+        const now = ctx.currentTime;
+        const notes = chords[Math.floor(bar++ / 2) % chords.length];
+        // Swung stabs: beat 1, the "and" of 2, beat 4
+        [0, 1.62, 3].forEach((b, k) => {
+          notes.forEach((n, j) =>
+            this.pluck(hz(n), now + b * beat + j * 0.012, k === 0 ? 0.05 : 0.035, 2.2, aux, 0.25),
+          );
+        });
+      };
+      playBar();
+      const timer = setInterval(playBar, beat * 4 * 1000);
+      const vinyl = this.crackle(0.0007, 0.5);
+      const hp = ctx.createBiquadFilter();
+      hp.type = "highpass";
+      hp.frequency.value = 1800;
+      const vinylLevel = ctx.createGain();
+      vinylLevel.gain.value = 0.35;
+      vinyl.connect(hp).connect(vinylLevel).connect(gain);
+      vinyl.start();
+      return {
+        gain,
+        aux,
+        stop: () => {
+          clearInterval(timer);
+          vinyl.stop(ctx.currentTime + 1.5);
+        },
+      };
+    }
+
+    return null;
+  }
+
   private build(id: SoundscapeId): Layer {
     const ctx = this.ctx!;
     const gain = ctx.createGain();
@@ -194,6 +362,9 @@ export class AmbientEngine {
     }
 
     gain.connect(this.master!);
+
+    const extra = this.buildExtra(id, gain);
+    if (extra) return extra;
 
     if (id === "rain") {
       // Hiss band for the rain body
