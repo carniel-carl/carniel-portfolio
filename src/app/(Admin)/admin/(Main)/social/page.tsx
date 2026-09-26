@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import SocialClient from "@/components/admin/SocialClient";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import { cacheLife, cacheTag } from "next/cache";
+
+export const metadata: Metadata = { title: "Social links" };
 
 export default async function SocialLinksPage() {
   "use cache: remote";

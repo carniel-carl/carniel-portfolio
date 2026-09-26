@@ -1,11 +1,15 @@
 import ProjectForm from "@/components/admin/ProjectForm";
-import PageHeader from "@/components/general/PageHeader";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import routes from "@/lib/routes";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "New project" };
 
 export default function NewProjectPage() {
   return (
-    <div className="space-y-6">
-      <PageHeader showBackBtn title="Add New Project" />
+    <>
+      <AdminPageHeader title="New project" backHref={routes.admin.projects} backLabel="Projects" />
       <ProjectForm />
-    </div>
+    </>
   );
 }

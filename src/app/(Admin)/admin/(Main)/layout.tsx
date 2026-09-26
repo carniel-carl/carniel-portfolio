@@ -1,29 +1,48 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import AdminHeader from "@/components/general/AdminHeader";
-import MaxWidth from "@/components/general/MaxWidth";
-import AdminSidebar from "@/components/layout/AdminSidebar";
-import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import AdminFrame from "@/components/admin/shell/AdminFrame";
+import AdminShellSkeleton from "@/components/admin/shell/AdminShellSkeleton";
+import { auth } from "@/lib/auth";
+import { CACHE_TAGS } from "@/lib/cache-tags";
+import prisma from "@/lib/prisma";
+import routes from "@/lib/routes";
+import { cacheLife, cacheTag } from "next/cache";
+import { cookies } from "next/headers";
 import { Suspense } from "react";
 
+async function getDraftCount() {
+  "use cache";
+  cacheTag(CACHE_TAGS.blog);
+  cacheLife("max");
+  return prisma.blogPost.count({ where: { published: false } });
+}
+
 async function AdminShell({ children }: { children: React.ReactNode }) {
+  const [session, cookieStore, draftCount] = await Promise.all([
+    auth(),
+    cookies(),
+    getDraftCount(),
+  ]);
+
+  const user = {
+    name: session?.user?.name ?? "",
+    email: session?.user?.email ?? "",
+    isSuperAdmin: !!session?.user?.isAdmin,
+  };
+
   return (
-    <SidebarProvider>
-      <AppSidebar children={<AdminSidebar />} />
-      <SidebarInset>
-        <SiteHeader children={<AdminHeader />} />
-        <MaxWidth className="md:w-[96%] mt-24 mb-4" children={children} />
-      </SidebarInset>
-    </SidebarProvider>
+    <AdminFrame
+      user={user}
+      badges={{ [routes.admin.blog]: draftCount }}
+      defaultOpen={cookieStore.get("sidebar_state")?.value !== "false"}
+    >
+      {children}
+    </AdminFrame>
   );
 }
 
-const AdminLayout = ({ children }: { children: React.ReactNode }) => {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<AdminShellSkeleton />}>
       <AdminShell>{children}</AdminShell>
     </Suspense>
   );
-};
-
-export default AdminLayout;
+}

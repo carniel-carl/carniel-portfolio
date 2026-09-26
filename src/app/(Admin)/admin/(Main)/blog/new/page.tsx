@@ -1,6 +1,10 @@
 import BlogPostForm from "@/components/admin/BlogPostForm";
-import PageHeader from "@/components/general/PageHeader";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import prisma from "@/lib/prisma";
+import routes from "@/lib/routes";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "New post" };
 
 export default async function NewBlogPostPage() {
   const categories = await prisma.category.findMany({
@@ -9,9 +13,9 @@ export default async function NewBlogPostPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <PageHeader showBackBtn title="New Blog Post" />
+    <>
+      <AdminPageHeader title="New post" backHref={routes.admin.blog} backLabel="Blog" className="pb-4" />
       <BlogPostForm categories={JSON.parse(JSON.stringify(categories))} />
-    </div>
+    </>
   );
 }

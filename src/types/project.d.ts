@@ -8,12 +8,4 @@ type ProjectDataType = {
   stack?: string[];
 };
 
-type ProjectCardTypes = {
-  project: ProjectDataType;
-  image?: ReactNode;
-  info?: ReactNode;
-  action?: ReactNode;
-  variant?: PropsVariantType;
-};
-
-export { ProjectCardTypes, ProjectDataType };
+export { ProjectDataType };

@@ -1,12 +1,17 @@
-import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import BlogPostContent from "@/components/blog/BlogPostContent";
-import PageHeader from "@/components/general/PageHeader";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import StatusPill from "@/components/admin/ui/StatusPill";
+import { buttonVariants } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 import routes from "@/lib/routes";
+import { cn } from "@/lib/utils";
+import { ExternalLink, Pencil } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+
+export const metadata: Metadata = { title: "Preview post" };
 
 export default async function BlogPreviewPage({
   params,
@@ -29,20 +34,37 @@ export default async function BlogPreviewPage({
   if (!post) notFound();
 
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-4">
-        <PageHeader showBackBtn title="Preview" />
-        <Link href={routes.admin.blogEdit(id)} className="ml-auto">
-          <Button variant="outline" size="sm">
-            <Pencil className="size-3 mr-2" />
-            Edit
-          </Button>
-        </Link>
-      </div>
+    <>
+      <AdminPageHeader
+        title="Preview"
+        description="How the post reads on the blog."
+        backHref={routes.admin.blog}
+        backLabel="Blog"
+        actions={
+          <>
+            <StatusPill published={post.published} />
+            {post.published && (
+              <a
+                href={routes.public.blogPost(post.slug)}
+                target="_blank"
+                rel="noopener"
+                className={cn(buttonVariants({ variant: "outline" }), "hover:bg-muted")}
+              >
+                <ExternalLink />
+                Open live
+              </a>
+            )}
+            <Link href={routes.admin.blogEdit(id)} className={buttonVariants()}>
+              <Pencil />
+              Edit
+            </Link>
+          </>
+        }
+      />
 
-      <div className="border rounded-lg bg-card">
+      <div className="surface overflow-hidden">
         <BlogPostContent post={post} preview />
       </div>
-    </div>
+    </>
   );
 }

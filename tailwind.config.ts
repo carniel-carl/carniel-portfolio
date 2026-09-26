@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import defaultTheme from "tailwindcss/defaultTheme";
 
 const config: Config = {
   darkMode: ["class"],
@@ -36,7 +37,12 @@ const config: Config = {
         accent: {
           DEFAULT: "var(--clr)",
           foreground: "hsl(var(--accent-foreground))",
+          // Accent tuned for text on the page background (AA contrast)
+          ink: "hsl(var(--accent-ink))",
+          // Text/icons placed on an accent fill
+          on: "hsl(var(--on-accent))",
         },
+        surface: "hsl(var(--surface))",
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
@@ -68,8 +74,25 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        nunito: "var(--nunito) sans-serif",
-        montserrat: "var(--montserrat)",
+        sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
+        display: ["var(--font-display)", ...defaultTheme.fontFamily.sans],
+        mono: ["var(--font-mono)", ...defaultTheme.fontFamily.mono],
+        // Legacy aliases still used by blog/admin screens
+        nunito: ["var(--font-display)", ...defaultTheme.fontFamily.sans],
+        montserrat: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
+      },
+      keyframes: {
+        eq: {
+          "0%, 100%": { transform: "scaleY(0.3)" },
+          "50%": { transform: "scaleY(1)" },
+        },
+      },
+      animation: {
+        eq: "eq 0.9s ease-in-out infinite",
+      },
+      transitionTimingFunction: {
+        expo: "cubic-bezier(0.16, 1, 0.3, 1)",
+        curtain: "cubic-bezier(0.76, 0, 0.24, 1)",
       },
       transform: {
         "rotate-x-90": "rotateX(-90deg)",

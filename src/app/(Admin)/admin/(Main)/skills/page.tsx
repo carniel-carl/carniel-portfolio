@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { cacheTag, cacheLife } from "next/cache";
 import prisma from "@/lib/prisma";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import SkillsClient from "@/components/admin/SkillsClient";
+
+export const metadata: Metadata = { title: "Skills" };
 
 async function getSkills() {
   "use cache";

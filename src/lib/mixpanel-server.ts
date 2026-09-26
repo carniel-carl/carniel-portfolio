@@ -80,145 +80,88 @@ async function exportEvents(
     .filter((e): e is RawEvent => e !== null);
 }
 
-export async function getEventCounts(
-  fromDate: string,
-  toDate: string,
-): Promise<EventCount[]> {
-  const trackedEvents = [
-    "Home Viewed",
-    "Portfolio Viewed",
-    "Blog Page Viewed",
-    "Blog Post Viewed",
-    "Blog Category Viewed",
-    "Resume Downloaded",
-    "Social Link Clicked",
-    "Project Link Clicked",
-  ];
+const TRACKED_EVENTS = [
+  "Home Viewed",
+  "Portfolio Viewed",
+  "Blog Page Viewed",
+  "Blog Post Viewed",
+  "Blog Category Viewed",
+  "Resume Downloaded",
+  "Social Link Clicked",
+  "Project Link Clicked",
+];
 
-  const rawEvents = await exportEvents(fromDate, toDate, trackedEvents);
+const PAGE_VIEW_EVENTS = new Set(["Home Viewed", "Portfolio Viewed"]);
 
+/** Count events by a string property, highest first. */
+function tally(
+  events: RawEvent[],
+  pick: (e: RawEvent) => string | undefined,
+): [string, number][] {
   const counts = new Map<string, number>();
-  for (const e of rawEvents) {
-    counts.set(e.event, (counts.get(e.event) || 0) + 1);
+  for (const e of events) {
+    const key = pick(e);
+    if (key) counts.set(key, (counts.get(key) || 0) + 1);
   }
-
-  return trackedEvents.map((event) => ({
-    event,
-    count: counts.get(event) || 0,
-  }));
+  return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
 }
 
-export async function getPortfolioLocations(
-  fromDate: string,
-  toDate: string,
-): Promise<LocationData[]> {
-  const rawEvents = await exportEvents(fromDate, toDate, [
-    "Home Viewed",
-    "Portfolio Viewed",
-  ]);
+const pickCountry = (e: RawEvent) =>
+  (e.properties.mp_country_code ?? e.properties.$country_code) as string | undefined;
+const pickRegion = (e: RawEvent) =>
+  (e.properties.$region ?? e.properties.mp_region) as string | undefined;
 
-  const countryCounts = new Map<string, number>();
-  for (const e of rawEvents) {
-    const country = (e.properties.mp_country_code ??
-      e.properties.$country_code) as string | undefined;
-    if (country) {
-      countryCounts.set(country, (countryCounts.get(country) || 0) + 1);
-    }
-  }
-
-  return Array.from(countryCounts.entries())
-    .map(([country, count]) => ({ country, region: "", count }))
-    .sort((a, b) => b.count - a.count);
+function eventCountsFrom(events: RawEvent[]): EventCount[] {
+  const counts = new Map(tally(events, (e) => e.event));
+  return TRACKED_EVENTS.map((event) => ({ event, count: counts.get(event) || 0 }));
 }
 
-export async function getLocationsByRegion(
-  fromDate: string,
-  toDate: string,
-): Promise<LocationData[]> {
-  const rawEvents = await exportEvents(fromDate, toDate, [
-    "Home Viewed",
-    "Portfolio Viewed",
-  ]);
-
-  const regionCounts = new Map<string, number>();
-  for (const e of rawEvents) {
-    const region = (e.properties.$region ?? e.properties.mp_region) as
-      | string
-      | undefined;
-    if (region) {
-      regionCounts.set(region, (regionCounts.get(region) || 0) + 1);
-    }
-  }
-
-  return Array.from(regionCounts.entries())
-    .map(([region, count]) => ({ country: "", region, count }))
-    .sort((a, b) => b.count - a.count);
+function locationsFrom(events: RawEvent[]): LocationData[] {
+  const views = events.filter((e) => PAGE_VIEW_EVENTS.has(e.event));
+  return tally(views, pickCountry).map(([country, count]) => ({ country, region: "", count }));
 }
 
-export async function getSocialClicks(
-  fromDate: string,
-  toDate: string,
-): Promise<SocialClickData[]> {
-  const rawEvents = await exportEvents(fromDate, toDate, [
-    "Social Link Clicked",
-  ]);
-
-  const platformCounts = new Map<string, number>();
-  for (const e of rawEvents) {
-    const platform = e.properties.platform as string | undefined;
-    if (platform) {
-      platformCounts.set(platform, (platformCounts.get(platform) || 0) + 1);
-    }
-  }
-
-  return Array.from(platformCounts.entries())
-    .map(([platform, count]) => ({ platform, count }))
-    .sort((a, b) => b.count - a.count);
+function regionsFrom(events: RawEvent[]): LocationData[] {
+  const views = events.filter((e) => PAGE_VIEW_EVENTS.has(e.event));
+  return tally(views, pickRegion).map(([region, count]) => ({ country: "", region, count }));
 }
 
-export async function getTopBlogPosts(
-  fromDate: string,
-  toDate: string,
-): Promise<BlogPostData[]> {
-  const rawEvents = await exportEvents(fromDate, toDate, ["Blog Post Viewed"]);
-
-  const slugCounts = new Map<string, number>();
-  for (const e of rawEvents) {
-    const slug = e.properties.slug as string | undefined;
-    if (slug) {
-      slugCounts.set(slug, (slugCounts.get(slug) || 0) + 1);
-    }
-  }
-
-  return Array.from(slugCounts.entries())
-    .map(([slug, count]) => ({ slug, title: slug, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
+function socialClicksFrom(events: RawEvent[]): SocialClickData[] {
+  const clicks = events.filter((e) => e.event === "Social Link Clicked");
+  return tally(clicks, (e) => e.properties.platform as string | undefined).map(
+    ([platform, count]) => ({ platform, count }),
+  );
 }
 
-export async function getTopProjects(
-  fromDate: string,
-  toDate: string,
-): Promise<ProjectClickData[]> {
-  const rawEvents = await exportEvents(fromDate, toDate, [
-    "Project Link Clicked",
-  ]);
+function topBlogPostsFrom(events: RawEvent[]): BlogPostData[] {
+  const views = events.filter((e) => e.event === "Blog Post Viewed");
+  return tally(views, (e) => e.properties.slug as string | undefined)
+    .slice(0, 10)
+    .map(([slug, count]) => ({ slug, title: slug, count }));
+}
 
-  const projectCounts = new Map<string, number>();
-  for (const e of rawEvents) {
-    const project = e.properties.project as string | undefined;
-    if (project) {
-      projectCounts.set(project, (projectCounts.get(project) || 0) + 1);
-    }
-  }
+function topProjectsFrom(events: RawEvent[]): ProjectClickData[] {
+  const clicks = events.filter((e) => e.event === "Project Link Clicked");
+  return tally(clicks, (e) => e.properties.project as string | undefined)
+    .slice(0, 10)
+    .map(([project, total]) => ({ project, live_clicks: 0, code_clicks: 0, total }));
+}
 
-  return Array.from(projectCounts.entries())
-    .map(([project, total]) => ({
-      project,
-      live_clicks: 0,
-      code_clicks: 0,
-      total,
-    }))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 10);
+/**
+ * Everything the analytics page needs from ONE raw export.
+ * The export API is rate limited, so avoid one request per chart.
+ */
+export async function getAnalyticsSnapshot(days: number = 30) {
+  const { from_date, to_date } = getDateRange(days);
+  const events = await exportEvents(from_date, to_date, TRACKED_EVENTS);
+  return {
+    from_date,
+    to_date,
+    eventCounts: eventCountsFrom(events),
+    locations: locationsFrom(events),
+    regions: regionsFrom(events),
+    socialClicks: socialClicksFrom(events),
+    topPosts: topBlogPostsFrom(events),
+    topProjects: topProjectsFrom(events),
+  };
 }

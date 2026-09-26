@@ -30,7 +30,7 @@ const navLinksData = {
   links: [
     {
       title: "About",
-      to: "#",
+      to: "#about",
       icon: GoPersonFill,
     },
     {

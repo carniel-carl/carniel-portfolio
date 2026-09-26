@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
 import PageTracker from "@/components/analytics/PageTracker";
 import routes from "@/lib/routes";
+import SplitText from "@/components/motion/SplitText";
 
 export const metadata: Metadata = {
   title: "Blog | Chimezie's Portfolio",
@@ -130,9 +131,12 @@ export default async function BlogPage({
   ]);
 
   const totalPages = Math.ceil(total / POSTS_PER_PAGE);
+  // Lead story only on the unfiltered first page
+  const showLead = page === 1 && !categorySlug && !tag && !search && posts.length > 1;
+  const [lead, ...rest] = showLead ? posts : [null, ...posts];
 
   return (
-    <div className="w-[90%] max-w-4xl mx-auto py-12">
+    <div className="mx-auto max-w-[1400px] px-4 pb-24 pt-10 md:px-8 md:pb-32 md:pt-16">
       <PageTracker event="Blog Page Viewed" />
       {categorySlug && (
         <PageTracker
@@ -141,10 +145,25 @@ export default async function BlogPage({
           properties={{ category: categorySlug }}
         />
       )}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold font-nunito">Blog</h1>
-        {totalPublished > 0 && <BlogSearch />}
-      </div>
+      <header className="mb-12 flex flex-col gap-8 md:mb-16 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-6">
+          <SplitText
+            as="h1"
+            text="Writing"
+            by="char"
+            className="font-display text-[clamp(4rem,14vw,12rem)] font-semibold leading-[0.85] tracking-[-0.045em] [font-stretch:75%]"
+          />
+          <p className="max-w-[46ch] text-lg text-foreground/70 md:text-xl">
+            Notes on building for the web and mobile: React, React Native,
+            design and everything in between.
+          </p>
+        </div>
+        {totalPublished > 0 && (
+          <div className="w-full md:w-auto md:shrink-0">
+            <BlogSearch />
+          </div>
+        )}
+      </header>
 
       {totalPublished > 0 && (
         <>
@@ -222,7 +241,10 @@ export default async function BlogPage({
       )}
 
       {posts.length === 0 ? (
-        <div className="text-center py-20">
+        <div className="flex flex-col items-center gap-4 rounded-[1.25rem] border border-dashed border-foreground/20 px-6 py-24 text-center">
+          <p className="font-display text-3xl font-semibold tracking-[-0.02em] md:text-4xl">
+            {totalPublished === 0 ? "First posts are on the way" : "Nothing found"}
+          </p>
           <p className="text-muted-foreground text-lg">
             {totalPublished === 0
               ? "No posts yet. Check back soon!"
@@ -237,10 +259,13 @@ export default async function BlogPage({
         </div>
       ) : (
         <>
-          <div className="grid gap-8 md:grid-cols-2">
-            {posts.map((post) => (
-              <BlogCard key={post.id} post={post} />
-            ))}
+          {lead && (
+            <div className="mb-14 md:mb-20">
+              <BlogCard post={lead} variant="lead" />
+            </div>
+          )}
+          <div className="grid gap-x-6 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
+            {rest.map((post) => post && <BlogCard key={post.id} post={post} />)}
           </div>
 
           {/* Pagination */}
