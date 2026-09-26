@@ -16,6 +16,7 @@ import { Superscript } from "@tiptap/extension-superscript";
 import { Selection } from "@tiptap/extensions";
 import Underline from "@tiptap/extension-underline";
 import Placeholder from "@tiptap/extension-placeholder";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button";
@@ -68,6 +69,7 @@ import { useIsBreakpoint } from "@/hooks/use-is-breakpoint";
 // --- Lib ---
 import { cn } from "@/lib/utils";
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils";
+import { lowlight } from "@/lib/lowlight";
 
 interface TiptapEditorProps {
   content: string;
@@ -222,12 +224,14 @@ export default function TiptapEditor({
     extensions: [
       StarterKit.configure({
         horizontalRule: false,
+        codeBlock: false,
         link: {
           openOnClick: false,
           enableClickSelection: true,
         },
       }),
       HorizontalRule,
+      CodeBlockLowlight.configure({ lowlight }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TaskList,
       TaskItem.configure({ nested: true }),

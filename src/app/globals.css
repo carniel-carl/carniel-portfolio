@@ -287,7 +287,9 @@
   color: hsl(var(--muted-foreground));
 }
 .tiptap-content pre {
-  background: hsl(var(--muted));
+  background: var(--code-bg);
+  color: var(--code-text);
+  border: 1px solid var(--code-border);
   border-radius: 0.5rem;
   padding: 1rem;
   overflow-x: auto;
@@ -302,6 +304,152 @@
 .tiptap-content pre code {
   background: none;
   padding: 0;
+  color: inherit;
+  font-family: "JetBrains Mono NL", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.tiptap-content .code-block {
+  margin: 1rem 0;
+}
+.tiptap-content .code-block pre {
+  margin: 0;
+  padding-right: 3rem;
+}
+.tiptap-content .code-block-copy {
+  background: var(--code-bg);
+  border-color: var(--code-border);
+  color: var(--code-comment);
+}
+.tiptap-content .code-block-copy:hover {
+  color: var(--code-text);
+}
+
+/* HDR: CODE SYNTAX HIGHLIGHTING (editor + rendered posts) */
+/* Light: GitHub Light · Dark: VS Code Dark+ */
+:root {
+  --code-bg: #f6f8fa;
+  --code-text: #24292f;
+  --code-border: #d0d7de;
+  --code-comment: #6e7781;
+  --code-keyword: #cf222e;
+  --code-string: #0a3069;
+  --code-number: #0550ae;
+  --code-literal: #0550ae;
+  --code-function: #8250df;
+  --code-class: #953800;
+  --code-type: #953800;
+  --code-variable: #953800;
+  --code-property: #0550ae;
+  --code-tag: #116329;
+  --code-regexp: #116329;
+  --code-meta: #0550ae;
+  --code-addition: #116329;
+  --code-addition-bg: #dafbe1;
+  --code-deletion: #82071e;
+  --code-deletion-bg: #ffebe9;
+}
+.dark {
+  --code-bg: #1e1e1e;
+  --code-text: #d4d4d4;
+  --code-border: #2d2d2d;
+  --code-comment: #6a9955;
+  --code-keyword: #c586c0;
+  --code-string: #ce9178;
+  --code-number: #b5cea8;
+  --code-literal: #569cd6;
+  --code-function: #dcdcaa;
+  --code-class: #4ec9b0;
+  --code-type: #4ec9b0;
+  --code-variable: #9cdcfe;
+  --code-property: #9cdcfe;
+  --code-tag: #569cd6;
+  --code-regexp: #d16969;
+  --code-meta: #569cd6;
+  --code-addition: #b5cea8;
+  --code-addition-bg: #373d29;
+  --code-deletion: #ce9178;
+  --code-deletion-bg: #4b1818;
+}
+
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-comment,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-quote {
+  color: var(--code-comment);
+  font-style: italic;
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-keyword,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-selector-tag,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-doctag {
+  color: var(--code-keyword);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-string,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-template-tag,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-template-variable,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-meta .hljs-string {
+  color: var(--code-string);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-number,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-symbol,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-bullet {
+  color: var(--code-number);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-literal,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-built_in {
+  color: var(--code-literal);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-title,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-title.function_,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-section {
+  color: var(--code-function);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-title.class_,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-title.class_.inherited__,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-class .hljs-title {
+  color: var(--code-class);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-type {
+  color: var(--code-type);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-variable,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-params,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-variable.language_ {
+  color: var(--code-variable);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-attr,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-attribute,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-property,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-selector-class,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-selector-id,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-selector-attr {
+  color: var(--code-property);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-tag,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-name,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-selector-pseudo {
+  color: var(--code-tag);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-regexp,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-link {
+  color: var(--code-regexp);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-meta,
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-meta .hljs-keyword {
+  color: var(--code-meta);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-addition {
+  color: var(--code-addition);
+  background-color: var(--code-addition-bg);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-deletion {
+  color: var(--code-deletion);
+  background-color: var(--code-deletion-bg);
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-emphasis {
+  font-style: italic;
+}
+:is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-strong {
+  font-weight: 600;
 }
 .tiptap-content a {
   color: hsl(var(--accent));
