@@ -279,14 +279,22 @@ export default function TiptapEditor({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isExpanded]);
 
-  if (!editor) return null;
+  if (!editor) {
+    // Same footprint as the loaded editor so the form does not jump
+    return (
+      <div
+        aria-busy="true"
+        className="min-h-[244px] animate-pulse rounded-lg border bg-muted/40"
+      />
+    );
+  }
 
   return (
     <div
       className={cn(
-        "admin-editor-wrapper  rounded-md relative overflow-auto bg-muted",
+        "admin-editor-wrapper relative overflow-auto rounded-lg border bg-card transition-colors focus-within:border-ring",
         isExpanded
-          ? "fixed inset-0 z-[200] rounded-none max-h-none"
+          ? "fixed inset-0 z-[200] rounded-none border-0 max-h-none"
           : "max-h-[70vh] max-md:max-h-[50vh] overflow-y-scroll",
       )}
     >

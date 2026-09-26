@@ -151,9 +151,16 @@ const SidebarProvider = React.forwardRef<
               {
                 "--sidebar-width": SIDEBAR_WIDTH,
                 "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                // Fixed admin header position (PinnedHeader). Mirrors the inset sheet:
+                // expanded, the sheet starts at the sidebar edge (ml-0) with a 0.5rem
+                // right margin; collapsed, icon rail + 1rem inset gap + 0.5rem margin
+                // each side. `100%` on a fixed element is the viewport minus scrollbar.
+                "--dashboard-header-left": open
+                  ? "var(--sidebar-width)"
+                  : "calc(var(--sidebar-width-icon) + 1.5rem)",
                 "--dashboard-header-width": open
-                  ? "calc(100dvw - var(--sidebar-width))"
-                  : "calc(100dvw - var(--sidebar-width-icon))",
+                  ? "calc(100% - var(--sidebar-width) - 0.5rem)"
+                  : "calc(100% - var(--sidebar-width-icon) - 2rem)",
                 ...style,
               } as React.CSSProperties
             }
@@ -255,7 +262,7 @@ const Sidebar = React.forwardRef<
         />
         <div
           className={cn(
-            "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
+            "fixed inset-y-0 z-30 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",

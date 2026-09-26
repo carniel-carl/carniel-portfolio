@@ -1,171 +1,147 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  LocationChart,
-  RegionChart,
-  SocialClicksChart,
-  TopBlogPostsChart,
-  TopProjectsChart,
-} from "@/components/admin/AnalyticsCharts";
-import {
-  getEventCounts,
-  getPortfolioLocations,
-  getLocationsByRegion,
-  getTopBlogPosts,
-  getTopProjects,
-  getSocialClicks,
-  getDateRange,
-} from "@/lib/mixpanel-server";
-import { cacheLife, cacheTag } from "next/cache";
-import { CACHE_TAGS } from "@/lib/cache-tags";
+import RankedList from "@/components/admin/analytics/RankedList";
 import { RefreshAnalyticsButton } from "@/components/admin/RefreshAnalyticsButton";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import StatTile from "@/components/admin/ui/StatTile";
+import { CACHE_TAGS } from "@/lib/cache-tags";
+import { getAnalyticsSnapshot } from "@/lib/mixpanel-server";
+import dayjs from "dayjs";
 import {
-  Eye,
-  Home,
-  FileText,
-  Download,
-  Share2,
   BookOpen,
-  LayoutGrid,
+  Download,
+  Eye,
+  FileText,
   FolderKanban,
+  Globe2,
+  MapPin,
+  MousePointerClick,
+  Share2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import type { Metadata } from "next";
+import { cacheLife, cacheTag } from "next/cache";
+
+export const metadata: Metadata = { title: "Analytics" };
 
 async function getAnalyticsData() {
   "use cache";
   cacheTag(CACHE_TAGS.analytics);
   cacheLife("hours");
-
-  const { from_date, to_date } = getDateRange(30);
-
-  const [eventCounts, locations, regions, socialClicks, topPosts, topProjects] =
-    await Promise.all([
-      getEventCounts(from_date, to_date),
-      getPortfolioLocations(from_date, to_date),
-      getLocationsByRegion(from_date, to_date),
-      getSocialClicks(from_date, to_date),
-      getTopBlogPosts(from_date, to_date),
-      getTopProjects(from_date, to_date),
-    ]);
-
-  return {
-    eventCounts,
-    locations,
-    regions,
-    socialClicks,
-    topPosts,
-    topProjects,
-  };
+  return getAnalyticsSnapshot(30);
 }
 
-const eventToIcon: Record<
-  string,
-  { icon: typeof Eye; color: string; bg: string }
-> = {
-  "Home Viewed": {
-    icon: Home,
-    color: "text-[#8b5cf6]",
-    bg: "bg-[#c4b5fd]/10",
-  },
-  "Portfolio Viewed": {
-    icon: Eye,
-    color: "text-[#7c3aed]",
-    bg: "bg-[#a78bfa]/10",
-  },
-  "Blog Page Viewed": {
-    icon: BookOpen,
-    color: "text-[#0891b2]",
-    bg: "bg-[#67e8f9]/10",
-  },
-  "Blog Post Viewed": {
-    icon: FileText,
-    color: "text-[#e11d48]",
-    bg: "bg-[#fda4af]/10",
-  },
-  "Blog Category Viewed": {
-    icon: LayoutGrid,
-    color: "text-[#ea580c]",
-    bg: "bg-[#fdba74]/10",
-  },
-  "Resume Downloaded": {
-    icon: Download,
-    color: "text-[#16a34a]",
-    bg: "bg-[#86efac]/10",
-  },
-  "Social Link Clicked": {
-    icon: Share2,
-    color: "text-[#2563eb]",
-    bg: "bg-[#93c5fd]/10",
-  },
-  "Project Link Clicked": {
-    icon: FolderKanban,
-    color: "text-[#d97706]",
-    bg: "bg-[#fcd34d]/10",
-  },
-};
+const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+function countryName(code: string) {
+  try {
+    return regionNames.of(code.toUpperCase()) ?? code;
+  } catch {
+    return code;
+  }
+}
+
+function humanize(slug: string) {
+  return slug.replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+}
 
 export default async function AnalyticsPage() {
-  const {
-    eventCounts,
-    locations,
-    regions,
-    socialClicks,
-    topPosts,
-    topProjects,
-  } = await getAnalyticsData();
+  const data = await getAnalyticsData();
+  const count = (event: string) =>
+    data.eventCounts.find((e) => e.event === event)?.count ?? 0;
+
+  const home = count("Home Viewed");
+  const portfolio = count("Portfolio Viewed");
+  const postReads = count("Blog Post Viewed");
+  const blogIndex = count("Blog Page Viewed");
+  const categoryViews = count("Blog Category Viewed");
+  const socialClicks = count("Social Link Clicked");
+  const projectClicks = count("Project Link Clicked");
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold">Analytics</h2>
-          <p className="text-sm text-muted-foreground">
-            Last 30 days — cached hourly
+    <div className="space-y-8">
+      <AdminPageHeader
+        title="Analytics"
+        description={`${dayjs(data.from_date).format("D MMM")} to ${dayjs(data.to_date).format("D MMM YYYY")}. Refreshed hourly.`}
+        actions={<RefreshAnalyticsButton />}
+      />
+
+      <section aria-label="Totals" className="stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile
+          label="Site visits"
+          value={(home + portfolio).toLocaleString()}
+          icon={Eye}
+          detail={`${home.toLocaleString()} home, ${portfolio.toLocaleString()} portfolio`}
+        />
+        <StatTile
+          label="Post reads"
+          value={postReads.toLocaleString()}
+          icon={BookOpen}
+          detail={`${blogIndex.toLocaleString()} blog index, ${categoryViews.toLocaleString()} category views`}
+        />
+        <StatTile
+          label="Resume downloads"
+          value={count("Resume Downloaded").toLocaleString()}
+          icon={Download}
+          detail="From the about section"
+        />
+        <StatTile
+          label="Outbound clicks"
+          value={(socialClicks + projectClicks).toLocaleString()}
+          icon={MousePointerClick}
+          detail={`${projectClicks.toLocaleString()} project, ${socialClicks.toLocaleString()} social`}
+        />
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <RankedList
+          title="Most read posts"
+          unit="reads"
+          icon={FileText}
+          emptyText="Post reads will appear once someone opens an article."
+          rows={data.topPosts.map((p) => ({ label: humanize(p.slug), value: p.count }))}
+        />
+        <RankedList
+          title="Most clicked projects"
+          unit="clicks"
+          icon={FolderKanban}
+          emptyText="Clicks on live demos and repos will show up here."
+          rows={data.topProjects.map((p) => ({ label: p.project, value: p.total }))}
+        />
+        <RankedList
+          title="Visitors by country"
+          unit="visits"
+          icon={Globe2}
+          emptyText="No location data for this period."
+          rows={data.locations.map((l) => ({ label: countryName(l.country), value: l.count }))}
+        />
+        <RankedList
+          title="Visitors by region"
+          unit="visits"
+          icon={MapPin}
+          emptyText="No region data for this period."
+          rows={data.regions.map((r) => ({ label: r.region, value: r.count }))}
+        />
+      </div>
+
+      <section aria-labelledby="social-clicks" className="surface p-5">
+        <h2 id="social-clicks" className="mb-4 text-sm font-semibold">
+          Social profile clicks
+        </h2>
+        {data.socialClicks.length === 0 ? (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Share2 className="size-4" />
+            No one has clicked a social link in this period.
           </p>
-        </div>
-        <RefreshAnalyticsButton />
-      </div>
-
-      {/* Overview cards */}
-      <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(200px,1fr))] mb-8">
-        {eventCounts.map((item) => {
-          const meta = eventToIcon[item.event] || {
-            icon: Eye,
-            color: "text-foreground",
-            bg: "bg-muted",
-          };
-          const Icon = meta.icon;
-          return (
-            <Card key={item.event}>
-              <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground">
-                  {item.event}
-                </CardTitle>
-                <div className={cn("p-2 rounded-full", meta.bg)}>
-                  <Icon className={cn("size-4", meta.color)} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{item.count}</div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-2 mb-6">
-        <LocationChart data={locations} />
-        <RegionChart data={regions} />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2 mb-6">
-        <SocialClicksChart data={socialClicks} />
-        <TopProjectsChart data={topProjects} />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <TopBlogPostsChart data={topPosts} />
-      </div>
+        ) : (
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+            {data.socialClicks.map((s) => (
+              <div key={s.platform} className="space-y-1">
+                <dt className="text-[13px] capitalize text-muted-foreground">{s.platform}</dt>
+                <dd className="tnum font-display text-2xl font-semibold tracking-tight">
+                  {s.count.toLocaleString()}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </section>
     </div>
   );
 }

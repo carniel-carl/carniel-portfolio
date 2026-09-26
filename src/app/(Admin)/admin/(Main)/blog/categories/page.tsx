@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { cacheTag, cacheLife } from "next/cache";
 import prisma from "@/lib/prisma";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import CategoryClient from "@/components/admin/CategoryClient";
+
+export const metadata: Metadata = { title: "Categories" };
 
 async function getCategories() {
   "use cache";

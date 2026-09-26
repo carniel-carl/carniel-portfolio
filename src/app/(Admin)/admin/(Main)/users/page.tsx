@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import UsersClient from "@/components/admin/UsersClient";
+
+export const metadata: Metadata = { title: "Users" };
 
 export default async function UsersPage() {
   const session = await auth();

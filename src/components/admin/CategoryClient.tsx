@@ -1,20 +1,14 @@
 "use client";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import EmptyState from "@/components/admin/ui/EmptyState";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/ui/data-table";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -32,32 +26,31 @@ import {
   deleteCategory,
   updateCategory,
 } from "@/lib/actions/category";
+import routes from "@/lib/routes";
 import {
   categoryFormSchema,
   type CategoryFormValues,
 } from "@/lib/schemas/category";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ColumnDef } from "@tanstack/react-table";
-import { Check, Pencil, Plus, Trash2 } from "lucide-react";
+import { Check, Loader2, Lock, Pencil, Plus, Tags, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import PageHeader from "@/components/general/PageHeader";
 
 const COLOR_PALETTE = [
-  "#ef4444",
-  "#f97316",
-  "#f59e0b",
-  "#22c55e",
-  "#10b981",
-  "#06b6d4",
-  "#3b82f6",
-  "#6366f1",
-  "#8b5cf6",
-  "#a855f7",
-  "#ec4899",
-  "#6b7280",
+  { hex: "#ef4444", name: "Red" },
+  { hex: "#f97316", name: "Orange" },
+  { hex: "#f59e0b", name: "Amber" },
+  { hex: "#22c55e", name: "Green" },
+  { hex: "#10b981", name: "Emerald" },
+  { hex: "#06b6d4", name: "Cyan" },
+  { hex: "#3b82f6", name: "Blue" },
+  { hex: "#6366f1", name: "Indigo" },
+  { hex: "#8b5cf6", name: "Violet" },
+  { hex: "#a855f7", name: "Purple" },
+  { hex: "#ec4899", name: "Pink" },
+  { hex: "#6b7280", name: "Grey" },
 ];
 
 interface Category {
@@ -86,11 +79,15 @@ export default function CategoryClient({
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
     defaultValues: { name: "", slug: "", color: "#6b7280" },
+  });
+  const [previewName, previewColor, previewSlug] = useWatch({
+    control: form.control,
+    name: ["name", "color", "slug"],
   });
 
   const openCreate = () => {
@@ -107,11 +104,6 @@ export default function CategoryClient({
       color: category.color,
     });
     setDialogOpen(true);
-  };
-
-  const handleNameChange = (name: string) => {
-    form.setValue("name", name);
-    form.setValue("slug", slugify(name));
   };
 
   const onSubmit = async (values: CategoryFormValues) => {
@@ -133,113 +125,113 @@ export default function CategoryClient({
   };
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    if (!deleteTarget) return;
     try {
-      await deleteCategory(deleteId);
+      await deleteCategory(deleteTarget.id);
       toast.success("Category deleted");
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete");
+      toast.error(error instanceof Error ? error.message : "Could not delete");
     }
-    setDeleteId(null);
   };
 
-  const columns = useMemo<ColumnDef<Category>[]>(
-    () => [
-      {
-        accessorKey: "name",
-        header: "Name",
-        cell: ({ row }) => (
-          <span className="font-medium">{row.getValue("name")}</span>
-        ),
-      },
-      {
-        accessorKey: "slug",
-        header: "Slug",
-        cell: ({ row }) => (
-          <span className="text-muted-foreground text-sm">
-            {row.getValue("slug")}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "color",
-        header: "Color",
-        cell: ({ row }) => (
-          <span
-            className="inline-block size-5 rounded-full border"
-            style={{ backgroundColor: row.getValue("color") }}
-          />
-        ),
-      },
-      {
-        id: "postCount",
-        header: "Posts",
-        cell: ({ row }) => (
-          <span className="text-sm">{row.original._count.posts}</span>
-        ),
-      },
-      {
-        accessorKey: "createdAt",
-        header: "Created",
-        cell: ({ row }) => (
-          <span className="text-sm">
-            {new Date(row.getValue("createdAt")).toLocaleDateString()}
-          </span>
-        ),
-      },
-      {
-        id: "actions",
-        header: () => <span className="text-right block">Actions</span>,
-        cell: ({ row }) => {
-          const isDefault = row.original.slug === "others";
-          return (
-            <div className="text-right space-x-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => openEdit(row.original)}
-                disabled={isDefault}
-              >
-                <Pencil className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setDeleteId(row.original.id)}
-                disabled={isDefault}
-              >
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
-            </div>
-          );
-        },
-      },
-    ],
-    [],
-  );
+  const submitting = form.formState.isSubmitting;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <PageHeader showBackBtn title="Categories" />
-        <Button onClick={openCreate}>
-          <Plus className="size-4 " />
-          New Category
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Categories"
+        description="Group posts by topic. Each colour tags its posts across the blog."
+        backHref={routes.admin.blog}
+        backLabel="Blog"
+        actions={
+          <Button onClick={openCreate}>
+            <Plus />
+            New category
+          </Button>
+        }
+      />
 
-      <DataTable columns={columns} data={categories} paginated={true} />
+      {categories.length === 0 ? (
+        <EmptyState
+          icon={Tags}
+          title="No categories yet"
+          description="Posts without a category fall under Others."
+          action={
+            <Button size="sm" onClick={openCreate}>
+              New category
+            </Button>
+          }
+        />
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {categories.map((category) => {
+            const isDefault = category.slug === "others";
+            return (
+              <li
+                key={category.id}
+                className="surface surface-interactive group flex items-center gap-3 p-4"
+              >
+                <span
+                  aria-hidden
+                  className="grid size-9 shrink-0 place-items-center rounded-lg"
+                  style={{ backgroundColor: `${category.color}22`, color: category.color }}
+                >
+                  <Tags className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                    {category.name}
+                    {isDefault && (
+                      <Lock className="size-3 text-muted-foreground" aria-label="Default category" />
+                    )}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    <span className="tnum">{category._count.posts}</span>{" "}
+                    {category._count.posts === 1 ? "post" : "posts"}
+                    <span className="font-mono"> · /{category.slug}</span>
+                  </p>
+                </div>
+                {!isDefault && (
+                  <div className="flex shrink-0 items-center opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      onClick={() => openEdit(category)}
+                      aria-label={`Edit ${category.name}`}
+                    >
+                      <Pencil />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setDeleteTarget(category)}
+                      aria-label={`Delete ${category.name}`}
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+      <Dialog open={dialogOpen} onOpenChange={(open) => !submitting && setDialogOpen(open)}>
+        <DialogContent className="max-w-md rounded-xl">
           <DialogHeader>
-            <DialogTitle>
-              {editingId ? "Edit Category" : "New Category"}
+            <DialogTitle className="font-display tracking-tight">
+              {editingId ? "Edit category" : "New category"}
             </DialogTitle>
+            <DialogDescription>
+              The slug is generated from the name.
+            </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField
                 control={form.control}
                 name="name"
@@ -249,7 +241,12 @@ export default function CategoryClient({
                     <FormControl>
                       <Input
                         {...field}
-                        onChange={(e) => handleNameChange(e.target.value)}
+                        autoFocus
+                        className="h-10"
+                        onChange={(e) => {
+                          field.onChange(e);
+                          form.setValue("slug", slugify(e.target.value));
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -262,64 +259,80 @@ export default function CategoryClient({
                 name="color"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Color</FormLabel>
+                    <FormLabel>Colour</FormLabel>
                     <FormControl>
-                      <div className="flex flex-wrap gap-2">
-                        {COLOR_PALETTE.map((hex) => (
-                          <button
-                            key={hex}
-                            type="button"
-                            className="size-8 rounded-full border-2 flex items-center justify-center transition-transform hover:scale-110"
-                            style={{
-                              backgroundColor: hex,
-                              borderColor:
-                                field.value === hex
-                                  ? "hsl(var(--foreground))"
-                                  : "transparent",
-                            }}
-                            onClick={() => field.onChange(hex)}
-                          >
-                            {field.value === hex && (
-                              <Check className="size-4 text-white" />
-                            )}
-                          </button>
-                        ))}
+                      <div role="radiogroup" aria-label="Colour" className="grid grid-cols-6 gap-2">
+                        {COLOR_PALETTE.map(({ hex, name }) => {
+                          const selected = field.value === hex;
+                          return (
+                            <button
+                              key={hex}
+                              type="button"
+                              role="radio"
+                              aria-checked={selected}
+                              aria-label={name}
+                              title={name}
+                              onClick={() => field.onChange(hex)}
+                              className="grid aspect-square place-items-center rounded-full ring-offset-2 ring-offset-card transition-transform duration-200 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-checked:ring-2 aria-checked:ring-foreground"
+                              style={{ backgroundColor: hex }}
+                            >
+                              {selected && <Check className="size-4 text-white drop-shadow" />}
+                            </button>
+                          );
+                        })}
                       </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting}
-                className="w-full"
-              >
-                {form.formState.isSubmitting
-                  ? "Saving..."
-                  : editingId
-                    ? "Update"
-                    : "Create"}
-              </Button>
+
+              <div className="flex items-center justify-between rounded-lg bg-muted/60 px-3 py-2.5">
+                <span className="text-xs text-muted-foreground">Preview</span>
+                <span className="flex items-center gap-2">
+                  <span
+                    className="rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                    style={{ borderColor: previewColor, color: previewColor }}
+                  >
+                    {previewName || "Category"}
+                  </span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    /{previewSlug || "slug"}
+                  </span>
+                </span>
+              </div>
+
+              <DialogFooter className="gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="hover:bg-muted"
+                  disabled={submitting}
+                  onClick={() => setDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting && <Loader2 className="animate-spin" />}
+                  {editingId ? "Save changes" : "Create category"}
+                </Button>
+              </DialogFooter>
             </form>
           </Form>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Category</AlertDialogTitle>
-            <AlertDialogDescription>
-              Posts in this category will be moved to &quot;Others&quot;.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={`Delete ${deleteTarget?.name ?? "category"}?`}
+        description={
+          deleteTarget?._count.posts
+            ? `Its ${deleteTarget._count.posts} ${deleteTarget._count.posts === 1 ? "post moves" : "posts move"} to Others.`
+            : "No posts use it, so nothing else changes."
+        }
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

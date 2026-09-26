@@ -1,28 +1,31 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Montserrat, Nunito_Sans, Poppins } from "next/font/google";
+import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import ThemeWrapper from "@/context/theme-provider";
 
-const poppins = Poppins({
+// Display: variable width + optical size axes drive the kinetic headlines
+const display = Bricolage_Grotesque({
   subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-  variable: "--poppins",
+  axes: ["opsz", "wdth"],
+  variable: "--font-display",
+  display: "swap",
 });
-const montserrat = Montserrat({
+const sans = Geist({
   subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-  variable: "--montserrat",
+  variable: "--font-sans",
+  display: "swap",
 });
-const nunito = Nunito_Sans({
+const mono = Geist_Mono({
   subsets: ["latin"],
-  weight: ["200", "300", "400", "500", "600", "700", "800", "900"],
-  variable: "--nunito",
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Chimezie's portfolio",
-  description: "Hello, Welcome to my portfolio",
+  description:
+    "Chimezie (Carniel) is a web and mobile developer building fast, accessible apps with React, Next.js and React Native.",
 };
 
 export default function RootLayout({
@@ -33,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${poppins.className} ${montserrat.variable} ${nunito.variable} antialiased overscroll-none relative min-h-screen`}
+        className={`${display.variable} ${sans.variable} ${mono.variable} font-sans antialiased overscroll-none relative min-h-screen`}
       >
         <ThemeWrapper>
           {children}

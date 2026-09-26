@@ -57,10 +57,15 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
         ref={ref}
       >
-        {loading && !asChild && (
-          <Loader2 className="mr-2 size-5 animate-spin" />
+        {/* Slot needs exactly one child, so asChild renders children untouched */}
+        {asChild ? (
+          children
+        ) : (
+          <>
+            {loading && <Loader2 className="mr-2 size-5 animate-spin" />}
+            {loading ? <span className="animate-pulse">Loading...</span> : children}
+          </>
         )}
-        {loading ? <span className="animate-pulse">Loading...</span> : children}
       </Comp>
     );
   },

@@ -18,10 +18,10 @@ const handleLogin = async ({
       redirect: false,
     });
 
-    return { message: "Login successfully", error: false };
+    return { message: "Signed in", error: false };
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Invalid email or password" };
+      return { message: "That email and password do not match.", error: true };
     }
 
     return {

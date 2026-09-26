@@ -1,0 +1,222 @@
+/*
+  ADMIN THEME SCOPE
+  Scoped with :has() on <html> so Radix portals (dialogs, popovers, menus)
+  rendered outside the admin tree pick up the same tokens.
+
+  Rules:
+  - One neutral family (warm grey, hue 20) in both modes. The global dark
+    tokens mix warm background with cool zinc cards; the admin unifies them.
+  - One accent per mode: brand amber (light) / brand teal (dark).
+  - Text on an accent fill is always near-black (--primary-foreground).
+  - Radius: panels rounded-xl, inputs rounded-md, buttons pill.
+  - Z-index scale: see lib/admin-z.ts.
+*/
+
+html:has(.admin-root) {
+  --background: 20 6% 94%;
+  --card: 0 0% 100%;
+  --popover: 0 0% 100%;
+  --muted: 20 6% 95%;
+  --muted-foreground: 20 5% 38%;
+  --secondary: 20 6% 92%;
+  --secondary-foreground: 20 10% 10%;
+  --border: 20 6% 87%;
+  --input: 20 6% 80%;
+  --primary-foreground: 20 14% 6%;
+
+  --sidebar-background: 20 6% 90.5%;
+  --sidebar-foreground: 20 5% 30%;
+  --sidebar-accent: 20 6% 84.5%;
+  --sidebar-accent-foreground: 20 10% 8%;
+  --sidebar-border: 20 6% 84%;
+
+  /* Band: a soft tint of the brand amber, with its own ink */
+  --brand-surface: 38 72% 90%;
+  --brand-surface-foreground: 20 14% 8%;
+  --brand-surface-muted: 28 24% 30%;
+  /* Card shadow tinted with the brand hue, never grey-black */
+  --shadow-surface: 0 1px 2px hsl(32 40% 25% / 0.06), 0 12px 32px -16px hsl(32 40% 25% / 0.24);
+  --shadow-surface-hover: 0 1px 2px hsl(32 40% 25% / 0.08), 0 18px 40px -18px hsl(32 40% 25% / 0.34);
+}
+
+html.dark:has(.admin-root) {
+  --background: 20 12% 4.5%;
+  --card: 20 9% 7.5%;
+  --popover: 20 9% 8.5%;
+  --muted: 20 7% 12%;
+  --muted-foreground: 20 5% 64%;
+  --secondary: 20 7% 13%;
+  --secondary-foreground: 0 0% 96%;
+  --border: 20 6% 15%;
+  --input: 20 6% 20%;
+  --primary-foreground: 20 14% 6%;
+
+  --sidebar-background: 20 12% 3%;
+  --sidebar-foreground: 20 5% 70%;
+  --sidebar-accent: 20 7% 10%;
+  --sidebar-accent-foreground: 0 0% 96%;
+  --sidebar-border: 20 6% 11%;
+
+  /* Band: a deep tint of the brand teal (not the light tint inverted) */
+  --brand-surface: 176 30% 9%;
+  --brand-surface-foreground: 0 0% 96%;
+  --brand-surface-muted: 176 12% 68%;
+  --shadow-surface: inset 0 1px 0 hsl(0 0% 100% / 0.04), 0 1px 2px hsl(176 40% 2% / 0.5), 0 12px 32px -16px hsl(176 50% 2% / 0.9);
+  --shadow-surface-hover: inset 0 1px 0 hsl(0 0% 100% / 0.06), 0 1px 2px hsl(176 40% 2% / 0.6), 0 18px 40px -18px hsl(176 50% 2% / 1);
+}
+
+/* Tabular figures anywhere numbers need to align */
+.admin-root .tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Uploadthing button: match admin pill buttons */
+.admin-root [data-ut-element="button"] {
+  border-radius: 9999px;
+  background: var(--clr);
+  color: hsl(var(--primary-foreground));
+  font-size: 0.8125rem;
+  font-weight: 500;
+  height: 2.25rem;
+  width: auto;
+  padding: 0 1rem;
+}
+.admin-root [data-ut-element="allowed-content"] {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Ranked bars grow in once, from the baseline, to signal ranking */
+@media (prefers-reduced-motion: no-preference) {
+  .admin-root .admin-bar {
+    transform-origin: left center;
+    animation: admin-bar-grow 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+@keyframes admin-bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/*
+  Phones: the editor pins its toolbar to the bottom (globals.css), and the
+  forms pin a save bar there too. Stack the toolbar above the bar; while the
+  editor has focus, hide the bar and give the toolbar the bottom edge.
+*/
+@media (max-width: 480px) {
+  .admin-root:has(.admin-mobile-bar)
+    .admin-editor-wrapper
+    .tiptap-toolbar.tiptap-toolbar[data-variant="fixed"] {
+    bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .admin-root:has(.admin-editor-wrapper:focus-within) .admin-mobile-bar {
+    display: none;
+  }
+  .admin-root:has(.admin-editor-wrapper:focus-within)
+    .admin-editor-wrapper
+    .tiptap-toolbar.tiptap-toolbar[data-variant="fixed"] {
+    bottom: 0 !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+  BAND AND OVERLAP
+  Tailwind v3 has no @utility/@custom-variant and globals.css belongs to the
+  public site, so these are plain selectors scoped to [data-band] (set on the
+  admin SidebarInset).
+--------------------------------------------------------------------------- */
+
+/* No colour flash when pulling past either end */
+html:has(.admin-root),
+html:has(.admin-root) body {
+  overscroll-behavior: none;
+  background-color: hsl(var(--sidebar-background));
+}
+
+/* Band ink: text inside a band (and the pinned header) uses band colours */
+.band-ink,
+.band {
+  color: hsl(var(--brand-surface-foreground));
+  --foreground: var(--brand-surface-foreground);
+  --muted-foreground: var(--brand-surface-muted);
+}
+
+/* Full-bleed band: stays in the content column, colour runs edge to edge
+   via a spread shadow clipped to the element's own height. */
+.band,
+[data-band] [data-slot="page-header"] {
+  position: relative;
+  background-color: hsl(var(--brand-surface));
+  box-shadow: 0 0 0 100vmax hsl(var(--brand-surface));
+  clip-path: inset(0 -100vmax);
+}
+
+[data-band] [data-slot="page-header"] {
+  color: hsl(var(--brand-surface-foreground));
+  --foreground: var(--brand-surface-foreground);
+  --muted-foreground: var(--brand-surface-muted);
+  margin-bottom: 0;
+  padding-top: 2.5rem;
+  /* Larger than the overlap below, so ~3rem of band shows under the title */
+  padding-bottom: 7.5rem;
+}
+@media (min-width: 768px) {
+  [data-band] [data-slot="page-header"] {
+    padding-top: 3.5rem;
+  }
+}
+
+/* Whatever follows the page header rises over the band's lower edge.
+   !important: parents often use space-y-*, whose sibling margin selector
+   is more specific than this one. */
+[data-band] [data-slot="page-header"] + * {
+  position: relative;
+  margin-top: -4.5rem !important;
+}
+
+/* The one card treatment: no border, soft brand-tinted shadow */
+.surface {
+  border-radius: 0.75rem;
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: var(--shadow-surface);
+}
+.surface-interactive {
+  transition:
+    box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.surface-interactive:hover {
+  box-shadow: var(--shadow-surface-hover);
+}
+.surface-interactive:active {
+  transform: scale(0.99);
+}
+
+/* ---------------------------------------------------------------------------
+  ENTRY MOTION
+  fill-mode "backwards": the start state applies before the animation, but
+  no transform is left behind afterwards to trap position:fixed children.
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter {
+    animation: admin-page-enter 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+  .stagger > * {
+    animation: admin-page-enter 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 50ms + 60ms);
+  }
+  .stagger > :nth-child(2) { --i: 1; }
+  .stagger > :nth-child(3) { --i: 2; }
+  .stagger > :nth-child(4) { --i: 3; }
+  .stagger > :nth-child(5) { --i: 4; }
+  .stagger > :nth-child(6) { --i: 5; }
+  .stagger > :nth-child(7) { --i: 6; }
+  .stagger > :nth-child(8) { --i: 7; }
+}
+@keyframes admin-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

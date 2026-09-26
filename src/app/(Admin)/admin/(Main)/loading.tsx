@@ -1,7 +1,5 @@
-import { PagePreLoader } from "@/components/layout/PreLoader";
+import PageSkeleton from "@/components/admin/shell/PageSkeleton";
 
-const Loading = () => {
-  return <PagePreLoader isCompact />;
-};
-
-export default Loading;
+export default function Loading() {
+  return <PageSkeleton />;
+}
