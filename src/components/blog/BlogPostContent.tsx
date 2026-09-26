@@ -10,7 +10,7 @@ import parse, {
   type DOMNode,
   type HTMLReactParserOptions,
 } from "html-react-parser";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 import { hastToReact, highlightCode } from "@/lib/lowlight";
 import CodeBlock from "@/components/blog/CodeBlock";
 
@@ -144,7 +144,10 @@ export default function BlogPostContent({
 
       <div className="tiptap-content prose prose-lg dark:prose-invert max-w-none">
         {parse(
-          DOMPurify.sanitize(post.content, { ALLOWED_TAGS, ALLOWED_ATTR }),
+          sanitizeHtml(post.content, {
+            allowedTags: ALLOWED_TAGS,
+            allowedAttributes: { "*": ALLOWED_ATTR },
+          }),
           parserOptions,
         )}
       </div>
