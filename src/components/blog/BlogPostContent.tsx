@@ -4,8 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { getContrastColor } from "@/lib/utils";
-import parse from "html-react-parser";
+import parse, {
+  Element,
+  Text,
+  type DOMNode,
+  type HTMLReactParserOptions,
+} from "html-react-parser";
 import DOMPurify from "isomorphic-dompurify";
+import { hastToReact, highlightCode } from "@/lib/lowlight";
+import CodeBlock from "@/components/blog/CodeBlock";
 
 const ALLOWED_TAGS = [
   "b", "i", "em", "strong", "a", "p", "ul", "ol", "li",
@@ -18,6 +25,40 @@ const ALLOWED_ATTR = [
   "href", "src", "alt", "width", "height",
   "allowfullscreen", "target", "rel", "class", "style", "id",
 ];
+
+function getText(nodes: DOMNode[]): string {
+  return nodes
+    .map((node) =>
+      node instanceof Text
+        ? node.data
+        : node instanceof Element
+          ? getText(node.children as DOMNode[])
+          : "",
+    )
+    .join("");
+}
+
+// Colour <pre><code> blocks the same way the editor does
+const parserOptions: HTMLReactParserOptions = {
+  replace(domNode) {
+    if (!(domNode instanceof Element) || domNode.name !== "pre") return;
+    const code = domNode.children.find(
+      (child): child is Element =>
+        child instanceof Element && child.name === "code",
+    );
+    if (!code) return;
+
+    const language = code.attribs.class?.match(/language-([\w-]+)/)?.[1];
+    const text = getText(code.children as DOMNode[]);
+    const tree = highlightCode(text, language);
+
+    return (
+      <CodeBlock code={text} language={language}>
+        {hastToReact(tree.children)}
+      </CodeBlock>
+    );
+  },
+};
 
 interface BlogPostContentProps {
   post: {
@@ -102,7 +143,10 @@ export default function BlogPostContent({
       </header>
 
       <div className="tiptap-content prose prose-lg dark:prose-invert max-w-none">
-        {parse(DOMPurify.sanitize(post.content, { ALLOWED_TAGS, ALLOWED_ATTR }))}
+        {parse(
+          DOMPurify.sanitize(post.content, { ALLOWED_TAGS, ALLOWED_ATTR }),
+          parserOptions,
+        )}
       </div>
     </article>
   );
