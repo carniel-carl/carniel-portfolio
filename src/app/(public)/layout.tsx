@@ -1,5 +1,7 @@
 import SocialLinks from "@/components/layout/navbar/SocialLinks";
-import Footer from "@/components/layout/Footer";
+import SiteFooter from "@/components/layout/SiteFooter";
+import SmoothScroll from "@/components/motion/SmoothScroll";
+import SoundPlayer from "@/components/general/SoundPlayer";
 import { Suspense } from "react";
 
 export default function PublicLayout({
@@ -8,16 +10,18 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <div className="grid grid-rows-[3.5rem_1fr] ">
-        <div>
-          <SocialLinks />
-        </div>
-        <main className="row-start-2 row-end-3">
-          <Suspense fallback={null}>{children}</Suspense>
-        </main>
-      </div>
-      <Footer />
-    </>
+    <SmoothScroll>
+      <div aria-hidden="true" className="grain" />
+      <SocialLinks />
+      <SoundPlayer />
+      {/* Spacer for the fixed header */}
+      <div className="h-14" />
+      <main className="relative min-h-[100dvh] bg-background">
+        <Suspense fallback={null}>{children}</Suspense>
+      </main>
+      <Suspense fallback={null}>
+        <SiteFooter />
+      </Suspense>
+    </SmoothScroll>
   );
 }

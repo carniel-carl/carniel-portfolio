@@ -1,23 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import FileDrop from "@/components/admin/form/FileDrop";
+import FormSection, { ToggleRow } from "@/components/admin/form/FormSection";
+import TagInput from "@/components/admin/form/TagInput";
+import { useFormShortcuts } from "@/components/admin/form/useFormShortcuts";
+import { Kbd } from "@/components/admin/shell/CommandMenu";
+import TiptapEditor from "@/components/admin/TiptapEditor";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Form,
+  FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -25,16 +24,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, Plus } from "lucide-react";
-import { toast } from "sonner";
-import { UploadButton } from "@uploadthing/react";
-import type { OurFileRouter } from "@/app/api/uploadthing/core";
-import TiptapEditor from "@/components/admin/TiptapEditor";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { createBlogPost, updateBlogPost } from "@/lib/actions/blog";
-import {
-  blogPostFormSchema,
-  type BlogPostFormValues,
-} from "@/lib/schemas/blog";
+import { adminZ } from "@/lib/admin-z";
+import routes from "@/lib/routes";
+import { blogPostFormSchema, type BlogPostFormValues } from "@/lib/schemas/blog";
+import { cn } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
 
 interface BlogFormData {
   id?: string;
@@ -54,6 +57,8 @@ interface BlogPostFormProps {
   categories: { id: string; name: string }[];
 }
 
+const EXCERPT_TARGET = 160;
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -63,67 +68,30 @@ function slugify(text: string): string {
     .replace(/-+/g, "-");
 }
 
-export default function BlogPostForm({
-  initialData,
-  isEdit,
-  categories,
-}: BlogPostFormProps) {
+export default function BlogPostForm({ initialData, isEdit, categories }: BlogPostFormProps) {
   const router = useRouter();
-  const [newTag, setNewTag] = useState("");
+  // Existing posts keep their URL unless the slug is edited on purpose
+  const [slugTouched, setSlugTouched] = useState(!!isEdit);
 
-  // Find the "Others" category ID for default
-  const othersCategory = categories.find(
-    (c) => c.name.toLowerCase() === "others",
-  );
+  const othersCategory = categories.find((c) => c.name.toLowerCase() === "others");
   const defaultCategoryId = othersCategory?.id ?? categories[0]?.id ?? "";
 
   const form = useForm<BlogPostFormValues>({
     resolver: zodResolver(blogPostFormSchema),
-    defaultValues: initialData
-      ? {
-          title: initialData.title ?? "",
-          slug: initialData.slug ?? "",
-          content: initialData.content ?? "",
-          excerpt: initialData.excerpt ?? "",
-          coverImage: initialData.coverImage ?? "",
-          published: initialData.published ?? false,
-          categoryId: initialData.categoryId ?? defaultCategoryId,
-          tags: initialData.tags ?? [],
-        }
-      : {
-          title: "",
-          slug: "",
-          content: "",
-          excerpt: "",
-          coverImage: "",
-          published: false,
-          categoryId: defaultCategoryId,
-          tags: [],
-        },
+    defaultValues: {
+      title: initialData?.title ?? "",
+      slug: initialData?.slug ?? "",
+      content: initialData?.content ?? "",
+      excerpt: initialData?.excerpt ?? "",
+      coverImage: initialData?.coverImage ?? "",
+      published: initialData?.published ?? false,
+      categoryId: initialData?.categoryId ?? defaultCategoryId,
+      tags: initialData?.tags ?? [],
+    },
   });
 
-  const handleTitleChange = (title: string) => {
-    form.setValue("title", title);
-    form.setValue("slug", slugify(title));
-  };
-
-  const addTag = () => {
-    if (newTag.trim()) {
-      const current = form.getValues("tags");
-      if (!current.includes(newTag.trim())) {
-        form.setValue("tags", [...current, newTag.trim()]);
-      }
-      setNewTag("");
-    }
-  };
-
-  const removeTag = (index: number) => {
-    const current = form.getValues("tags");
-    form.setValue(
-      "tags",
-      current.filter((_, i) => i !== index),
-    );
-  };
+  const { isSubmitting, isDirty } = form.formState;
+  const [published, excerpt] = useWatch({ control: form.control, name: ["published", "excerpt"] });
 
   const onSubmit = async (values: BlogPostFormValues) => {
     try {
@@ -132,235 +100,244 @@ export default function BlogPostForm({
       } else {
         await createBlogPost(values);
       }
-      toast.success(isEdit ? "Post updated" : "Post created");
-      router.push("/admin/blog");
+      form.reset(values);
+      toast.success(
+        values.published ? (isEdit ? "Post updated" : "Post published") : "Draft saved",
+      );
+      router.push(routes.admin.blog);
       router.refresh();
     } catch {
-      toast.error("Something went wrong");
+      toast.error("Could not save the post");
     }
   };
 
-  const watchedPublished = useWatch({
-    control: form.control,
-    name: "published",
-  });
+  const submit = form.handleSubmit(onSubmit, () => toast.error("Some fields need attention"));
+  useFormShortcuts({ onSave: submit, dirty: isDirty && !isSubmitting });
 
-  const slug = useWatch({
-    control: form.control,
-    name: "slug",
-  });
-
-  const watchedTags = useWatch({
-    control: form.control,
-    name: "tags",
-  });
+  const saveLabel = published ? (isEdit && initialData?.published ? "Update post" : "Publish") : "Save draft";
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-6 max-w-3xl"
+        onSubmit={submit}
+        noValidate
+        className="grid gap-6 pb-24 lg:grid-cols-[minmax(0,1fr)_320px] lg:pb-0"
       >
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Title *</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  onChange={(e) => handleTitleChange(e.target.value)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="space-y-2">
-          <Label>Slug</Label>
-          <p className="text-sm text-muted-foreground">/blog/{slug || "..."}</p>
-        </div>
-
-        <FormField
-          control={form.control}
-          name="categoryId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category *</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="coverImage"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Cover Image</FormLabel>
-              <FormControl>
-                <div>
-                  {field.value && (
-                    <div className="relative w-full max-w-md h-48 rounded-md overflow-hidden mb-2">
-                      <Image
-                        src={field.value}
-                        alt="Cover"
-                        fill
-                        className="object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => form.setValue("coverImage", "")}
-                        className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
-                      >
-                        <X className="size-4" />
-                      </button>
-                    </div>
-                  )}
-                  {!field.value && (
-                    <UploadButton<OurFileRouter, "imageUploader">
-                      endpoint="imageUploader"
-                      onClientUploadComplete={(res) => {
-                        if (res?.[0]) {
-                          form.setValue("coverImage", res[0].ufsUrl);
-                          toast.success("Image uploaded");
+        {/* The writing sheet: a card, so it rises over the band like the aside */}
+        <div className="surface min-w-0 space-y-6 p-5 md:p-7">
+          <div className="space-y-3">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="sr-only">Title</FormLabel>
+                  <FormControl>
+                    <input
+                      {...field}
+                      autoFocus={!isEdit}
+                      placeholder="Post title"
+                      onChange={(e) => {
+                        field.onChange(e);
+                        if (!slugTouched) {
+                          form.setValue("slug", slugify(e.target.value), { shouldDirty: true });
                         }
                       }}
-                      onUploadError={(err) => {
-                        toast.error(err.message);
-                      }}
+                      className="w-full bg-transparent font-display text-3xl font-semibold tracking-tight text-foreground outline-none placeholder:text-muted-foreground/70 md:text-4xl"
                     />
-                  )}
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="excerpt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Excerpt</FormLabel>
-              <FormControl>
-                <Textarea
-                  rows={2}
-                  placeholder="Brief summary of the post..."
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="content"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Content *</FormLabel>
-              <FormControl>
-                <TiptapEditor
-                  content={field.value}
-                  onChange={field.onChange}
-                  placeholder="Write your blog post..."
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="space-y-2">
-          <Label>Tags</Label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="e.g. React, CSS, Frontend"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addTag();
-                }
-              }}
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <Button type="button" variant="secondary" onClick={addTag}>
-              <Plus className="size-4" />
-            </Button>
+            <FormField
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="sr-only">URL slug</FormLabel>
+                  <div className="flex h-8 w-fit max-w-full items-center rounded-md border border-transparent font-mono text-xs text-muted-foreground transition-colors focus-within:border-input focus-within:bg-card hover:border-input">
+                    <span className="pl-2">/blog/</span>
+                    <FormControl>
+                      <input
+                        {...field}
+                        onChange={(e) => {
+                          setSlugTouched(true);
+                          field.onChange(slugify(e.target.value));
+                        }}
+                        placeholder="your-post-url"
+                        size={Math.max(field.value.length, 14)}
+                        className="h-full min-w-0 bg-transparent pr-2 text-foreground outline-none placeholder:text-muted-foreground"
+                      />
+                    </FormControl>
+                  </div>
+                  {isEdit && initialData?.published && field.value !== initialData.slug && (
+                    <p className="text-xs text-destructive">
+                      Changing the URL breaks existing links to this post.
+                    </p>
+                  )}
+                </FormItem>
+              )}
+            />
           </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {watchedTags.map((tag, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-md text-sm"
-              >
-                {tag}
-                <button type="button" onClick={() => removeTag(i)}>
-                  <X className="size-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-        </div>
 
-        <FormField
-          control={form.control}
-          name="published"
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex items-center gap-3">
+          <FormField
+            control={form.control}
+            name="excerpt"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-baseline justify-between">
+                  <FormLabel>Excerpt</FormLabel>
+                  <span
+                    className={cn(
+                      "tnum text-xs",
+                      excerpt.length > EXCERPT_TARGET ? "text-destructive" : "text-muted-foreground",
+                    )}
+                  >
+                    {excerpt.length}/{EXCERPT_TARGET}
+                  </span>
+                </div>
                 <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
+                  <Textarea rows={2} className="resize-none" {...field} />
+                </FormControl>
+                <FormDescription>Shown on post cards and in search results.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="content"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Content</FormLabel>
+                <FormControl>
+                  <TiptapEditor
+                    content={field.value}
+                    onChange={field.onChange}
+                    placeholder="Start writing..."
                   />
                 </FormControl>
-                <FormLabel>Published</FormLabel>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-        <div className="flex gap-3">
-          <Button
-            type="submit"
-            disabled={form.formState.isSubmitting || !form.formState.isValid}
-          >
-            {form.formState.isSubmitting
-              ? "Saving..."
-              : watchedPublished
-                ? isEdit
-                  ? "Update Post"
-                  : "Publish Post"
-                : "Save Draft"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push("/admin/blog")}
-          >
-            Cancel
+        <aside className="space-y-6 lg:sticky lg:top-20 lg:self-start">
+          <FormSection title="Publishing">
+            <FormField
+              control={form.control}
+              name="published"
+              render={({ field }) => (
+                <ToggleRow
+                  title={field.value ? "Live" : "Draft"}
+                  description={
+                    field.value ? "Visible on the blog after saving." : "Only admins can see it."
+                  }
+                  control={
+                    <Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Published" />
+                  }
+                />
+              )}
+            />
+            <div className="hidden space-y-3 lg:block">
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="animate-spin" />}
+                {saveLabel}
+              </Button>
+              {isEdit && initialData?.id && (
+                <Link
+                  href={routes.admin.blogPreview(initialData.id)}
+                  className={cn(buttonVariants({ variant: "outline" }), "w-full hover:bg-muted")}
+                >
+                  <Eye />
+                  Preview
+                </Link>
+              )}
+              <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                <Kbd>⌘</Kbd>
+                <Kbd>S</Kbd>
+                saves from anywhere
+              </p>
+            </div>
+          </FormSection>
+
+          <FormSection title="Organise">
+            <FormField
+              control={form.control}
+              name="categoryId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Choose a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tags</FormLabel>
+                  <FormControl>
+                    <TagInput value={field.value} onChange={field.onChange} placeholder="React, CSS" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </FormSection>
+
+          <FormSection title="Cover image">
+            <FormField
+              control={form.control}
+              name="coverImage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="sr-only">Cover image</FormLabel>
+                  <FormControl>
+                    <FileDrop
+                      endpoint="imageUploader"
+                      value={field.value}
+                      onChange={(url) => form.setValue("coverImage", url, { shouldDirty: true })}
+                      aspectClass="aspect-[1200/630]"
+                      hint="Optional. 1200 x 630 works best."
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </FormSection>
+        </aside>
+
+        {/* Mobile action bar */}
+        <div
+          className={cn(
+            "admin-mobile-bar fixed inset-x-0 bottom-0 flex items-center gap-2 border-t bg-card/95 px-4 py-3 backdrop-blur-md [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))] lg:hidden",
+            adminZ.mobileBar,
+          )}
+        >
+          <span className="flex-1 text-xs text-muted-foreground">
+            {isDirty ? "Unsaved changes" : published ? "Live" : "Draft"}
+          </span>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="animate-spin" />}
+            {saveLabel}
           </Button>
         </div>
       </form>

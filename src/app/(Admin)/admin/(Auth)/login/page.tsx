@@ -1,24 +1,22 @@
 "use client";
 
+import SVGIcon from "@/components/general/SVGIcon";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { handleLogin } from "@/lib/actions/login";
+import routes from "@/lib/routes";
 import { LoginFormData, loginSchema } from "@/lib/schemas/login";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 
 const LoginPage = () => {
-  const navigate = useRouter();
+  const router = useRouter();
+  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -29,57 +27,93 @@ const LoginPage = () => {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    setFormError(null);
     const result = await handleLogin(data);
-
     if (result.error) {
-      toast.error(result.message);
-    } else {
-      toast.success(result.message);
-      navigate.push("/admin");
+      setFormError(result.message);
+      return;
     }
+    router.push(routes.admin.dashboard);
+    router.refresh();
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
-          <CardDescription>
-            Sign in to manage your portfolio content
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register("email")} />
-              {errors.email && (
-                <p className="text-sm text-destructive">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-sm text-destructive">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isSubmitting}
-              loading={isSubmitting}
+    <main className="flex min-h-[100dvh] flex-col bg-background px-4">
+      <div className="mx-auto flex w-full max-w-sm items-center pt-6">
+        <Link
+          href="/"
+          className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5 transition-transform duration-300 ease-expo group-hover:-translate-x-0.5" />
+          Back to the site
+        </Link>
+      </div>
+
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center pb-24">
+        <span className="mb-8 grid size-11 place-items-center rounded-xl bg-foreground text-accent">
+          <SVGIcon width="1.4rem" height="1.4rem" />
+        </span>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+          Sign in
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Manage projects, posts and everything else on the portfolio.
+        </p>
+
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-8 space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              autoFocus
+              className="h-11 bg-card"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              {...register("email")}
+            />
+            {errors.email && (
+              <p id="email-error" className="text-sm text-destructive">
+                {errors.email.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              className="h-11 bg-card"
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? "password-error" : undefined}
+              {...register("password")}
+            />
+            {errors.password && (
+              <p id="password-error" className="text-sm text-destructive">
+                {errors.password.message}
+              </p>
+            )}
+          </div>
+
+          {formError && (
+            <p
+              role="alert"
+              className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
             >
-              Sign In
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              {formError}
+            </p>
+          )}
+
+          <Button type="submit" className="h-11 w-full" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="animate-spin" />}
+            {isSubmitting ? "Signing in" : "Sign in"}
+          </Button>
+        </form>
+      </div>
+    </main>
   );
 };
 

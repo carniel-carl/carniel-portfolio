@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
+  // Hosts (besides localhost) allowed to load dev-only resources like HMR.
+  // 127.0.0.1 is needed for Spotify sign-in, which rejects "localhost".
+  allowedDevOrigins: ["127.0.0.1", "192.168.100.113"],
   images: {
     remotePatterns: [
       {

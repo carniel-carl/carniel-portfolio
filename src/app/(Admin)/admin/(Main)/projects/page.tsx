@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { cacheTag, cacheLife } from "next/cache";
 import prisma from "@/lib/prisma";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import ProjectsClient from "@/components/admin/ProjectsClient";
+
+export const metadata: Metadata = { title: "Projects" };
 
 async function getProjects() {
   "use cache: remote";

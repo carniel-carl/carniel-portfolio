@@ -1,7 +1,12 @@
 import BlogPostForm from "@/components/admin/BlogPostForm";
-import PageHeader from "@/components/general/PageHeader";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import StatusPill from "@/components/admin/ui/StatusPill";
 import prisma from "@/lib/prisma";
+import routes from "@/lib/routes";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
+export const metadata: Metadata = { title: "Edit post" };
 
 export default async function EditBlogPostPage({
   params,
@@ -27,13 +32,19 @@ export default async function EditBlogPostPage({
   if (!post) notFound();
 
   return (
-    <div className="space-y-6">
-      <PageHeader showBackBtn title="Edit Blog Post" />
+    <>
+      <AdminPageHeader
+        title="Edit post"
+        backHref={routes.admin.blog}
+        backLabel="Blog"
+        className="pb-4"
+        actions={<StatusPill published={post.published} />}
+      />
       <BlogPostForm
         initialData={JSON.parse(JSON.stringify(post))}
         isEdit
         categories={JSON.parse(JSON.stringify(categories))}
       />
-    </div>
+    </>
   );
 }

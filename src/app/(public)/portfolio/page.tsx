@@ -1,75 +1,19 @@
-import MaxWidth from "@/components/general/MaxWidth";
 import FloatNavDynamic from "@/components/layout/navbar/FloatNavDynamic";
-import ScrollToTop from "@/components/layout/ScrollToTop";
 import AboutClient from "@/sections/AboutClient";
 import Contact from "@/sections/Contact";
 import ProjectsClient from "@/sections/ProjectsClient";
 import SkillsClient from "@/sections/SkillsClient";
-import prisma from "@/lib/prisma";
-import { cacheTag, cacheLife } from "next/cache";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import PageTracker from "@/components/analytics/PageTracker";
+import {
+  getAbout,
+  getProjects,
+  getPublishedPostCount,
+  getSkills,
+} from "@/lib/data/portfolio";
+import Highlights from "@/sections/portfolio/Highlights";
+import Process from "@/sections/portfolio/Process";
 import { Suspense } from "react";
-
-async function getAbout() {
-  "use cache: remote";
-  cacheTag(CACHE_TAGS.about);
-  cacheLife("max");
-
-  const about = await prisma.about.findFirst();
-
-  return about
-    ? {
-        bio: about.bio,
-        profilePicUrl: about.profilePicUrl,
-        resumeUrl: about.resumeUrl,
-      }
-    : null;
-}
-
-async function getProjects() {
-  "use cache: remote";
-  cacheTag(CACHE_TAGS.projects);
-  cacheLife("max");
-
-  const featured = await prisma.project.findMany({
-    where: { featured: true, visible: { not: false } },
-    orderBy: { order: "asc" },
-  });
-  const other = await prisma.project.findMany({
-    where: { featured: false, visible: { not: false } },
-    orderBy: { order: "asc" },
-  });
-
-  const mapProject = (p: (typeof featured)[number]) => ({
-    name: p.name,
-    tag: p.tag || undefined,
-    description: p.description,
-    img: p.img,
-    live: p.live || undefined,
-    code: p.code || undefined,
-    stack: p.stack,
-  });
-
-  return {
-    featured: featured.map(mapProject),
-    other: other.map(mapProject),
-  };
-}
-
-async function getSkills() {
-  "use cache: remote";
-  cacheTag(CACHE_TAGS.skills);
-  cacheLife("max");
-
-  const skills = await prisma.skill.findMany({ orderBy: { order: "asc" } });
-
-  return skills.map((s) => ({
-    id: s.id,
-    title: s.title,
-    iconName: s.iconName,
-  }));
-}
+import Intro from "@/components/layout/Intro";
 
 const PortfolioPage = async ({
   searchParams,
@@ -77,23 +21,31 @@ const PortfolioPage = async ({
   searchParams: Promise<{ tab?: string }>;
 }) => {
   const { tab } = await searchParams;
-  const [about, { featured, other }, skills] = await Promise.all([
+  const [about, { featured, other }, skills, articles] = await Promise.all([
     getAbout(),
     getProjects(),
     getSkills(),
+    getPublishedPostCount(),
   ]);
 
   return (
-    <div className="w-screen min-h-[calc(100svh-2rem)] overflow-x-hidden">
+    // overflow-x-clip (not hidden) so the sticky project stack keeps working
+    <div className="w-full overflow-x-clip">
       <PageTracker event="Portfolio Viewed" />
+      <Intro>
       <FloatNavDynamic />
-      <ScrollToTop />
-      <MaxWidth className="lg:!max-w-[65rem] md:!max-w-[40rem] mb-24 w-[90%] mx-auto ">
+      <div className="mx-auto max-w-[1400px] px-4 md:px-8">
         <Suspense fallback={null}>
           <AboutClient about={about} />
         </Suspense>
 
-        <div className="divider" />
+        <Highlights
+          projects={featured.length + other.length}
+          skills={skills.length}
+          articles={articles}
+        />
+
+        <div className="h-24 md:h-40" />
 
         <ProjectsClient
           featured={featured}
@@ -101,12 +53,13 @@ const PortfolioPage = async ({
           tab={tab === "other" ? "other" : "featured"}
         />
 
-        <div className="divider" />
+        <Process />
 
         <SkillsClient skills={skills} />
-        <div className="divider" />
+
         <Contact />
-      </MaxWidth>
+      </div>
+      </Intro>
     </div>
   );
 };

@@ -1,11 +1,10 @@
 "use client";
 
-import { slideUpVariant } from "@/components/animations/general";
-import { staggerContainer } from "@/components/animations/portfolio-page";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { type LucideIcon } from "lucide-react";
 import { type IconType } from "react-icons";
 import { getIcon } from "@/lib/icon-map";
+import SplitText from "@/components/motion/SplitText";
 
 interface SkillData {
   id: string;
@@ -17,46 +16,54 @@ interface SkillsClientProps {
   skills: SkillData[];
 }
 
+// Typographic wall: skills set as display type that flows and wraps like a
+// sentence, each word rising into place in reading order.
 const SkillsClient = ({ skills }: SkillsClientProps) => {
+  const reduce = useReducedMotion();
+
   return (
-    <motion.section
-      variants={staggerContainer}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.3 }}
-      id="skill"
-      className="portfolio flex flex-col"
-    >
-      <motion.h2
-        variants={slideUpVariant}
-        className="heading-style after:content-['Acquired_skills'] font-nunito after:font-montserrat md:self-center md:mb-20 mb-12"
-      >
-        Skills
-      </motion.h2>
-      <motion.div
-        variants={staggerContainer}
-        className="grid lg:grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] md:grid-cols-[repeat(auto-fit,minmax(5rem,1fr))] grid-cols-[repeat(auto-fit,minmax(5rem,1fr))] md:gap-x-6 gap-x-3 gap-y-8 justify-items-center items-end"
-      >
-        {skills.map((data) => {
-          const Icon = getIcon(data.iconName);
-          return (
-            <motion.div
-              key={data.id}
-              variants={slideUpVariant}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.9 }}
-            >
-              <SkillCard Icon={Icon} title={data.title} />
-            </motion.div>
-          );
-        })}
-      </motion.div>
-    </motion.section>
+    <section id="skill" className="portfolio flex flex-col pb-24 md:pb-40">
+      <SplitText
+        as="h2"
+        text="Skills & tools"
+        className="font-display text-[clamp(3.25rem,10vw,9rem)] font-semibold leading-[0.88] tracking-[-0.045em] [font-stretch:75%]"
+      />
+
+      {skills.length === 0 ? (
+        <p className="mt-10 text-foreground/65">Skills will appear here once added.</p>
+      ) : (
+        <motion.ul
+          initial={reduce ? false : "hidden"}
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.15 }}
+          variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
+          className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-3 md:mt-16 md:gap-x-10 md:gap-y-5"
+        >
+          {skills.map((data) => {
+            const Icon = getIcon(data.iconName);
+            return (
+              <li key={data.id} className="overflow-hidden pb-[0.12em]">
+                <motion.div
+                  variants={{
+                    hidden: { y: "110%" },
+                    visible: {
+                      y: "0%",
+                      transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
+                    },
+                  }}
+                >
+                  <SkillWord Icon={Icon} title={data.title} />
+                </motion.div>
+              </li>
+            );
+          })}
+        </motion.ul>
+      )}
+    </section>
   );
 };
 
-const SkillCard = ({
+const SkillWord = ({
   title,
   Icon,
 }: {
@@ -64,12 +71,17 @@ const SkillCard = ({
   Icon: LucideIcon | IconType | null;
 }) => {
   return (
-    <div className="flex flex-col items-center gap-2 p-[1.2em] lg:w-24 md:w-20 w-20 overflow-hidden rounded-lg text-foreground border-t-0 border-b-2 !border-b-accent bg-background shadow-md">
-      {Icon ? <Icon className="md:size-6 size-4 opacity-70" /> : <div className="md:size-6 size-4" />}
-      <p className="text-[0.8em] md:text-sm text-center text-wrap leading-tight">
+    <span className="group inline-flex cursor-default items-center gap-3 md:gap-4">
+      {Icon && (
+        <Icon
+          aria-hidden="true"
+          className="size-6 shrink-0 text-accent-ink transition-transform duration-500 ease-expo group-hover:rotate-[-12deg] group-hover:scale-110 md:size-10"
+        />
+      )}
+      <span className="font-display text-3xl font-medium tracking-[-0.03em] text-foreground/85 transition-colors duration-300 group-hover:text-foreground md:text-5xl lg:text-6xl">
         {title}
-      </p>
-    </div>
+      </span>
+    </span>
   );
 };
 
