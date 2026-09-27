@@ -53,6 +53,9 @@ const ThemeSwitch = () => {
       Math.max(y, window.innerHeight - y),
     );
 
+    // Tells globals.css not to split the header out of the circle reveal
+    root.dataset.themeSwitching = "";
+
     const transition = document.startViewTransition(() => {
       // Apply the class synchronously so the snapshot captures the new theme
       root.classList.toggle("dark", resolve(next) === "dark");
@@ -74,6 +77,10 @@ const ThemeSwitch = () => {
           pseudoElement: "::view-transition-new(root)",
         },
       );
+    });
+
+    transition.finished.finally(() => {
+      delete root.dataset.themeSwitching;
     });
   };
 

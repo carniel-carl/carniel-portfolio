@@ -93,7 +93,7 @@ const Navbar = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
         animate={{ y: hidden && !showMenu ? "-110%" : "0%" }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
-          "fixed inset-x-0 top-0 z-[100] transition-[background-color,backdrop-filter,border-color] duration-500",
+          "vt-chrome-header fixed inset-x-0 top-0 z-[100] transition-[background-color,backdrop-filter,border-color] duration-500",
           scrolled && !showMenu
             ? "border-b border-foreground/[0.06] bg-background/70 backdrop-blur-xl"
             : "border-b border-transparent",
