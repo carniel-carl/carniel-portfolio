@@ -11,13 +11,16 @@ import LatestWriting from "@/sections/home/LatestWriting";
 import { trackEvent } from "@/lib/mixpanel";
 import type { ProjectDataType } from "@/types/project";
 import type { LatestPost } from "@/lib/data/portfolio";
+import type { ContactInfo } from "@/lib/availability";
 
 const HomeExperience = ({
   projects,
   posts,
+  contact,
 }: {
   projects: ProjectDataType[];
   posts: LatestPost[];
+  contact: ContactInfo;
 }) => {
   useEffect(() => {
     trackEvent("Home Viewed", {
@@ -27,7 +30,7 @@ const HomeExperience = ({
 
   return (
     <Intro>
-      <Hero />
+      <Hero contact={contact} />
       <VelocityMarquee />
       <Statement />
       <Capabilities />

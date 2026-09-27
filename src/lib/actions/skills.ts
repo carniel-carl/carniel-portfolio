@@ -2,9 +2,16 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { fetchIconifySvg } from "@/lib/iconify";
+
+/** Expire skills immediately everywhere they show, so edits appear on the next load. */
+const invalidateSkillCaches = () => {
+  updateTag(CACHE_TAGS.skills);
+  revalidateTag(CACHE_TAGS.skills, "max");
+  revalidatePath("/portfolio");
+};
 
 // Iconify markup is resolved here rather than accepted from the client,
 // since it is rendered as raw HTML on the site
@@ -35,7 +42,7 @@ export async function createSkill(data: {
     },
   });
 
-  revalidateTag(CACHE_TAGS.skills, "max");
+  invalidateSkillCaches();
   return skill;
 }
 
@@ -62,7 +69,7 @@ export async function updateSkill(
     },
   });
 
-  revalidateTag(CACHE_TAGS.skills, "max");
+  invalidateSkillCaches();
   return skill;
 }
 
@@ -71,5 +78,16 @@ export async function deleteSkill(id: string) {
   if (!session) throw new Error("Unauthorized");
 
   await prisma.skill.delete({ where: { id } });
-  revalidateTag(CACHE_TAGS.skills, "max");
+  invalidateSkillCaches();
+}
+
+/** Saves a full ordering from the admin grid; each skill's order becomes its index. */
+export async function reorderSkills(ids: string[]) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  await prisma.$transaction(
+    ids.map((id, order) => prisma.skill.update({ where: { id }, data: { order } })),
+  );
+  invalidateSkillCaches();
 }

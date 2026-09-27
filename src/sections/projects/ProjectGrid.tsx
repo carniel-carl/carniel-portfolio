@@ -1,12 +1,16 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import { ViewTransition } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ProjectLinks from "./ProjectLinks";
 import { ProjectBadges, ProjectRole, isMobileProject } from "./ProjectMeta";
 import PhoneShowcase from "@/components/general/PhoneShowcase";
 import type { ProjectDataType } from "@/types/project";
+import { projectCoverName } from "@/lib/projects/view-transitions";
+import routes from "@/lib/routes";
 
 // Staggered two-column gallery: the right column is dropped by a row offset so
 // the grid reads as a loose masonry instead of a rigid table.
@@ -24,6 +28,7 @@ const ProjectGrid = ({ projects }: { projects: ProjectDataType[] }) => {
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           className={cn("group flex flex-col gap-6", i % 2 === 1 && "md:mt-32")}
         >
+          <ViewTransition name={projectCoverName(project.slug)} share="vt-morph">
           {isMobileProject(project) && (project.videoUrl || project.screenshots?.length) ? (
             <div className="relative flex aspect-[16/11] items-center justify-center overflow-hidden rounded-[1.25rem] bg-surface bg-[radial-gradient(60%_60%_at_50%_45%,color-mix(in_srgb,var(--clr)_20%,transparent),transparent_75%)] py-6">
               <PhoneShowcase
@@ -46,11 +51,17 @@ const ProjectGrid = ({ projects }: { projects: ProjectDataType[] }) => {
               />
             </div>
           )}
+          </ViewTransition>
           <div className="flex flex-col gap-3">
             <ProjectBadges project={project} />
             <div className="flex items-baseline justify-between gap-4">
               <h3 className="font-display text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
-                {project.name}
+                <Link
+                  href={routes.public.work(project.slug)}
+                  className="underline-offset-[0.12em] decoration-2 hover:underline"
+                >
+                  {project.name}
+                </Link>
               </h3>
               {project.tag && (
                 <span className="shrink-0 text-sm text-accent-ink">{project.tag}</span>

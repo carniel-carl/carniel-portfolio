@@ -1,10 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ArrowUpRight, FlaskConical, Github } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight, FlaskConical, Github } from "lucide-react";
 import { SiApple, SiGoogleplay } from "react-icons/si";
 import { pillClasses, PillIcon, RollingLabel } from "@/components/motion/PillLink";
 import { trackEvent } from "@/lib/mixpanel";
+import routes from "@/lib/routes";
 import type { ProjectDataType } from "@/types/project";
 
 type LinkDef = {
@@ -15,8 +17,15 @@ type LinkDef = {
   srText: string;
 };
 
-// The first available link is the solid primary button; the rest are ghost
-const ProjectLinks = ({ project }: { project: ProjectDataType }) => {
+// The first available link is the solid primary button; the rest are ghost.
+// On cards the case study leads; the case study page itself hides it.
+const ProjectLinks = ({
+  project,
+  showCaseStudy = true,
+}: {
+  project: ProjectDataType;
+  showCaseStudy?: boolean;
+}) => {
   const all: LinkDef[] = [
       { type: "live", label: "Visit site", href: project.live, icon: <ArrowUpRight />, srText: `opens ${project.name}` },
       { type: "app_store", label: "App Store", href: project.appStoreUrl, icon: <SiApple />, srText: `${project.name} on the App Store` },
@@ -26,12 +35,26 @@ const ProjectLinks = ({ project }: { project: ProjectDataType }) => {
   ];
   const links = all.filter((l): l is LinkDef & { href: string } => Boolean(l.href));
 
-  if (!links.length) return null;
+  if (!links.length && !showCaseStudy) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-3">
+      {showCaseStudy && (
+        <Link
+          href={routes.public.work(project.slug)}
+          className={pillClasses("solid")}
+          onClick={() =>
+            trackEvent("Case Study Clicked", { project: project.name, source: "card" })
+          }
+        >
+          <RollingLabel>{project.hasCaseStudy ? "Read case study" : "View project"}</RollingLabel>
+          <PillIcon>
+            <ArrowRight />
+          </PillIcon>
+        </Link>
+      )}
       {links.map((link, i) => {
-        const variant = i === 0 ? "solid" : "ghost";
+        const variant = i === 0 && !showCaseStudy ? "solid" : "ghost";
         return (
           <a
             key={link.type}

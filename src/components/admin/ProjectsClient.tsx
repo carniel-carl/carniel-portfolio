@@ -15,25 +15,35 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   deleteProject,
-  reorderProject,
+  reorderProjects,
   toggleProjectVisibility,
 } from "@/lib/actions/projects";
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import routes from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  ArrowDown,
-  ArrowUp,
   ExternalLink,
   FolderKanban,
   Github,
+  GripVertical,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -75,14 +85,28 @@ export default function ProjectsClient({
 }: ProjectsClientProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const reduceMotion = useReducedMotion();
   const [tab, setTab] = useState<Tab>(activeTab);
   const [query, setQuery] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
   const [, startTransition] = useTransition();
 
-  const list = tab === "featured" ? featured : other;
+  // Local copies so a drag shows instantly; resynced whenever the server sends new data
+  const [lists, setLists] = useState({ featured, other });
+  const [synced, setSynced] = useState({ featured, other });
+  if (featured !== synced.featured || other !== synced.other) {
+    setSynced({ featured, other });
+    setLists({ featured, other });
+  }
+
+  const list = lists[tab];
+  const visibleIds = useMemo(() => list.filter((p) => p.visible).map((p) => p.id), [list]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -116,11 +140,30 @@ export default function ProjectsClient({
     });
   };
 
-  const move = (project: Project, direction: -1 | 1) => {
-    const index = list.findIndex((p) => p.id === project.id);
-    const target = list[index + direction];
-    if (!target) return;
-    mutate(project.id, () => reorderProject(project.id, target.order), "Could not reorder");
+  // Only visible projects are sortable; hidden ones stay grouped at the end
+  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const group = tab;
+    const previous = lists[group];
+    const from = visibleIds.indexOf(String(active.id));
+    const to = visibleIds.indexOf(String(over.id));
+    if (from < 0 || to < 0) return;
+
+    const nextIds = arrayMove(visibleIds, from, to);
+    const byId = new Map(previous.map((p) => [p.id, p]));
+    const next = [...nextIds.map((id) => byId.get(id)!), ...previous.filter((p) => !p.visible)];
+    setLists((current) => ({ ...current, [group]: next }));
+
+    setSavingOrder(true);
+    try {
+      await reorderProjects(group === "featured", nextIds);
+      router.refresh();
+    } catch {
+      setLists((current) => ({ ...current, [group]: previous }));
+      toast.error("Could not save the new order");
+    } finally {
+      setSavingOrder(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -135,12 +178,13 @@ export default function ProjectsClient({
   };
 
   const searching = query.trim().length > 0;
+  const canReorder = !searching && !savingOrder && !busyId;
 
   return (
-    <TooltipProvider delayDuration={300}>
+    <>
       <AdminPageHeader
         title="Projects"
-        description="Featured projects lead the home page. The order here is the order visitors see."
+        description="Featured projects lead the home page. Drag to set the order visitors see."
         actions={
           <Link href={routes.admin.projectNew} className={buttonVariants()}>
             <Plus />
@@ -156,8 +200,8 @@ export default function ProjectsClient({
             value={tab}
             onChange={changeTab}
             options={[
-              { value: "featured", label: "Featured", count: featured.length },
-              { value: "other", label: "Other", count: other.length },
+              { value: "featured", label: "Featured", count: lists.featured.length },
+              { value: "other", label: "Other", count: lists.other.length },
             ]}
           />
           <SearchField
@@ -194,166 +238,34 @@ export default function ProjectsClient({
             />
           )
         ) : (
-          <ul className="divide-y">
-            <AnimatePresence initial={false}>
-              {filtered.map((project) => {
-                const index = list.findIndex((p) => p.id === project.id);
-                const next = list[index + 1];
-                const busy = busyId === project.id;
-                const canMoveUp = !searching && index > 0 && project.visible && !busyId;
-                const canMoveDown =
-                  !searching && !!next && project.visible && next.visible && !busyId;
-
-                return (
-                  <motion.li
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={visibleIds} strategy={verticalListSortingStrategy}>
+              <ul className="divide-y">
+                {filtered.map((project) => (
+                  <ProjectRow
                     key={project.id}
-                    layout={reduceMotion ? false : "position"}
-                    exit={{ opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 36 }}
-                    className={cn(
-                      "group flex items-center gap-3 bg-card px-3 py-3 sm:gap-4 sm:px-4",
-                      busy && "pointer-events-none",
-                    )}
-                    aria-busy={busy}
-                  >
-                    <span className="tnum hidden w-5 text-center text-xs text-muted-foreground sm:block">
-                      {project.visible ? index + 1 : ""}
-                    </span>
-
-                    <Link
-                      href={routes.admin.projectEdit(project.id)}
-                      className={cn(
-                        "flex min-w-0 flex-1 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-4",
-                        !project.visible && "opacity-55",
-                        busy && "opacity-40",
-                      )}
-                    >
-                      <span className="relative aspect-[16/10] w-20 shrink-0 overflow-hidden rounded-md border bg-muted sm:w-24">
-                        {project.img && (
-                          <Image
-                            src={project.img}
-                            alt=""
-                            fill
-                            sizes="96px"
-                            className="object-cover transition-transform duration-500 ease-expo group-hover:scale-[1.04]"
-                          />
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2">
-                          <span className="truncate text-sm font-medium text-foreground">
-                            {project.name}
-                          </span>
-                          {project.tag && (
-                            <span className="hidden shrink-0 rounded-full border px-2 py-px text-[11px] text-muted-foreground sm:inline">
-                              {project.tag}
-                            </span>
-                          )}
-                        </span>
-                        <span className="mt-0.5 line-clamp-1 text-[13px] text-muted-foreground">
-                          {project.description}
-                        </span>
-                        {!!project.stack?.length && (
-                          <span className="mt-1 hidden truncate font-mono text-[11px] text-muted-foreground/80 md:block">
-                            {project.stack.slice(0, 5).join(" / ")}
-                          </span>
-                        )}
-                      </span>
-                    </Link>
-
-                    <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-                      <span className="hidden lg:inline">{project.visible ? "Visible" : "Hidden"}</span>
-                      <Switch
-                        checked={project.visible}
-                        disabled={busy}
-                        onCheckedChange={() =>
-                          mutate(
-                            project.id,
-                            () => toggleProjectVisibility(project.id),
-                            "Could not update visibility",
-                          )
-                        }
-                        aria-label={`Show ${project.name} on the site`}
-                      />
-                    </label>
-
-                    <div className="hidden shrink-0 items-center rounded-full border p-0.5 sm:flex">
-                      <IconAction
-                        label="Move up"
-                        disabled={!canMoveUp}
-                        onClick={() => move(project, -1)}
-                      >
-                        <ArrowUp />
-                      </IconAction>
-                      <IconAction
-                        label="Move down"
-                        disabled={!canMoveDown}
-                        onClick={() => move(project, 1)}
-                      >
-                        <ArrowDown />
-                      </IconAction>
-                    </div>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground"
-                          aria-label={`More actions for ${project.name}`}
-                        >
-                          <MoreHorizontal />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48 rounded-xl">
-                        <DropdownMenuItem asChild>
-                          <Link href={routes.admin.projectEdit(project.id)}>
-                            <Pencil className="size-4" />
-                            Edit
-                          </Link>
-                        </DropdownMenuItem>
-                        {project.live && (
-                          <DropdownMenuItem asChild>
-                            <a href={project.live} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="size-4" />
-                              Open live site
-                            </a>
-                          </DropdownMenuItem>
-                        )}
-                        {project.code && (
-                          <DropdownMenuItem asChild>
-                            <a href={project.code} target="_blank" rel="noopener noreferrer">
-                              <Github className="size-4" />
-                              Open repository
-                            </a>
-                          </DropdownMenuItem>
-                        )}
-                        <div className="sm:hidden">
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem disabled={!canMoveUp} onSelect={() => move(project, -1)}>
-                            <ArrowUp className="size-4" />
-                            Move up
-                          </DropdownMenuItem>
-                          <DropdownMenuItem disabled={!canMoveDown} onSelect={() => move(project, 1)}>
-                            <ArrowDown className="size-4" />
-                            Move down
-                          </DropdownMenuItem>
-                        </div>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onSelect={() => setDeleteTarget(project)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="size-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </motion.li>
-                );
-              })}
-            </AnimatePresence>
-          </ul>
+                    project={project}
+                    position={visibleIds.indexOf(project.id) + 1}
+                    canReorder={canReorder && project.visible}
+                    busy={busyId === project.id}
+                    onToggleVisible={() =>
+                      mutate(
+                        project.id,
+                        () => toggleProjectVisibility(project.id),
+                        "Could not update visibility",
+                      )
+                    }
+                    onDelete={() => setDeleteTarget(project)}
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
@@ -370,36 +282,169 @@ export default function ProjectsClient({
         description="It will be removed from the site straight away. This cannot be undone."
         onConfirm={handleDelete}
       />
-    </TooltipProvider>
+    </>
   );
 }
 
-function IconAction({
-  label,
-  disabled,
-  onClick,
-  children,
+function ProjectRow({
+  project,
+  position,
+  canReorder,
+  busy,
+  onToggleVisible,
+  onDelete,
 }: {
-  label: string;
-  disabled?: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
+  project: Project;
+  position: number;
+  canReorder: boolean;
+  busy: boolean;
+  onToggleVisible: () => void;
+  onDelete: () => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: project.id, disabled: !canReorder });
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={disabled}
-          onClick={onClick}
-          aria-label={label}
-          className="size-7 text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
-        >
-          {children}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="top">{label}</TooltipContent>
-    </Tooltip>
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cn(
+        "group relative flex items-center gap-2 bg-card px-3 py-3 sm:gap-3 sm:px-4",
+        busy && "pointer-events-none",
+        isDragging && "z-10 shadow-lg ring-1 ring-border",
+      )}
+      aria-busy={busy}
+    >
+      <button
+        type="button"
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        disabled={!canReorder}
+        aria-label={`Reorder ${project.name}, position ${position}`}
+        className={cn(
+          "tnum flex h-9 w-8 shrink-0 touch-none items-center justify-center rounded-md text-xs text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          canReorder
+            ? "cursor-grab hover:bg-muted hover:text-foreground active:cursor-grabbing"
+            : "cursor-default",
+        )}
+      >
+        {canReorder && (
+          <GripVertical className="size-4 md:hidden md:group-hover:block md:group-focus-within:block" />
+        )}
+        {project.visible && (
+          <span
+            className={cn(
+              canReorder && "hidden md:block md:group-hover:hidden md:group-focus-within:hidden",
+            )}
+          >
+            {position}
+          </span>
+        )}
+      </button>
+
+      <Link
+        href={routes.admin.projectEdit(project.id)}
+        className={cn(
+          "flex min-w-0 flex-1 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-4",
+          !project.visible && "opacity-55",
+          busy && "opacity-40",
+        )}
+      >
+        <span className="relative aspect-[16/10] w-20 shrink-0 overflow-hidden rounded-md border bg-muted sm:w-24">
+          {project.img && (
+            <Image
+              src={project.img}
+              alt=""
+              fill
+              sizes="96px"
+              className="object-cover transition-transform duration-500 ease-expo group-hover:scale-[1.04]"
+            />
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium text-foreground">
+              {project.name}
+            </span>
+            {project.tag && (
+              <span className="hidden shrink-0 rounded-full border px-2 py-px text-[11px] text-muted-foreground sm:inline">
+                {project.tag}
+              </span>
+            )}
+          </span>
+          <span className="mt-0.5 line-clamp-1 text-[13px] text-muted-foreground">
+            {project.description}
+          </span>
+          {!!project.stack?.length && (
+            <span className="mt-1 hidden truncate font-mono text-[11px] text-muted-foreground/80 md:block">
+              {project.stack.slice(0, 5).join(" / ")}
+            </span>
+          )}
+        </span>
+      </Link>
+
+      <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+        <span className="hidden lg:inline">{project.visible ? "Visible" : "Hidden"}</span>
+        <Switch
+          checked={project.visible}
+          disabled={busy}
+          onCheckedChange={onToggleVisible}
+          aria-label={`Show ${project.name} on the site`}
+        />
+      </label>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label={`More actions for ${project.name}`}
+          >
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48 rounded-xl">
+          <DropdownMenuItem asChild>
+            <Link href={routes.admin.projectEdit(project.id)}>
+              <Pencil className="size-4" />
+              Edit
+            </Link>
+          </DropdownMenuItem>
+          {project.live && (
+            <DropdownMenuItem asChild>
+              <a href={project.live} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="size-4" />
+                Open live site
+              </a>
+            </DropdownMenuItem>
+          )}
+          {project.code && (
+            <DropdownMenuItem asChild>
+              <a href={project.code} target="_blank" rel="noopener noreferrer">
+                <Github className="size-4" />
+                Open repository
+              </a>
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={onDelete}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="size-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </li>
   );
 }

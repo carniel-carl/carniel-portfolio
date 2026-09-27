@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, type PointerEvent } from "react";
+import Link from "next/link";
+import { useRef, useState, ViewTransition, type PointerEvent } from "react";
 import {
   motion,
   useMotionValue,
@@ -14,6 +15,7 @@ import PillLink from "@/components/motion/PillLink";
 import routes from "@/lib/routes";
 import { trackEvent } from "@/lib/mixpanel";
 import type { ProjectDataType } from "@/types/project";
+import { projectCoverName } from "@/lib/projects/view-transitions";
 
 // Index list of featured work. On desktop a preview window trails the cursor
 // and its image strip slides to whichever row is hovered.
@@ -49,8 +51,6 @@ const SelectedWork = ({ projects }: { projects: ProjectDataType[] }) => {
       >
         <ul className="border-b border-foreground/10">
           {projects.map((project, i) => {
-            const href = project.live ?? project.code ?? routes.public.portfolio;
-            const external = href.startsWith("http");
             return (
               <motion.li
                 key={project.name}
@@ -60,32 +60,30 @@ const SelectedWork = ({ projects }: { projects: ProjectDataType[] }) => {
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: i * 0.06 }}
                 className="border-t border-foreground/10"
               >
-                <a
-                  href={href}
-                  target={external ? "_blank" : undefined}
-                  rel={external ? "noopener noreferrer" : undefined}
+                <Link
+                  href={routes.public.work(project.slug)}
                   onPointerEnter={() => setActive(i)}
                   onFocus={() => setActive(i)}
                   onClick={() =>
-                    trackEvent("Project Link Clicked", {
+                    trackEvent("Case Study Clicked", {
                       project: project.name,
-                      link_type: project.live ? "live" : "code",
-                      url: href,
-                      source_page: "home",
+                      source: "home",
                     })
                   }
                   className="group grid grid-cols-1 gap-4 py-8 focus-visible:outline-none md:grid-cols-12 md:items-center md:gap-6 md:py-10"
                 >
                   {/* Mobile: inline thumbnail instead of the cursor preview */}
-                  <div className="relative aspect-[16/10] overflow-hidden rounded-[1.25rem] bg-surface md:hidden">
-                    <Image
-                      src={project.img}
-                      alt={project.name}
-                      fill
-                      sizes="100vw"
-                      className="object-cover object-top"
-                    />
-                  </div>
+                  <ViewTransition name={projectCoverName(project.slug)} share="vt-morph">
+                    <div className="relative aspect-[16/10] overflow-hidden rounded-[1.25rem] bg-surface md:hidden">
+                      <Image
+                        src={project.img}
+                        alt={project.name}
+                        fill
+                        sizes="100vw"
+                        className="object-cover object-top"
+                      />
+                    </div>
+                  </ViewTransition>
 
                   <h3 className="font-display text-4xl font-semibold leading-[1.05] tracking-[-0.03em] transition-transform duration-700 ease-expo group-hover:translate-x-4 group-focus-visible:translate-x-4 md:col-span-7 md:text-6xl lg:text-7xl">
                     {project.name}
@@ -96,7 +94,7 @@ const SelectedWork = ({ projects }: { projects: ProjectDataType[] }) => {
                   <span className="hidden size-12 place-items-center justify-self-end rounded-full border border-foreground/15 transition-[transform,background-color,color,border-color] duration-500 ease-expo group-hover:rotate-45 group-hover:border-transparent group-hover:bg-accent group-hover:text-accent-on md:col-span-1 md:grid">
                     <ArrowUpRight className="size-5" />
                   </span>
-                </a>
+                </Link>
               </motion.li>
             );
           })}

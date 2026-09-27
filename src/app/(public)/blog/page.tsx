@@ -7,7 +7,7 @@ import BlogCard from "@/components/blog/BlogCard";
 import BlogSearch from "@/components/blog/BlogSearch";
 import CategoryPills, { type CategoryPill } from "@/components/blog/CategoryPills";
 import { readingMinutes } from "@/lib/blog/article";
-import { SITE_NAME } from "@/lib/site";
+import { BASE_OPEN_GRAPH, SITE_NAME } from "@/lib/site";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import PageTracker from "@/components/analytics/PageTracker";
 import routes from "@/lib/routes";
@@ -19,17 +19,23 @@ const BLOG_DESCRIPTION =
   "Notes on building for the web and mobile: React, Next.js, React Native, design and the craft in between, by Carniel.";
 
 export const metadata: Metadata = {
-  title: "Blog | Chimezie's Portfolio",
+  title: "Writing",
   description: BLOG_DESCRIPTION,
-  alternates: { canonical: "/blog" },
+  alternates: {
+    canonical: "/blog",
+    types: { "application/rss+xml": [{ url: "/feed.xml", title: "Writing · Chimezie Carniel" }] },
+  },
   openGraph: {
-    type: "website",
+    ...BASE_OPEN_GRAPH,
     url: "/blog",
-    siteName: SITE_NAME,
-    title: "Writing | Carniel",
+    title: `Writing · ${SITE_NAME}`,
     description: BLOG_DESCRIPTION,
   },
-  twitter: { card: "summary", title: "Writing | Carniel", description: BLOG_DESCRIPTION },
+  twitter: {
+    card: "summary_large_image",
+    title: `Writing · ${SITE_NAME}`,
+    description: BLOG_DESCRIPTION,
+  },
 };
 
 const POSTS_PER_PAGE = 6;
@@ -131,6 +137,28 @@ async function getCategories() {
   ];
 }
 
+// Refreshed hourly: view counts change without a blog cache invalidation
+async function getMostRead() {
+  "use cache";
+  cacheTag(CACHE_TAGS.blog);
+  cacheLife("hours");
+
+  return prisma.blogPost.findMany({
+    where: { published: true, views: { gt: 0 } },
+    orderBy: { views: "desc" },
+    take: 4,
+    select: {
+      title: true,
+      slug: true,
+      views: true,
+      category: { select: { name: true, color: true } },
+    },
+  });
+}
+
+// A "most read" list needs a few posts before it says anything
+const MOST_READ_MIN = 3;
+
 async function getTotalPublishedCount() {
   "use cache";
   cacheTag(CACHE_TAGS.blog);
@@ -172,10 +200,12 @@ export default async function BlogPage({
   const tag = params.tag || undefined;
   const search = params.search || undefined;
 
-  const [{ posts, total }, categories, totalPublished] = await Promise.all([
+  const unfiltered = page === 1 && !categorySlug && !tag && !search;
+  const [{ posts, total }, categories, totalPublished, mostRead] = await Promise.all([
     getPosts(page, POSTS_PER_PAGE, categorySlug, tag, search),
     getCategories(),
     getTotalPublishedCount(),
+    unfiltered ? getMostRead() : Promise.resolve([]),
   ]);
 
   const totalPages = Math.ceil(total / POSTS_PER_PAGE);
@@ -373,7 +403,51 @@ export default async function BlogPage({
           </>
         )}
 
-        {/* <BlogSearch /> */}
+        {mostRead.length >= MOST_READ_MIN && (
+          <section
+            aria-labelledby="most-read"
+            className="mt-24 grid gap-8 border-t border-foreground/10 pt-12 md:mt-32 md:grid-cols-12 md:pt-16"
+          >
+            <h2
+              id="most-read"
+              className="font-display text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-[0.95] tracking-[-0.04em] [font-stretch:75%] md:col-span-4"
+            >
+              Most read
+            </h2>
+            <ol className="md:col-span-8">
+              {mostRead.map((post, i) => (
+                <li key={post.slug} className="border-t border-foreground/10 last:border-b">
+                  <Link
+                    href={routes.public.blogPost(post.slug)}
+                    className="group grid grid-cols-[3rem_1fr] items-baseline gap-4 py-6 md:grid-cols-[4rem_1fr_auto]"
+                  >
+                    <span className="font-mono text-sm text-accent-ink">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="flex flex-col gap-2">
+                      <span className="text-balance font-display text-2xl font-semibold leading-tight tracking-[-0.02em] transition-transform duration-500 ease-expo group-hover:translate-x-2 md:text-3xl">
+                        {post.title}
+                      </span>
+                      {post.category && (
+                        <span className="inline-flex items-center gap-2 text-sm text-foreground/60">
+                          <span
+                            aria-hidden="true"
+                            className="size-2 rounded-full"
+                            style={{ backgroundColor: post.category.color }}
+                          />
+                          {post.category.name}
+                        </span>
+                      )}
+                    </span>
+                    <span className="col-start-2 font-mono text-sm tabular-nums text-foreground/55 md:col-start-auto">
+                      {new Intl.NumberFormat("en", { notation: "compact" }).format(post.views ?? 0)} views
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
       </div>
     </ViewTransition>
   );

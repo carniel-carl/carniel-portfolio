@@ -1,8 +1,9 @@
 import SocialLinks from "@/components/layout/navbar/SocialLinks";
 import SiteFooter from "@/components/layout/SiteFooter";
 import SmoothScroll from "@/components/motion/SmoothScroll";
-import SoundPlayer from "@/components/general/SoundPlayer";
+import SoundPlayerLazy from "@/components/general/SoundPlayerLazy";
 import { Suspense } from "react";
+import SkipLink from "@/components/layout/SkipLink";
 
 export default function PublicLayout({
   children,
@@ -11,12 +12,17 @@ export default function PublicLayout({
 }) {
   return (
     <SmoothScroll>
+      <SkipLink />
       <div aria-hidden="true" className="grain" />
       <SocialLinks />
-      <SoundPlayer />
+      <SoundPlayerLazy />
       {/* Spacer for the fixed header */}
       <div className="h-14" />
-      <main className="relative min-h-[100dvh] bg-background">
+      <main
+        id="main"
+        tabIndex={-1}
+        className="relative min-h-[100dvh] bg-background outline-none"
+      >
         <Suspense fallback={null}>{children}</Suspense>
       </main>
       <Suspense fallback={null}>

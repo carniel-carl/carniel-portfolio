@@ -33,7 +33,8 @@ export default function RankedList({
   const max = visible[0]?.value ?? 0;
 
   return (
-    <section className={cn("surface p-5", className)}>
+    // min-w-0: long labels truncate instead of widening the card
+    <section className={cn("surface min-w-0 p-5", className)}>
       <header className="mb-4 flex items-baseline justify-between gap-3">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         {total > 0 && (

@@ -4,6 +4,8 @@ import ScrollToTopOnEnter from "@/components/blog/ScrollToTopOnEnter";
 import ReadingProgress from "@/components/blog/ReadingProgress";
 import ShareBar from "@/components/blog/ShareBar";
 import AuthorCard from "@/components/blog/AuthorCard";
+import PostViews from "@/components/blog/PostViews";
+import { JsonLdScript } from "@/components/seo/JsonLd";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { getRecommendedPosts } from "@/lib/blog/recommendations";
 import prisma from "@/lib/prisma";
@@ -17,7 +19,12 @@ import AdSlot from "@/components/ads/AdSlot";
 import { ADSENSE_BLOG_SIDEBAR_SLOT, ADSENSE_CLIENT } from "@/lib/adsense";
 import { ViewTransition } from "react";
 import { BLOG_BACK, blogPageTransition } from "@/lib/blog/view-transitions";
-import { AUTHOR_NAME, SITE_NAME, SITE_URL, toMetaDescription } from "@/lib/site";
+import {
+  AUTHOR_NAME,
+  BASE_OPEN_GRAPH,
+  SITE_URL,
+  toMetaDescription,
+} from "@/lib/site";
 
 async function getPost(slug: string) {
   "use cache";
@@ -54,27 +61,27 @@ export async function generateMetadata({
 
   // Drafts 404 on the page, so keep them (and missing posts) out of the index too
   if (!post || !post.published) {
-    return { title: "Post Not Found", robots: { index: false, follow: false } };
+    return { title: "Post not found", robots: { index: false, follow: false } };
   }
 
   const url = `/blog/${post.slug}`;
   const description = post.excerpt?.trim() || toMetaDescription(post.content);
   const authorName = AUTHOR_NAME;
-  const images = post.coverImage
-    ? [{ url: post.coverImage, alt: post.title }]
-    : undefined;
 
   return {
-    title: `${post.title} | Blog`,
+    title: post.title,
     description,
     keywords: post.tags.length > 0 ? post.tags : undefined,
     authors: [{ name: authorName }],
     category: post.category?.name,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      types: { "application/rss+xml": [{ url: "/feed.xml", title: "Writing · Chimezie Carniel" }] },
+    },
     openGraph: {
+      ...BASE_OPEN_GRAPH,
       type: "article",
       url,
-      siteName: SITE_NAME,
       title: post.title,
       description,
       publishedTime: (post.publishedAt ?? post.createdAt).toISOString(),
@@ -82,13 +89,11 @@ export async function generateMetadata({
       authors: [authorName],
       section: post.category?.name,
       tags: post.tags,
-      images,
     },
     twitter: {
-      card: images ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title: post.title,
       description,
-      images: post.coverImage ? [post.coverImage] : undefined,
     },
     robots: {
       index: true,
@@ -150,13 +155,7 @@ export default async function BlogPostPage({
       <div>
         <ScrollToTopOnEnter />
         <ReadingProgress targetId="post-article" />
-        <script
-          type="application/ld+json"
-          // Escape "<" so post content can't close the script tag
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
-          }}
-        />
+        <JsonLdScript data={jsonLd} />
         <PageTracker
           event="Blog Post Viewed"
           properties={{
@@ -201,7 +200,7 @@ export default async function BlogPostPage({
                 </div>
               </aside>
 
-              <BlogPostContent post={post} layout="inline" footer={articleFooter} />
+              <BlogPostContent post={post} layout="inline" footer={articleFooter} meta={<PostViews slug={post.slug} />} />
 
               <aside aria-label="Advertisement" className="hidden xl:block">
                 <div className="sticky top-24 pt-12">
@@ -211,7 +210,7 @@ export default async function BlogPostPage({
             </div>
           </>
         ) : (
-          <BlogPostContent post={post} layout="rail" footer={articleFooter} />
+          <BlogPostContent post={post} layout="rail" footer={articleFooter} meta={<PostViews slug={post.slug} />} />
         )}
 
         {relatedPosts.length > 0 && (

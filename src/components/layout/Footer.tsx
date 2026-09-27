@@ -11,12 +11,20 @@ import SplitText from "@/components/motion/SplitText";
 import { NavLinks } from "@/data/navlinks";
 import routes from "@/lib/routes";
 import { trackEvent } from "@/lib/mixpanel";
+import { AvailabilityBadge, CopyEmail } from "@/components/general/Availability";
+import type { ContactInfo } from "@/lib/availability";
 
 type SocialLink = { name: string; link: string };
 
 // Curtain footer: the fixed panel sits behind the page and is uncovered by a
 // clip-path window as the last section scrolls away.
-const Footer = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
+const Footer = ({
+  socialLinks,
+  contact,
+}: {
+  socialLinks: SocialLink[];
+  contact: ContactInfo;
+}) => {
   const [year, setYear] = useState("");
   const pathname = usePathname();
   const lenis = useLenis();
@@ -121,9 +129,23 @@ const Footer = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
             )}
 
             <div className="col-span-2 flex flex-col gap-1 self-end text-sm text-accent-on/75 md:col-span-6 md:items-end">
-              <Link href={routes.public.privacy} className="hover:underline underline-offset-4">
-                Privacy Policy
-              </Link>
+              {(contact.availability || contact.contactEmail) && (
+                <div className="mb-5 flex flex-col gap-3 md:items-end">
+                  <AvailabilityBadge info={contact} surface="accent" />
+                  {contact.contactEmail && (
+                    <CopyEmail email={contact.contactEmail} source="footer" surface="accent" />
+                  )}
+                </div>
+              )}
+              <div className="flex gap-4">
+                <Link href={routes.public.privacy} className="hover:underline underline-offset-4">
+                  Privacy Policy
+                </Link>
+                {/* Plain <a>: the feed is XML, not a page to navigate to */}
+                <a href="/feed.xml" className="hover:underline underline-offset-4">
+                  RSS
+                </a>
+              </div>
               <p>&copy; {year} Nmugha Chimezie (Carniel). All rights reserved.</p>
             </div>
           </div>

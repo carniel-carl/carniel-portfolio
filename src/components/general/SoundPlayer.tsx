@@ -475,9 +475,10 @@ const SoundPlayer = () => {
           onPortfolio && "max-md:bottom-24",
         )}
       >
-        {/* Entrance: pops in once the intro curtain is gone */}
+        {/* Entrance: pops in once the intro curtain is gone. Mounted lazily
+            (SoundPlayerLazy), usually after the intro, so start hidden. */}
         <motion.div
-          initial={false}
+          initial={{ scale: 0, opacity: 0, rotate: 0 }}
           animate={
             introDone
               ? {

@@ -4,6 +4,7 @@ const routes = {
     portfolio: "/portfolio",
     blog: "/blog",
     blogPost: (slug: string) => `/blog/${slug}`,
+    work: (slug: string) => `/work/${slug}`,
     privacy: "/privacy",
   },
   admin: {

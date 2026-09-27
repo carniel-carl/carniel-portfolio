@@ -4,15 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ViewTransition, type ReactNode } from "react";
-import parse, {
-  Element,
-  Text,
-  type DOMNode,
-  type HTMLReactParserOptions,
-} from "html-react-parser";
-import sanitizeHtml from "sanitize-html";
-import { hastToReact, highlightCode } from "@/lib/lowlight";
-import CodeBlock from "@/components/blog/CodeBlock";
+import { renderRichText, sanitizeRichText } from "@/components/content/RichText";
 import TableOfContents from "@/components/blog/TableOfContents";
 import AuthorHoverCard from "@/components/blog/AuthorHoverCard";
 import { getAbout } from "@/lib/data/portfolio";
@@ -21,65 +13,8 @@ import { readingMinutes, withHeadingAnchors } from "@/lib/blog/article";
 import { cn } from "@/lib/utils";
 import { AUTHOR_NAME } from "@/lib/site";
 
-const ALLOWED_TAGS = [
-  "b", "i", "em", "strong", "a", "p", "ul", "ol", "li",
-  "img", "iframe", "h1", "h2", "h3", "h4", "h5", "h6",
-  "br", "blockquote", "code", "pre", "u", "s", "sub", "sup",
-  "hr", "table", "thead", "tbody", "tr", "th", "td",
-];
-
-const ALLOWED_ATTR = [
-  "href", "src", "alt", "width", "height",
-  "allowfullscreen", "target", "rel", "class", "style", "id",
-];
-
 // Posts need a few sections before a table of contents earns its space
 const TOC_MIN_HEADINGS = 3;
-
-function getText(nodes: DOMNode[]): string {
-  return nodes
-    .map((node) =>
-      node instanceof Text
-        ? node.data
-        : node instanceof Element
-          ? getText(node.children as DOMNode[])
-          : "",
-    )
-    .join("");
-}
-
-// Colour <pre><code> blocks the same way the editor does
-const parserOptions: HTMLReactParserOptions = {
-  replace(domNode) {
-    if (!(domNode instanceof Element)) return;
-
-    // React holds a navigation's commit until eager <img>s load, which swaps in
-    // the route loader and drops the card -> post view transition. Lazy images
-    // are exempt, and they're below the hero anyway.
-    if (domNode.name === "img") {
-      domNode.attribs.loading = "lazy";
-      domNode.attribs.decoding = "async";
-      return;
-    }
-
-    if (domNode.name !== "pre") return;
-    const code = domNode.children.find(
-      (child): child is Element =>
-        child instanceof Element && child.name === "code",
-    );
-    if (!code) return;
-
-    const language = code.attribs.class?.match(/language-([\w-]+)/)?.[1];
-    const text = getText(code.children as DOMNode[]);
-    const tree = highlightCode(text, language);
-
-    return (
-      <CodeBlock code={text} language={language}>
-        {hastToReact(tree.children)}
-      </CodeBlock>
-    );
-  },
-};
 
 interface BlogPostContentProps {
   post: {
@@ -99,6 +34,8 @@ interface BlogPostContentProps {
   layout?: "rail" | "inline";
   // Rendered under the article body (share bar, author card)
   footer?: ReactNode;
+  // Extra items for the date / read-time line (e.g. the view counter)
+  meta?: ReactNode;
 }
 
 export default async function BlogPostContent({
@@ -106,11 +43,9 @@ export default async function BlogPostContent({
   preview,
   layout = "inline",
   footer,
+  meta,
 }: BlogPostContentProps) {
-  const clean = sanitizeHtml(post.content, {
-    allowedTags: ALLOWED_TAGS,
-    allowedAttributes: { "*": ALLOWED_ATTR },
-  });
+  const clean = sanitizeRichText(post.content);
   const { html, toc } = withHeadingAnchors(clean);
   const minutes = readingMinutes(clean);
   const showToc = toc.length >= TOC_MIN_HEADINGS;
@@ -159,6 +94,7 @@ export default async function BlogPostContent({
           )}
           {date && <time dateTime={new Date(post.publishedAt!).toISOString()}>{date}</time>}
           <span>{minutes} min read</span>
+          {meta}
         </div>
 
         {/* Morphs from the matching BlogCard (see lib/blog/view-transitions) */}
@@ -203,7 +139,7 @@ export default async function BlogPostContent({
             </div>
           )}
 
-          <div className="tiptap-content">{parse(html, parserOptions)}</div>
+          <div className="tiptap-content">{renderRichText(html)}</div>
 
           {post.tags.length > 0 && (
             <div className="mt-14 flex flex-wrap gap-2 border-t border-foreground/10 pt-8">

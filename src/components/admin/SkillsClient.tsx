@@ -15,12 +15,30 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  rectSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Label } from "@/components/ui/label";
-import { createSkill, deleteSkill, updateSkill } from "@/lib/actions/skills";
+import { createSkill, deleteSkill, reorderSkills, updateSkill } from "@/lib/actions/skills";
 import { getIcon, iconNames } from "@/lib/icon-map";
 import { iconifyPreviewUrl, searchIconify } from "@/lib/iconify";
 import { cn } from "@/lib/utils";
-import { Loader2, Plus, SearchX, Trash2, Wrench } from "lucide-react";
+import { GripVertical, Loader2, Plus, SearchX, Trash2, Wrench } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -66,6 +84,38 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
   });
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Local copy so a drag shows instantly; resynced whenever the server sends new data
+  const [items, setItems] = useState(skills);
+  const [syncedSkills, setSyncedSkills] = useState(skills);
+  if (skills !== syncedSkills) {
+    setSyncedSkills(skills);
+    setItems(skills);
+  }
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    // Press-and-hold on touch, so swiping still scrolls the page
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const previous = items;
+    const from = items.findIndex((s) => s.id === active.id);
+    const to = items.findIndex((s) => s.id === over.id);
+    const next = arrayMove(items, from, to).map((s, order) => ({ ...s, order }));
+    setItems(next);
+
+    try {
+      await reorderSkills(next.map((s) => s.id));
+      router.refresh();
+    } catch {
+      setItems(previous);
+      toast.error("Could not save the new order");
+    }
+  };
 
   const openCreate = () => {
     setEditingSkill(null);
@@ -153,17 +203,18 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
   const remoteReady = remote.query === iconQuery;
   const remoteIcons = remoteReady ? remote.icons : [];
 
+  const searching = query.trim() !== "";
   const filteredSkills = useMemo(() => {
     const q = query.toLowerCase().trim();
-    return q ? skills.filter((s) => s.title.toLowerCase().includes(q)) : skills;
-  }, [skills, query]);
+    return q ? items.filter((s) => s.title.toLowerCase().includes(q)) : items;
+  }, [items, query]);
 
 
   return (
     <div>
       <AdminPageHeader
         title="Skills"
-        description="The tools listed in the skills section, in display order."
+        description="The tools listed in the skills section, in display order. Drag to reorder."
         actions={
           <Button onClick={openCreate}>
             <Plus />
@@ -201,37 +252,26 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
               className="rounded-none border-0"
             />
           ) : (
-            <ul className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 sm:p-4 md:grid-cols-4 xl:grid-cols-6">
-              {filteredSkills.map((skill) => {
-                return (
-                  <li key={skill.id} className="group relative">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(skill)}
-                      className="flex w-full flex-col items-center gap-3 rounded-lg bg-muted/50 px-3 pb-4 pt-6 text-center transition-[background-color,transform] duration-300 ease-expo hover:bg-muted active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      aria-label={`Edit ${skill.title}`}
-                    >
-                      <span className="grid size-11 place-items-center rounded-lg bg-card text-foreground/80 shadow-sm transition-colors group-hover:text-accent-ink">
-                        <SkillIcon icon={skill} className="size-6" />
-                      </span>
-                      <span className="line-clamp-1 text-sm font-medium">{skill.title}</span>
-                      <span className="tnum absolute left-3 top-2.5 text-[11px] text-muted-foreground">
-                        {skill.order}
-                      </span>
-                    </button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleteTarget(skill)}
-                      aria-label={`Delete ${skill.title}`}
-                      className="absolute right-1.5 top-1.5 size-7 text-muted-foreground opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100 [&_svg]:size-3.5"
-                    >
-                      <Trash2 />
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={filteredSkills.map((s) => s.id)} strategy={rectSortingStrategy}>
+                <ul className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 sm:p-4 md:grid-cols-4 xl:grid-cols-6">
+                  {filteredSkills.map((skill) => (
+                    <SortableSkill
+                      key={skill.id}
+                      skill={skill}
+                      disabled={searching}
+                      onEdit={() => openEdit(skill)}
+                      onDelete={() => setDeleteTarget(skill)}
+                    />
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
+          )}
+          {searching && filteredSkills.length > 0 && (
+            <p className="border-t px-4 py-2.5 text-xs text-muted-foreground">
+              Reordering is paused while searching.
+            </p>
           )}
         </div>
       )}
@@ -402,6 +442,83 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
         onConfirm={handleDelete}
       />
     </div>
+  );
+}
+
+function SortableSkill({
+  skill,
+  disabled,
+  onEdit,
+  onDelete,
+}: {
+  skill: Skill;
+  disabled: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: skill.id, disabled });
+
+  return (
+    // Mouse and touch drag from anywhere on the card; the keyboard uses the grip
+    <li
+      ref={setNodeRef}
+      {...listeners}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cn(
+        "group relative touch-manipulation",
+        !disabled && "cursor-grab active:cursor-grabbing",
+        isDragging && "z-10 rounded-lg shadow-lg ring-2 ring-accent-ink",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onEdit}
+        className={cn(
+          "flex w-full flex-col items-center gap-3 rounded-lg bg-muted/50 px-3 pb-4 pt-6 text-center transition-[background-color,transform] duration-300 ease-expo hover:bg-muted active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          !disabled && "cursor-grab active:cursor-grabbing",
+          isDragging && "bg-muted",
+        )}
+        aria-label={`Edit ${skill.title}`}
+      >
+        <span className="grid size-11 place-items-center rounded-lg bg-card text-foreground/80 shadow-sm transition-colors group-hover:text-accent-ink">
+          <SkillIcon icon={skill} className="size-6" />
+        </span>
+        <span className="line-clamp-1 text-sm font-medium">{skill.title}</span>
+      </button>
+      <button
+        type="button"
+        ref={setActivatorNodeRef}
+        {...attributes}
+        disabled={disabled}
+        aria-label={`Reorder ${skill.title}, position ${skill.order}`}
+        className="tnum absolute left-1.5 top-1.5 flex h-7 items-center gap-0.5 rounded-md px-1 text-[11px] text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:hover:bg-transparent"
+      >
+        <GripVertical
+          className={cn(
+            "size-3.5 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100",
+            disabled && "hidden",
+          )}
+        />
+        {skill.order}
+      </button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onDelete}
+        aria-label={`Delete ${skill.title}`}
+        className="absolute right-1.5 top-1.5 size-7 text-muted-foreground opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100 [&_svg]:size-3.5"
+      >
+        <Trash2 />
+      </Button>
+    </li>
   );
 }
 

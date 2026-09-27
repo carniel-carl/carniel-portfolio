@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import { revalidatePath, revalidateTag, updateTag } from "next/cache";
+import { projectSlug, toSlug } from "@/lib/projects/slug";
 
 /**
  * Invalidate both the Runtime Cache (use cache: remote) and
@@ -14,10 +15,32 @@ const invalidateProjectCaches = () => {
   updateTag(CACHE_TAGS.projects);
   revalidateTag(CACHE_TAGS.projects, "max");
 
-  // 2. CDN/ISR Page Cache: explicitly invalidate the portfolio page
+  // 2. CDN/ISR Page Cache: explicitly invalidate every page showing projects
   //    (PPR pages cache the full response at the CDN level separately)
+  revalidatePath("/");
   revalidatePath("/portfolio");
+  revalidatePath("/work/[slug]", "page");
 };
+
+/**
+ * Slug for /work/[slug]: the admin's choice or the name, made unique against
+ * every other project's effective slug (stored or derived from its name).
+ */
+async function uniqueSlug(input: { slug?: string; name: string }, excludeId?: string) {
+  const base = toSlug(input.slug?.trim() || input.name);
+  const others = await prisma.project.findMany({
+    where: excludeId ? { id: { not: excludeId } } : undefined,
+    select: { slug: true, name: true },
+  });
+  const taken = new Set(others.map(projectSlug));
+  let slug = base;
+  for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+  return slug;
+}
+
+/** Empty editor output ("<p></p>") counts as no case study. */
+const caseStudyHtml = (html?: string) =>
+  html && html.replace(/<[^>]*>/g, "").trim() ? html : null;
 
 type ShowcaseInput = {
   platform?: string;
@@ -141,6 +164,8 @@ export async function createProject(data: {
   stack?: string[];
   featured?: boolean;
   visible?: boolean;
+  slug?: string;
+  caseStudy?: string;
 } & ShowcaseInput) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
@@ -169,6 +194,8 @@ export async function createProject(data: {
       featured: isFeatured,
       visible: isVisible,
       order: insertOrder,
+      slug: await uniqueSlug(data),
+      caseStudy: caseStudyHtml(data.caseStudy),
       ...showcaseData(data),
     },
   });
@@ -190,6 +217,8 @@ export async function updateProject(
     stack?: string[];
     featured?: boolean;
     visible?: boolean;
+    slug?: string;
+    caseStudy?: string;
   } & ShowcaseInput,
 ) {
   const session = await auth();
@@ -233,6 +262,8 @@ export async function updateProject(
       featured: newFeatured,
       visible: newVisible,
       order: newOrder,
+      slug: await uniqueSlug(data, id),
+      caseStudy: caseStudyHtml(data.caseStudy),
       ...showcaseData(data),
     },
   });
@@ -294,6 +325,39 @@ export async function reorderProject(id: string, newOrder: number) {
     where: { id },
     data: { order: newOrder },
   });
+
+  invalidateProjectCaches();
+}
+
+/**
+ * Saves a drag-and-drop ordering for one category. `visibleIds` is the full
+ * list of visible projects in their new order; hidden ones keep their
+ * relative order after them, as elsewhere.
+ */
+export async function reorderProjects(featured: boolean, visibleIds: string[]) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const group = await prisma.project.findMany({
+    where: { featured },
+    orderBy: { order: "asc" },
+    select: { id: true, visible: true },
+  });
+  const visible = group.filter((p) => p.visible).map((p) => p.id);
+  const hidden = group.filter((p) => !p.visible).map((p) => p.id);
+
+  // Reject stale or tampered lists instead of scrambling the order
+  const sameSet =
+    visibleIds.length === visible.length &&
+    new Set(visibleIds).size === visibleIds.length &&
+    visibleIds.every((id) => visible.includes(id));
+  if (!sameSet) throw new Error("Project list is out of date");
+
+  await prisma.$transaction(
+    [...visibleIds, ...hidden].map((id, order) =>
+      prisma.project.update({ where: { id }, data: { order } }),
+    ),
+  );
 
   invalidateProjectCaches();
 }

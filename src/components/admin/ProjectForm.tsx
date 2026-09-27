@@ -3,6 +3,7 @@
 import FileDrop from "@/components/admin/form/FileDrop";
 import FormSection, { ToggleRow } from "@/components/admin/form/FormSection";
 import TagInput from "@/components/admin/form/TagInput";
+import TiptapEditor from "@/components/admin/TiptapEditor";
 import VideoDrop from "@/components/admin/form/VideoDrop";
 import ScreenshotsDrop from "@/components/admin/form/ScreenshotsDrop";
 import { useFormShortcuts } from "@/components/admin/form/useFormShortcuts";
@@ -29,6 +30,7 @@ import {
   type ProjectFormValues,
 } from "@/lib/schemas/project";
 import { cn } from "@/lib/utils";
+import { toSlug } from "@/lib/projects/slug";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -59,6 +61,8 @@ interface ProjectFormData {
   appStoreUrl?: string | null;
   playStoreUrl?: string | null;
   betaUrl?: string | null;
+  slug?: string | null;
+  caseStudy?: string | null;
 }
 
 const PLATFORM_OPTIONS = [
@@ -108,12 +112,15 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
       appStoreUrl: initialData?.appStoreUrl ?? "",
       playStoreUrl: initialData?.playStoreUrl ?? "",
       betaUrl: initialData?.betaUrl ?? "",
+      slug: initialData?.slug ?? "",
+      caseStudy: initialData?.caseStudy ?? "",
     },
   });
 
   const { isSubmitting, isDirty } = form.formState;
   const featured = useWatch({ control: form.control, name: "featured" });
   const description = useWatch({ control: form.control, name: "description" });
+  const name = useWatch({ control: form.control, name: "name" });
   const platform = useWatch({ control: form.control, name: "platform" });
   const isMobile = platform === "mobile" || platform === "both";
   const [videoUrl, posterUrl, screenshots] = useWatch({
@@ -164,6 +171,30 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
                   <FormControl>
                     <Input className="h-10" autoFocus={!isEdit} {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Page URL <span className="font-normal text-muted-foreground">(optional)</span>
+                  </FormLabel>
+                  <div className="flex h-10 items-center rounded-md border border-input bg-transparent focus-within:ring-1 focus-within:ring-ring">
+                    <span className="select-none pl-3 text-sm text-muted-foreground">/work/</span>
+                    <FormControl>
+                      <input
+                        className="h-full min-w-0 flex-1 bg-transparent pr-3 text-sm outline-none placeholder:text-muted-foreground/60"
+                        placeholder={name ? toSlug(name) : "project-name"}
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormDescription>Leave empty to use the project name. Changing it breaks old links.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -303,6 +334,29 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
                     />
                   </FormControl>
                   <FormDescription>One per line. The first 3 show on the card.</FormDescription>
+                </FormItem>
+              )}
+            />
+          </FormSection>
+
+          <FormSection
+            title="Case study (optional)"
+            description="The story on the project's page: the problem, your approach, the result. Use headings to break it into sections."
+          >
+            <FormField
+              control={form.control}
+              name="caseStudy"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="sr-only">Case study</FormLabel>
+                  <FormControl>
+                    <TiptapEditor
+                      content={field.value}
+                      onChange={field.onChange}
+                      placeholder="What problem did this project solve?"
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
