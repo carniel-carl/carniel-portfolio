@@ -41,7 +41,10 @@ const StackCard = ({
   return (
     <div
       ref={cardRef}
-      className="md:sticky md:top-0 md:flex md:h-[100dvh] md:items-center"
+      // The pinned wrapper is viewport-tall and mostly transparent. Later
+      // wrappers stack on top of earlier cards, so let the pointer pass
+      // through them; only the visible card itself is interactive.
+      className="md:pointer-events-none md:sticky md:top-0 md:flex md:h-[100dvh] md:items-center"
     >
       <motion.article
         // Stack offset and scale only apply while pinned (md+); on mobile they
@@ -51,7 +54,7 @@ const StackCard = ({
             ? undefined
             : ({ scale, "--stack-top": `${index * 1.75}rem` } as MotionStyle)
         }
-        className="relative grid w-full origin-top max-md:!transform-none md:top-[var(--stack-top,0)] grid-cols-1 gap-8 overflow-hidden rounded-[1.25rem] border border-foreground/[0.07] bg-surface p-4 shadow-[0_-20px_60px_-30px_hsl(var(--foreground)/0.25)] md:grid-cols-12 md:gap-10 md:p-6 lg:p-8"
+        className="pointer-events-auto relative grid w-full origin-top max-md:!transform-none md:top-[var(--stack-top,0)] grid-cols-1 gap-8 overflow-hidden rounded-[1.25rem] border border-foreground/[0.07] bg-surface p-4 shadow-[0_-20px_60px_-30px_hsl(var(--foreground)/0.25)] md:grid-cols-12 md:gap-10 md:p-6 lg:p-8"
       >
         <div className="relative aspect-[16/10] overflow-hidden rounded-[0.9rem] bg-background md:col-span-7 md:self-center">
           <motion.div
