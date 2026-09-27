@@ -10,6 +10,7 @@ import {
   getPublishedPostCount,
   getSkills,
 } from "@/lib/data/portfolio";
+import { getPortfolioData } from "@/lib/actions/utils";
 import Highlights from "@/sections/portfolio/Highlights";
 import Process from "@/sections/portfolio/Process";
 import { Suspense } from "react";
@@ -21,12 +22,14 @@ const PortfolioPage = async ({
   searchParams: Promise<{ tab?: string }>;
 }) => {
   const { tab } = await searchParams;
-  const [about, { featured, other }, skills, articles] = await Promise.all([
-    getAbout(),
-    getProjects(),
-    getSkills(),
-    getPublishedPostCount(),
-  ]);
+  const [about, { featured, other }, skills, articles, contact] =
+    await Promise.all([
+      getAbout(),
+      getProjects(),
+      getSkills(),
+      getPublishedPostCount(),
+      getPortfolioData(),
+    ]);
 
   return (
     // overflow-x-clip (not hidden) so the sticky project stack keeps working
@@ -57,7 +60,10 @@ const PortfolioPage = async ({
 
         <SkillsClient skills={skills} />
 
-        <Contact />
+        <Contact
+          githubUrl={contact.githubUrl}
+          resumeUrl={contact.resumeUrl}
+        />
       </div>
       </Intro>
     </div>
