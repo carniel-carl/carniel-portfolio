@@ -15,7 +15,7 @@ import PillLink, {
 import { cn } from "@/lib/utils";
 import type { PortfolioData } from "@/lib/actions/utils";
 import { RESUME_FILENAME, RESUME_PATH } from "@/lib/site";
-import { AvailabilityBadge, CopyEmail } from "@/components/general/Availability";
+import { AvailabilityBadge } from "@/components/general/Availability";
 import type { ContactInfo } from "@/lib/availability";
 
 const ID = process.env.NEXT_PUBLIC_FORM_ID!;
@@ -55,14 +55,7 @@ const Contact = ({ githubUrl, contactInfo }: ContactProps) => {
           get back to you.
         </p>
 
-        {(contactInfo.availability || contactInfo.contactEmail) && (
-          <div className="flex flex-col items-start gap-4">
-            <AvailabilityBadge info={contactInfo} />
-            {contactInfo.contactEmail && (
-              <CopyEmail email={contactInfo.contactEmail} source="contact" />
-            )}
-          </div>
-        )}
+        <AvailabilityBadge info={contactInfo} />
 
         <div className="flex flex-wrap gap-3">
           <PillLink

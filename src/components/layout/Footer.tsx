@@ -11,7 +11,7 @@ import SplitText from "@/components/motion/SplitText";
 import { NavLinks } from "@/data/navlinks";
 import routes from "@/lib/routes";
 import { trackEvent } from "@/lib/mixpanel";
-import { AvailabilityBadge, CopyEmail } from "@/components/general/Availability";
+import { AvailabilityBadge } from "@/components/general/Availability";
 import type { ContactInfo } from "@/lib/availability";
 
 type SocialLink = { name: string; link: string };
@@ -32,6 +32,28 @@ const Footer = ({
   // The fixed panel is always "in view" to an observer, so watch the window
   const windowRef = useRef<HTMLDivElement>(null);
   const revealed = useInView(windowRef, { once: true, amount: 0.5 });
+
+  // The layout (and so this footer) survives client-side navigation, while
+  // pages re-render with fresh data. Re-check availability when the footer
+  // comes into view on a page other than the one it was rendered for, so it
+  // matches the hero and contact section after an edit.
+  const [availability, setAvailability] = useState(contact);
+  useEffect(() => setAvailability(contact), [contact]);
+  const inView = useInView(windowRef, { amount: 0.1 });
+  const checkedPath = useRef(pathname);
+  useEffect(() => {
+    if (!inView || checkedPath.current === pathname) return;
+    // Marked only once it succeeds, so a failed check retries next time
+    const path = pathname;
+    fetch("/api/availability")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((fresh: ContactInfo | null) => {
+        if (!fresh) return;
+        checkedPath.current = path;
+        setAvailability(fresh);
+      })
+      .catch(() => {});
+  }, [inView, pathname]);
 
   useEffect(() => {
     setYear(new Date().getFullYear().toString());
@@ -129,13 +151,8 @@ const Footer = ({
             )}
 
             <div className="col-span-2 flex flex-col gap-1 self-end text-sm text-accent-on/75 md:col-span-6 md:items-end">
-              {(contact.availability || contact.contactEmail) && (
-                <div className="mb-5 flex flex-col gap-3 md:items-end">
-                  <AvailabilityBadge info={contact} surface="accent" />
-                  {contact.contactEmail && (
-                    <CopyEmail email={contact.contactEmail} source="footer" surface="accent" />
-                  )}
-                </div>
+              {availability.availability && (
+                <AvailabilityBadge info={availability} surface="accent" className="mb-5" />
               )}
               <div className="flex gap-4">
                 <Link href={routes.public.privacy} className="hover:underline underline-offset-4">

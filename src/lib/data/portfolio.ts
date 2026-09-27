@@ -22,7 +22,7 @@ export async function getAbout() {
     : null;
 }
 
-// Availability badge, local time and email for the hero, footer and contact
+// Availability badge and local time for the hero, footer and contact
 export async function getContactInfo(): Promise<ContactInfo> {
   "use cache: remote";
   cacheTag(CACHE_TAGS.about);
@@ -32,7 +32,6 @@ export async function getContactInfo(): Promise<ContactInfo> {
     select: {
       availability: true,
       availabilityNote: true,
-      contactEmail: true,
       timezone: true,
     },
   });
@@ -40,7 +39,6 @@ export async function getContactInfo(): Promise<ContactInfo> {
   return {
     availability: isAvailability(about?.availability) ? about.availability : null,
     availabilityNote: about?.availabilityNote || null,
-    contactEmail: about?.contactEmail || null,
     timezone: about?.timezone || null,
   };
 }

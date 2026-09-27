@@ -38,7 +38,6 @@ interface AboutData {
   resumeUrl: string;
   availability?: string | null;
   availabilityNote?: string | null;
-  contactEmail?: string | null;
   timezone?: string | null;
 }
 
@@ -48,7 +47,6 @@ type Editable = {
   resumeUrl: string;
   availability: string;
   availabilityNote: string;
-  contactEmail: string;
   timezone: string;
 };
 
@@ -58,7 +56,6 @@ const pick = (a: AboutData | Editable): Editable => ({
   resumeUrl: a.resumeUrl,
   availability: a.availability ?? "",
   availabilityNote: a.availabilityNote ?? "",
-  contactEmail: a.contactEmail ?? "",
   timezone: a.timezone ?? "",
 });
 
@@ -190,7 +187,7 @@ export default function AboutClient({
             />
           </FormSection>
           <FormSection
-            title="Availability & contact"
+            title="Availability"
             description="Shown in the hero, footer and contact section. Leave a field empty to hide it."
           >
             <div className="grid gap-5 sm:grid-cols-2">
@@ -221,27 +218,6 @@ export default function AboutClient({
                   value={about.availabilityNote}
                   onChange={(e) => set("availabilityNote")(e.target.value)}
                 />
-              </div>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="contactEmail">Public email</Label>
-                <Input
-                  id="contactEmail"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  enterKeyHint="next"
-                  className="h-10"
-                  placeholder="you@example.com"
-                  value={about.contactEmail}
-                  onChange={(e) => set("contactEmail")(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Visitors get a one-click copy button.
-                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="timezone">Time zone</Label>

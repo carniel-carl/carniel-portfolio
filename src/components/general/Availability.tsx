@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy } from "lucide-react";
-import { toast } from "sonner";
 import { AVAILABILITY, type ContactInfo } from "@/lib/availability";
-import { trackEvent } from "@/lib/mixpanel";
 import { cn } from "@/lib/utils";
 
 // Surfaces: the page background, or the accent-filled footer
@@ -93,68 +90,5 @@ export function AvailabilityBadge({
       {info.availabilityNote && <span>{info.availabilityNote}</span>}
       {showTime && info.timezone && <LocalTime timezone={info.timezone} />}
     </p>
-  );
-}
-
-export function CopyEmail({
-  email,
-  source,
-  surface = "page",
-  className,
-}: {
-  email: string;
-  source: string;
-  surface?: Surface;
-  className?: string;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (!copied) return;
-    const t = setTimeout(() => setCopied(false), 2000);
-    return () => clearTimeout(t);
-  }, [copied]);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(email);
-      setCopied(true);
-      toast.success("Email copied");
-      trackEvent("Email Copied", { source_page: source });
-    } catch {
-      // Clipboard blocked (permissions, insecure context): open the mail app
-      window.location.href = `mailto:${email}`;
-    }
-  };
-
-  const Icon = copied ? Check : Copy;
-
-  return (
-    <button
-      type="button"
-      onClick={copy}
-      aria-label={`Copy email address ${email}`}
-      className={cn(
-        "group inline-flex h-11 max-w-full items-center gap-3 rounded-full border pl-4 pr-1.5 text-sm font-medium transition-[border-color,transform] duration-300 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-        surface === "page"
-          ? "border-foreground/20 text-foreground hover:border-foreground/60 focus-visible:ring-accent focus-visible:ring-offset-background"
-          : "border-accent-on/30 text-accent-on hover:border-accent-on/70 focus-visible:ring-accent-on focus-visible:ring-offset-accent",
-        className,
-      )}
-    >
-      <span className="truncate">{email}</span>
-      <span
-        aria-hidden="true"
-        className={cn(
-          "grid size-8 shrink-0 place-items-center rounded-full transition-transform duration-300 group-hover:scale-105",
-          surface === "page" ? "bg-foreground text-background" : "bg-accent-on text-accent",
-        )}
-      >
-        <Icon className="size-3.5" />
-      </span>
-      <span className="sr-only" aria-live="polite">
-        {copied ? "Copied" : ""}
-      </span>
-    </button>
   );
 }
