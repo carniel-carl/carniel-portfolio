@@ -1,6 +1,7 @@
 import BlogPostContent from "@/components/blog/BlogPostContent";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import StatusPill from "@/components/admin/ui/StatusPill";
+import PublishPostButton from "@/components/admin/PublishPostButton";
 import { buttonVariants } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -54,10 +55,14 @@ export default async function BlogPreviewPage({
                 Open live
               </a>
             )}
-            <Link href={routes.admin.blogEdit(id)} className={buttonVariants()}>
+            <Link
+              href={routes.admin.blogEdit(id)}
+              className={buttonVariants(post.published ? undefined : { variant: "outline" })}
+            >
               <Pencil />
               Edit
             </Link>
+            {!post.published && <PublishPostButton id={id} />}
           </>
         }
       />

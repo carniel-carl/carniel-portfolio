@@ -11,6 +11,10 @@ export const SITE_NAME = "Chimezie's Portfolio";
 // Public byline for the blog (the admin account name is not shown)
 export const AUTHOR_NAME = "Carniel";
 
+// Filename recruiters get when downloading the resume from /resume
+export const RESUME_FILENAME = "NMUGHA CHIMEZIE CARNIEL Resume.pdf";
+export const RESUME_PATH = "/resume";
+
 // Plain-text summary for meta descriptions (~155 chars is what search results show)
 export function toMetaDescription(html: string, max = 155) {
   const text = html

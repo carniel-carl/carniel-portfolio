@@ -1,5 +1,6 @@
 "use client";
 
+import { RESUME_FILENAME, RESUME_PATH } from "@/lib/site";
 import { Download } from "lucide-react";
 import Image from "next/image";
 import { useRef } from "react";
@@ -32,7 +33,6 @@ const AboutClient = ({ about }: AboutClientProps) => {
     about?.bio ||
     "<p>I discovered my passion for coding while building a website for my art business. Since then, I have immersed myself in the world of technology, continuously expanding my skills and exploring its vast potential. Combining creativity with functionality, makes my journey in tech both fulfilling and dynamic.</p>";
   const profilePicUrl = about?.profilePicUrl || "/images/profile-pic.jpg";
-  const resumeUrl = about?.resumeUrl || "/chimezie-resume.pdf";
 
   const frameRef = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
@@ -95,9 +95,9 @@ const AboutClient = ({ about }: AboutClientProps) => {
         >
           <Magnetic strength={0.25}>
             <PillLink
-              href={resumeUrl}
+              href={RESUME_PATH}
               icon={<Download />}
-              download="chimezie-resume"
+              download={RESUME_FILENAME}
               onClick={() =>
                 trackEvent("Resume Downloaded", { source_page: "about" })
               }

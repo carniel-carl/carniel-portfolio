@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useRef } from "react";
 import { useForm, ValidationError } from "@formspree/react";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ import PillLink, {
 } from "@/components/motion/PillLink";
 import { cn } from "@/lib/utils";
 import type { PortfolioData } from "@/lib/actions/utils";
+import { RESUME_FILENAME, RESUME_PATH } from "@/lib/site";
 
 const ID = process.env.NEXT_PUBLIC_FORM_ID!;
 
@@ -21,7 +23,7 @@ const fieldClass =
 
 type ContactProps = PortfolioData;
 
-const Contact = ({ githubUrl, resumeUrl }: ContactProps) => {
+const Contact = ({ githubUrl }: ContactProps) => {
   const formRef = useRef<HTMLFormElement | null>(null);
   const reduce = useReducedMotion();
   const [state, handleSubmit] = useForm(ID);
@@ -53,10 +55,10 @@ const Contact = ({ githubUrl, resumeUrl }: ContactProps) => {
 
         <div className="flex flex-wrap gap-3">
           <PillLink
-            href={resumeUrl || "/chimezie-resume.pdf"}
+            href={RESUME_PATH}
             variant="ghost"
             icon={<Download />}
-            download="chimezie-resume"
+            download={RESUME_FILENAME}
             onClick={() =>
               trackEvent("Resume Downloaded", {
                 source_page: "contact",
