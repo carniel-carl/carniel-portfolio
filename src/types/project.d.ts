@@ -1,4 +1,7 @@
 type ProjectDataType = {
+  slug: string;
+  // Rich-text case study; the /work page still renders without it
+  hasCaseStudy?: boolean;
   tag?: string;
   name: string;
   img: string;

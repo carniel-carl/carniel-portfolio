@@ -7,7 +7,17 @@ export const SITE_URL = (
     : "http://localhost:3000")
 ).replace(/\/$/, "");
 
-export const SITE_NAME = "Chimezie's Portfolio";
+export const SITE_NAME = "Chimezie Carniel";
+export const SITE_TITLE = `${SITE_NAME} · Web & mobile developer`;
+// Child metadata replaces the parent's openGraph object instead of merging,
+// so every page spreads this in rather than relying on the root layout
+export const BASE_OPEN_GRAPH = {
+  type: "website",
+  siteName: SITE_NAME,
+  locale: "en_US",
+} as const;
+export const SITE_DESCRIPTION =
+  "Chimezie (Carniel) is a web and mobile developer building fast, accessible apps with React, Next.js and React Native.";
 // Public byline for the blog (the admin account name is not shown)
 export const AUTHOR_NAME = "Carniel";
 

@@ -32,6 +32,11 @@ const baseProjectSchema = z.object({
   appStoreUrl: z.string(),
   playStoreUrl: z.string(),
   betaUrl: z.string(),
+  // Case study page
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]*$/, "Lowercase letters, numbers and hyphens only"),
+  caseStudy: z.string(),
 });
 
 /** Mobile projects with a video or screenshots can use those as the cover. */

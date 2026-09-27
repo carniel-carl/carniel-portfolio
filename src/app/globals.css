@@ -164,6 +164,7 @@
   100 site header + menu
   500 floating music player (501 for its panel + hint)
   110 intro preloader
+  2001 skip link (only visible while focused)
   120 grain overlay (pointer-events: none)
 */
 .grain {

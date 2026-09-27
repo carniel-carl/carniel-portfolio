@@ -174,7 +174,7 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
                 />
                 <div className="min-w-0 flex-1">
                   <Link
-                    href={routes.admin.blogEdit(post.id)}
+                    href={routes.admin.blogPreview(post.id)}
                     className="block truncate text-sm font-medium text-foreground after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-[inherit] focus-visible:after:ring-2 focus-visible:after:ring-ring"
                   >
                     {post.title}
@@ -198,8 +198,8 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
                     asChild
                     className="hidden size-8 text-muted-foreground hover:bg-muted hover:text-foreground sm:inline-flex"
                   >
-                    <Link href={routes.admin.blogPreview(post.id)} aria-label={`Preview ${post.title}`}>
-                      <Eye />
+                    <Link href={routes.admin.blogEdit(post.id)} aria-label={`Edit ${post.title}`}>
+                      <Pencil />
                     </Link>
                   </Button>
                   <DropdownMenu>

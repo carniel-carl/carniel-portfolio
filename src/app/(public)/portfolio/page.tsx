@@ -6,6 +6,7 @@ import SkillsClient from "@/sections/SkillsClient";
 import PageTracker from "@/components/analytics/PageTracker";
 import {
   getAbout,
+  getContactInfo,
   getProjects,
   getPublishedPostCount,
   getSkills,
@@ -15,6 +16,24 @@ import Highlights from "@/sections/portfolio/Highlights";
 import Process from "@/sections/portfolio/Process";
 import { Suspense } from "react";
 import Intro from "@/components/layout/Intro";
+import type { Metadata } from "next";
+import { PersonJsonLd } from "@/components/seo/JsonLd";
+import { BASE_OPEN_GRAPH, SITE_NAME } from "@/lib/site";
+
+const PORTFOLIO_DESCRIPTION =
+  "Selected web and mobile projects by Chimezie (Carniel): what I built, the stack behind it, and how I work.";
+
+export const metadata: Metadata = {
+  title: "Portfolio",
+  description: PORTFOLIO_DESCRIPTION,
+  alternates: { canonical: "/portfolio" },
+  openGraph: {
+    ...BASE_OPEN_GRAPH,
+    url: "/portfolio",
+    title: `Portfolio · ${SITE_NAME}`,
+    description: PORTFOLIO_DESCRIPTION,
+  },
+};
 
 const PortfolioPage = async ({
   searchParams,
@@ -22,19 +41,21 @@ const PortfolioPage = async ({
   searchParams: Promise<{ tab?: string }>;
 }) => {
   const { tab } = await searchParams;
-  const [about, { featured, other }, skills, articles, contact] =
+  const [about, { featured, other }, skills, articles, contact, contactInfo] =
     await Promise.all([
       getAbout(),
       getProjects(),
       getSkills(),
       getPublishedPostCount(),
       getPortfolioData(),
+      getContactInfo(),
     ]);
 
   return (
     // overflow-x-clip (not hidden) so the sticky project stack keeps working
     <div className="w-full overflow-x-clip">
       <PageTracker event="Portfolio Viewed" />
+      <PersonJsonLd />
       <Intro>
       <FloatNavDynamic />
       <div className="mx-auto max-w-[1400px] px-4 md:px-8">
@@ -63,6 +84,7 @@ const PortfolioPage = async ({
         <Contact
           githubUrl={contact.githubUrl}
           resumeUrl={contact.resumeUrl}
+          contactInfo={contactInfo}
         />
       </div>
       </Intro>

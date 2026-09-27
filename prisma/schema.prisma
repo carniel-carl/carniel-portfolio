@@ -23,6 +23,11 @@ model About {
   bio           String
   profilePicUrl String
   resumeUrl     String
+  // Availability badge (hero, footer) and the copy-email button
+  availability     String? // "open" | "limited" | "unavailable"; null hides the badge
+  availabilityNote String? // e.g. "Taking new projects from November"
+  contactEmail     String?
+  timezone         String? // IANA name, e.g. "Africa/Lagos"; shows your local time
   updatedAt     DateTime @updatedAt
 }
 
@@ -48,6 +53,9 @@ model Project {
   appStoreUrl  String?
   playStoreUrl String?
   betaUrl      String?            // TestFlight, APK or Expo link
+  // Case study page (/work/[slug]). Slug falls back to the name when unset.
+  slug         String?
+  caseStudy    String?            // Tiptap HTML: problem, approach, outcome
   featured    Boolean  @default(false)
   visible     Boolean  @default(true)
   order       Int      @default(0)
@@ -79,6 +87,7 @@ model BlogPost {
   coverImage  String?
   tags        String[]
   published   Boolean   @default(false)
+  views       Int?      // Missing on older posts; read as 0
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

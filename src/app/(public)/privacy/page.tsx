@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import routes from "@/lib/routes";
+import { BASE_OPEN_GRAPH, SITE_NAME } from "@/lib/site";
+
+const PRIVACY_DESCRIPTION =
+  "How carniel.vercel.app collects, uses and protects information about visitors.";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Chimezie's Portfolio",
-  description:
-    "How carniel.vercel.app collects, uses and protects information about visitors.",
+  title: "Privacy policy",
+  description: PRIVACY_DESCRIPTION,
+  alternates: { canonical: "/privacy" },
+  openGraph: {
+    ...BASE_OPEN_GRAPH,
+    url: "/privacy",
+    title: `Privacy policy · ${SITE_NAME}`,
+    description: PRIVACY_DESCRIPTION,
+  },
 };
 
 const LAST_UPDATED = "September 27, 2026";

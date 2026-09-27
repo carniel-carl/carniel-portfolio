@@ -132,7 +132,9 @@ export default async function AnalyticsPage() {
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* grid-cols-1 (minmax(0,1fr)): an implicit mobile column grows to the
+          longest un-wrappable label and the admin shell clips the overflow */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <RankedList
           title="Most read posts"
           unit="reads"

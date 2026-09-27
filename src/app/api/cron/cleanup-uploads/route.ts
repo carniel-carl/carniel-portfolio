@@ -6,7 +6,6 @@ import prisma from "@/lib/prisma";
 // Runs monthly via Vercel Cron (vercel.json). Add ?dryRun=1 to preview
 // what would be removed without deleting anything.
 
-export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // Skip recent uploads: the admin forms upload before the record is saved,

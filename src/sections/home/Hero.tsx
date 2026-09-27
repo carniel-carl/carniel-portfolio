@@ -16,6 +16,8 @@ import routes from "@/lib/routes";
 import { trackEvent } from "@/lib/mixpanel";
 import KineticName from "@/sections/home/KineticName";
 import { useIntroReady } from "@/components/layout/Intro";
+import { AvailabilityBadge } from "@/components/general/Availability";
+import type { ContactInfo } from "@/lib/availability";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const NAME = "Carniel";
@@ -29,7 +31,7 @@ const fadeUp: Variants = {
   }),
 };
 
-const Hero = () => {
+const Hero = ({ contact }: { contact: ContactInfo }) => {
   const ready = useIntroReady();
   const ref = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
@@ -59,6 +61,17 @@ const Hero = () => {
             style={reduce ? undefined : { opacity: copyOpacity }}
             className="relative z-[2] flex flex-col gap-7 md:col-span-6 md:pt-10 lg:col-span-5"
           >
+            {contact.availability && (
+              <motion.div
+                custom={0.45}
+                variants={fadeUp}
+                initial={reduce ? false : "hidden"}
+                animate={state}
+              >
+                <AvailabilityBadge info={contact} />
+              </motion.div>
+            )}
+
             <motion.p
               custom={0.55}
               variants={fadeUp}

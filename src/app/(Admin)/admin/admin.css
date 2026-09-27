@@ -220,3 +220,30 @@ html:has(.admin-root) body {
     transform: translateY(8px);
   }
 }
+
+/* ---------------------------------------------------------------------------
+  SIGN-IN
+  Screenshot columns drift slowly behind the headline; each column holds its
+  list twice, so a -50% translate loops without a seam. Still under reduced
+  motion.
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  .auth-drift {
+    animation: auth-drift linear infinite;
+    will-change: transform;
+  }
+  .auth-drift[data-reverse] {
+    animation-direction: reverse;
+  }
+  .auth-rise {
+    animation: auth-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+@keyframes auth-drift {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+@keyframes auth-rise {
+  from { opacity: 0; transform: translateY(0.35em); }
+  to { opacity: 1; transform: translateY(0); }
+}
