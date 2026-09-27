@@ -40,7 +40,7 @@ export async function getProjects(): Promise<{
     name: p.name,
     tag: p.tag || undefined,
     description: p.description,
-    img: p.img,
+    img: p.img || p.posterUrl || p.screenshots[0] || "",
     live: p.live || undefined,
     code: p.code || undefined,
     stack: p.stack,

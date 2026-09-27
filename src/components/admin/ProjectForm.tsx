@@ -24,6 +24,7 @@ import { createProject, updateProject } from "@/lib/actions/projects";
 import { adminZ } from "@/lib/admin-z";
 import routes from "@/lib/routes";
 import {
+  hasOwnMedia,
   projectFormSchema,
   type ProjectFormValues,
 } from "@/lib/schemas/project";
@@ -115,6 +116,11 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
   const description = useWatch({ control: form.control, name: "description" });
   const platform = useWatch({ control: form.control, name: "platform" });
   const isMobile = platform === "mobile" || platform === "both";
+  const [videoUrl, posterUrl, screenshots] = useWatch({
+    control: form.control,
+    name: ["videoUrl", "posterUrl", "screenshots"],
+  });
+  const coverOptional = hasOwnMedia({ platform, videoUrl, posterUrl, screenshots });
 
   const onSubmit = async (values: ProjectFormValues) => {
     try {
@@ -395,7 +401,16 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-20 lg:self-start">
-          <FormSection title="Cover image">
+          <FormSection
+            title={coverOptional ? "Cover image (optional)" : "Cover image"}
+            description={
+              coverOptional
+                ? "Leave empty to use the video poster or first screenshot. Used on the home page and admin lists."
+                : isMobile
+                  ? "Or add a video or screenshots below and this becomes optional."
+                  : undefined
+            }
+          >
             <FormField
               control={form.control}
               name="img"
@@ -423,13 +438,7 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
                 <VideoDrop
                   value={form.watch("videoUrl")}
                   onChange={(url) => form.setValue("videoUrl", url, { shouldDirty: true })}
-                  onPoster={(url) => {
-                    form.setValue("posterUrl", url, { shouldDirty: true });
-                    // No cover yet? The poster frame makes a good one
-                    if (url && !form.getValues("img")) {
-                      form.setValue("img", url, { shouldDirty: true, shouldValidate: true });
-                    }
-                  }}
+                  onPoster={(url) => form.setValue("posterUrl", url, { shouldDirty: true })}
                 />
               </FormSection>
 

@@ -33,6 +33,24 @@ type ShowcaseInput = {
   betaUrl?: string;
 };
 
+/**
+ * The cover image is optional for mobile projects with their own media: fall
+ * back to the video poster, then the first screenshot. Stored in `img` so
+ * every consumer (home, admin lists, cards) keeps working unchanged.
+ */
+function resolveCover(data: { img?: string } & ShowcaseInput) {
+  const cover = data.img?.trim();
+  if (cover) return cover;
+  const isMobile = data.platform === "mobile" || data.platform === "both";
+  const fallback = isMobile
+    ? data.posterUrl?.trim() || data.screenshots?.find((s) => s.trim())
+    : undefined;
+  if (!fallback) {
+    throw new Error("A cover image is required unless a mobile project has a video or screenshots");
+  }
+  return fallback;
+}
+
 const PLATFORM_VALUES = new Set(["web", "mobile", "both"]);
 const STATUS_VALUES = new Set(["live", "beta", "prototype", "internal", "in-development"]);
 
@@ -127,9 +145,10 @@ export async function createProject(data: {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
-  if (!data.name || !data.description || !data.img) {
-    throw new Error("Name, description, and image are required");
+  if (!data.name || !data.description) {
+    throw new Error("Name and description are required");
   }
+  const cover = resolveCover(data);
 
   const isFeatured = data.featured || false;
   const isVisible = data.visible ?? true;
@@ -142,7 +161,7 @@ export async function createProject(data: {
       name: data.name,
       tag: data.tag || null,
       description: data.description,
-      img: data.img,
+      img: cover,
       mediaType: data.mediaType || "image",
       live: data.live || null,
       code: data.code || null,
@@ -206,7 +225,7 @@ export async function updateProject(
       name: data.name,
       tag: data.tag,
       description: data.description,
-      img: data.img,
+      img: resolveCover(data),
       mediaType: data.mediaType,
       live: data.live,
       code: data.code,
