@@ -14,7 +14,6 @@ export const isAvailability = (v: unknown): v is Availability =>
 export type ContactInfo = {
   availability: Availability | null;
   availabilityNote: string | null;
-  contactEmail: string | null;
   timezone: string | null;
 };
 

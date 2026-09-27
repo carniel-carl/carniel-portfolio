@@ -23,10 +23,9 @@ model About {
   bio           String
   profilePicUrl String
   resumeUrl     String
-  // Availability badge (hero, footer) and the copy-email button
+  // Availability badge (hero, footer, contact section)
   availability     String? // "open" | "limited" | "unavailable"; null hides the badge
   availabilityNote String? // e.g. "Taking new projects from November"
-  contactEmail     String?
   timezone         String? // IANA name, e.g. "Africa/Lagos"; shows your local time
   updatedAt     DateTime @updatedAt
 }

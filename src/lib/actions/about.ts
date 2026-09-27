@@ -2,30 +2,24 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { isAvailability, isValidTimezone } from "@/lib/availability";
 
 // Blank fields are stored as null so the site hides them
-function contactData(data: {
+function availabilityData(data: {
   availability?: string | null;
   availabilityNote?: string | null;
-  contactEmail?: string | null;
   timezone?: string | null;
 }) {
   const text = (v?: string | null) => (v && v.trim() ? v.trim() : null);
-  const email = text(data.contactEmail);
   const timezone = text(data.timezone);
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new Error("That email address doesn't look right");
-  }
   if (timezone && !isValidTimezone(timezone)) {
     throw new Error("Unknown time zone");
   }
   return {
     availability: isAvailability(data.availability) ? data.availability : null,
     availabilityNote: text(data.availabilityNote),
-    contactEmail: email,
     timezone,
   };
 }
@@ -36,7 +30,6 @@ export async function updateAbout(data: {
   resumeUrl: string;
   availability?: string | null;
   availabilityNote?: string | null;
-  contactEmail?: string | null;
   timezone?: string | null;
 }) {
   const session = await auth();
@@ -50,9 +43,12 @@ export async function updateAbout(data: {
         bio: data.bio || "",
         profilePicUrl: data.profilePicUrl || "",
         resumeUrl: data.resumeUrl || "",
-        ...contactData(data),
+        ...availabilityData(data),
       },
     });
+    // updateTag: the next page load already shows the change (hero, footer,
+    // contact); revalidateTag also refreshes the CDN copies
+    updateTag(CACHE_TAGS.about);
     revalidateTag(CACHE_TAGS.about, "max");
     return about;
   }
@@ -63,10 +59,13 @@ export async function updateAbout(data: {
       bio: data.bio,
       profilePicUrl: data.profilePicUrl,
       resumeUrl: data.resumeUrl,
-      ...contactData(data),
+      ...availabilityData(data),
     },
   });
 
-  revalidateTag(CACHE_TAGS.about, "max");
+  // updateTag: the next page load already shows the change (hero, footer,
+    // contact); revalidateTag also refreshes the CDN copies
+    updateTag(CACHE_TAGS.about);
+    revalidateTag(CACHE_TAGS.about, "max");
   return about;
 }

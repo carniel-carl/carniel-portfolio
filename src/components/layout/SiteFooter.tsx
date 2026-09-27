@@ -6,7 +6,8 @@ import { getContactInfo } from "@/lib/data/portfolio";
 
 const SiteFooter = async () => {
   "use cache: remote";
-  cacheTag(CACHE_TAGS.social);
+  // About too: the footer shows the availability badge from the About page
+  cacheTag(CACHE_TAGS.social, CACHE_TAGS.about);
   cacheLife("max");
 
   const [socialLinks, contact] = await Promise.all([

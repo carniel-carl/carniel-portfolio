@@ -61,17 +61,6 @@ const Hero = ({ contact }: { contact: ContactInfo }) => {
             style={reduce ? undefined : { opacity: copyOpacity }}
             className="relative z-[2] flex flex-col gap-7 md:col-span-6 md:pt-10 lg:col-span-5"
           >
-            {contact.availability && (
-              <motion.div
-                custom={0.45}
-                variants={fadeUp}
-                initial={reduce ? false : "hidden"}
-                animate={state}
-              >
-                <AvailabilityBadge info={contact} />
-              </motion.div>
-            )}
-
             <motion.p
               custom={0.55}
               variants={fadeUp}
@@ -156,6 +145,21 @@ const Hero = ({ contact }: { contact: ContactInfo }) => {
                   />
                 </motion.div>
               </motion.div>
+
+              {/* Availability: overlaid on the photo so it takes no space in
+                  the layout. Inside the clip so it's revealed with the photo,
+                  outside the zoom layers so it doesn't scale. */}
+              {contact.availability && (
+                <motion.div
+                  custom={1.2}
+                  variants={fadeUp}
+                  initial={reduce ? false : "hidden"}
+                  animate={state}
+                  className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] rounded-full border border-foreground/10 bg-background/75 px-3.5 py-2 shadow-[0_8px_24px_-12px_hsl(var(--foreground)/0.4)] backdrop-blur-md md:left-4 md:top-4"
+                >
+                  <AvailabilityBadge info={contact} className="text-xs md:text-[0.8rem]" />
+                </motion.div>
+              )}
             </motion.div>
           </motion.div>
         </div>
