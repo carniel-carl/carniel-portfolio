@@ -11,6 +11,8 @@ import {
   type MotionValue,
 } from "framer-motion";
 import ProjectLinks from "./ProjectLinks";
+import { ProjectBadges, ProjectRole, isMobileProject } from "./ProjectMeta";
+import PhoneShowcase from "@/components/general/PhoneShowcase";
 import type { ProjectDataType } from "@/types/project";
 
 const StackCard = ({
@@ -37,6 +39,8 @@ const StackCard = ({
     offset: ["start end", "start start"],
   });
   const imageScale = useTransform(enter, [0, 1], [1.25, 1]);
+  const phone =
+    isMobileProject(project) && Boolean(project.videoUrl || project.screenshots?.length);
 
   return (
     <div
@@ -56,23 +60,38 @@ const StackCard = ({
         }
         className="pointer-events-auto relative grid w-full origin-top max-md:!transform-none md:top-[var(--stack-top,0)] grid-cols-1 gap-8 overflow-hidden rounded-[1.25rem] border border-foreground/[0.07] bg-surface p-4 shadow-[0_-20px_60px_-30px_hsl(var(--foreground)/0.25)] md:grid-cols-12 md:gap-10 md:p-6 lg:p-8"
       >
-        <div className="relative aspect-[16/10] overflow-hidden rounded-[0.9rem] bg-background md:col-span-7 md:self-center">
-          <motion.div
-            style={reduce ? undefined : { scale: imageScale }}
-            className="absolute inset-0"
-          >
-            <Image
-              src={project.img}
-              alt={project.name}
-              fill
-              className="object-cover object-top"
-              sizes="(max-width: 768px) 100vw, 55vw"
+        {phone ? (
+          // Mobile app: phone frame on a soft accent glow instead of a screenshot crop
+          <div className="relative flex h-[26rem] items-center justify-center overflow-hidden rounded-[0.9rem] bg-background bg-[radial-gradient(60%_55%_at_50%_45%,color-mix(in_srgb,var(--clr)_22%,transparent),transparent_75%)] py-8 md:col-span-7 md:h-[32rem] lg:h-[34rem]">
+            <PhoneShowcase
+              name={project.name}
+              videoUrl={project.videoUrl}
+              posterUrl={project.posterUrl}
+              screenshots={project.screenshots}
+              fallbackImage={project.img}
+              className="h-full"
             />
-          </motion.div>
-        </div>
+          </div>
+        ) : (
+          <div className="relative aspect-[16/10] overflow-hidden rounded-[0.9rem] bg-background md:col-span-7 md:self-center">
+            <motion.div
+              style={reduce ? undefined : { scale: imageScale }}
+              className="absolute inset-0"
+            >
+              <Image
+                src={project.img}
+                alt={project.name}
+                fill
+                className="object-cover object-top"
+                sizes="(max-width: 768px) 100vw, 55vw"
+              />
+            </motion.div>
+          </div>
+        )}
 
         <div className="flex flex-col justify-between gap-8 md:col-span-5 md:py-2">
           <div className="flex flex-col gap-5">
+            <ProjectBadges project={project} />
             {project.tag && (
               <p className="text-sm font-medium text-accent-ink">{project.tag}</p>
             )}
@@ -82,6 +101,7 @@ const StackCard = ({
             <p className="max-w-[46ch] text-base leading-relaxed text-foreground/70 md:text-lg">
               {project.description}
             </p>
+            <ProjectRole project={project} />
           </div>
 
           <div className="flex flex-col gap-6">

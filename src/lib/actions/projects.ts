@@ -19,6 +19,42 @@ const invalidateProjectCaches = () => {
   revalidatePath("/portfolio");
 };
 
+type ShowcaseInput = {
+  platform?: string;
+  status?: string;
+  role?: string;
+  team?: string;
+  highlights?: string[];
+  videoUrl?: string;
+  posterUrl?: string;
+  screenshots?: string[];
+  appStoreUrl?: string;
+  playStoreUrl?: string;
+  betaUrl?: string;
+};
+
+const PLATFORM_VALUES = new Set(["web", "mobile", "both"]);
+const STATUS_VALUES = new Set(["live", "beta", "prototype", "internal", "in-development"]);
+
+/** Empty strings become null; lists are trimmed and de-blanked. */
+function showcaseData(data: ShowcaseInput) {
+  const text = (v?: string) => (v && v.trim() ? v.trim() : null);
+  const list = (v?: string[]) => (v ?? []).map((s) => s.trim()).filter(Boolean);
+  return {
+    platform: data.platform && PLATFORM_VALUES.has(data.platform) ? data.platform : "web",
+    status: data.status && STATUS_VALUES.has(data.status) ? data.status : null,
+    role: text(data.role),
+    team: text(data.team),
+    highlights: list(data.highlights),
+    videoUrl: text(data.videoUrl),
+    posterUrl: text(data.posterUrl),
+    screenshots: list(data.screenshots).slice(0, 6),
+    appStoreUrl: text(data.appStoreUrl),
+    playStoreUrl: text(data.playStoreUrl),
+    betaUrl: text(data.betaUrl),
+  };
+}
+
 /**
  * Within each category (featured/other), ordering invariant:
  *   [visible projects: 0, 1, 2 ...] [invisible projects: N, N+1, ...]
@@ -87,7 +123,7 @@ export async function createProject(data: {
   stack?: string[];
   featured?: boolean;
   visible?: boolean;
-}) {
+} & ShowcaseInput) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
@@ -114,6 +150,7 @@ export async function createProject(data: {
       featured: isFeatured,
       visible: isVisible,
       order: insertOrder,
+      ...showcaseData(data),
     },
   });
 
@@ -134,7 +171,7 @@ export async function updateProject(
     stack?: string[];
     featured?: boolean;
     visible?: boolean;
-  },
+  } & ShowcaseInput,
 ) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
@@ -177,6 +214,7 @@ export async function updateProject(
       featured: newFeatured,
       visible: newVisible,
       order: newOrder,
+      ...showcaseData(data),
     },
   });
 
