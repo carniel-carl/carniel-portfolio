@@ -176,6 +176,144 @@
   mix-blend-mode: normal;
 }
 
+/* HDR: ROUTE LOADER (app/(public)/loading.tsx) */
+.route-loader {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: calc(100dvh - 3.5rem);
+  overflow: hidden;
+  /* Wait a beat so fast navigations never flash the loader */
+  opacity: 0;
+  animation: route-loader-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+.route-loader::before {
+  /* Faint dot grid that fades out toward the edges */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(hsl(var(--foreground) / 0.12) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at center, black 10%, transparent 65%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 10%, transparent 65%);
+}
+.route-loader__mark {
+  position: absolute;
+  width: min(34rem, 80vw);
+  aspect-ratio: 1;
+  color: var(--clr);
+  opacity: 0.07;
+  animation: route-loader-spin 24s linear infinite;
+}
+.route-loader__name {
+  display: flex;
+  align-items: baseline;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(3.5rem, 13vw, 9rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: hsl(var(--foreground));
+}
+.route-loader__name > span {
+  display: inline-block;
+  font-variation-settings: "wght" 800, "wdth" 75;
+  animation: route-loader-breathe 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+}
+.route-loader__name > .route-loader__dot {
+  color: var(--clr);
+  animation: route-loader-pulse 0.9s ease-in-out infinite alternate;
+}
+.route-loader__track {
+  position: relative;
+  margin-top: 2rem;
+  width: min(15rem, 60vw);
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: hsl(var(--foreground) / 0.1);
+}
+.route-loader__track > div {
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: var(--clr);
+  box-shadow: 0 0 12px var(--clr);
+  animation: route-loader-sweep 1.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.route-loader__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  color: hsl(var(--muted-foreground));
+}
+.route-loader__ticker {
+  display: block;
+  height: 1.25rem;
+  overflow: hidden;
+}
+.route-loader__ticker > span {
+  display: flex;
+  flex-direction: column;
+  animation: route-loader-ticker 6.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.route-loader__ticker > span > span {
+  height: 1.25rem;
+  line-height: 1.25rem;
+}
+.route-loader__caret {
+  width: 0.5em;
+  height: 1em;
+  background: var(--clr);
+  animation: route-loader-blink 1s steps(1) infinite;
+}
+
+@keyframes route-loader-in {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes route-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes route-loader-breathe {
+  to {
+    font-variation-settings: "wght" 250, "wdth" 100;
+    transform: translateY(-0.06em);
+  }
+}
+@keyframes route-loader-pulse {
+  to {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+}
+@keyframes route-loader-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+@keyframes route-loader-ticker {
+  0%, 20% { transform: translateY(0); }
+  25%, 45% { transform: translateY(-1.25rem); }
+  50%, 70% { transform: translateY(-2.5rem); }
+  75%, 95% { transform: translateY(-3.75rem); }
+  100% { transform: translateY(-5rem); }
+}
+@keyframes route-loader-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

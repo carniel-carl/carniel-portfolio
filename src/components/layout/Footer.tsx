@@ -120,9 +120,12 @@ const Footer = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
               </ul>
             )}
 
-            <p className="col-span-2 self-end text-sm text-accent-on/75 md:col-span-6 md:text-right">
-              &copy; {year} Nmugha Chimezie (Carniel). All rights reserved.
-            </p>
+            <div className="col-span-2 flex flex-col gap-1 self-end text-sm text-accent-on/75 md:col-span-6 md:items-end">
+              <Link href={routes.public.privacy} className="hover:underline underline-offset-4">
+                Privacy Policy
+              </Link>
+              <p>&copy; {year} Nmugha Chimezie (Carniel). All rights reserved.</p>
+            </div>
           </div>
         </div>
       </footer>

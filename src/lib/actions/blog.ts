@@ -1,6 +1,10 @@
 "use server";
 
 import { auth } from "@/lib/auth";
+import {
+  getRecommendedPosts,
+  RECOMMENDATION_LIMIT,
+} from "@/lib/blog/recommendations";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import { revalidatePath, revalidateTag, updateTag } from "next/cache";
@@ -116,6 +120,25 @@ export async function updateBlogPost(
 
   invalidateBlogCaches();
   return post;
+}
+
+/**
+ * Public: the posts most similar to the given one (see getRecommendedPosts).
+ * Returns [] for unknown or unpublished posts.
+ */
+export async function getPostRecommendations(
+  slug: string,
+  limit: number = RECOMMENDATION_LIMIT,
+) {
+  const post = await prisma.blogPost.findUnique({
+    where: { slug },
+    select: { id: true, published: true },
+  });
+  if (!post?.published) return [];
+
+  // Clamp: server actions are callable from any client
+  const safeLimit = Math.min(Math.max(1, Math.trunc(limit) || RECOMMENDATION_LIMIT), 12);
+  return getRecommendedPosts(post.id, safeLimit);
 }
 
 export async function deleteBlogPost(id: string) {

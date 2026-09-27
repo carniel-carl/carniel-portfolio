@@ -1,6 +1,7 @@
 import BlogCard from "@/components/blog/BlogCard";
 import BlogPostContent from "@/components/blog/BlogPostContent";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import { getRecommendedPosts } from "@/lib/blog/recommendations";
 import prisma from "@/lib/prisma";
 import { ArrowLeft } from "lucide-react";
 import { Metadata } from "next";
@@ -8,6 +9,8 @@ import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import PageTracker from "@/components/analytics/PageTracker";
+import AdSlot from "@/components/ads/AdSlot";
+import { ADSENSE_BLOG_SIDEBAR_SLOT, ADSENSE_CLIENT } from "@/lib/adsense";
 
 async function getPost(slug: string) {
   "use cache";
@@ -17,43 +20,6 @@ async function getPost(slug: string) {
   return prisma.blogPost.findUnique({
     where: { slug },
     include: {
-      category: { select: { name: true, slug: true, color: true } },
-      author: { select: { name: true } },
-    },
-  });
-}
-
-async function getRelatedPosts(
-  postId: string,
-  categoryId: string | null,
-  tags: string[],
-) {
-  "use cache";
-  cacheTag(CACHE_TAGS.blog);
-  cacheLife("max");
-
-  const orConditions = [];
-  if (categoryId) orConditions.push({ categoryId });
-  if (tags.length > 0) orConditions.push({ tags: { hasSome: tags } });
-
-  if (orConditions.length === 0) return [];
-
-  return prisma.blogPost.findMany({
-    where: {
-      published: true,
-      id: { not: postId },
-      OR: orConditions,
-    },
-    orderBy: { publishedAt: "desc" },
-    take: 4,
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      excerpt: true,
-      coverImage: true,
-      publishedAt: true,
-      tags: true,
       category: { select: { name: true, slug: true, color: true } },
       author: { select: { name: true } },
     },
@@ -98,12 +64,9 @@ export default async function BlogPostPage({
 
   if (!post || !post.published) notFound();
 
-  const relatedPosts = await getRelatedPosts(
-    post.id,
-    post.categoryId,
-    post.tags,
-  );
+  const relatedPosts = await getRecommendedPosts(post.id);
 
+  const showAds = Boolean(ADSENSE_CLIENT && ADSENSE_BLOG_SIDEBAR_SLOT);
   const estimatedReadTime = `${Math.max(1, Math.ceil(post.content.split(/\s+/).length / 200))} min`;
 
   return (
@@ -127,11 +90,40 @@ export default async function BlogPostPage({
         </Link>
       </div>
 
-      <BlogPostContent post={post} />
+      {showAds ? (
+        <>
+          {/* Plain <script>: AdSense rejects next/script's data-nscript
+              attribute. React hoists async scripts to <head> and loads them once. */}
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+            crossOrigin="anonymous"
+          />
+
+          {/* Ad rails flank the article on wide screens; below xl it's content only */}
+          <div className="xl:grid xl:grid-cols-[160px_minmax(0,48rem)_160px] xl:justify-center xl:gap-10 2xl:grid-cols-[300px_minmax(0,48rem)_300px]">
+            <aside aria-label="Advertisement" className="hidden xl:block">
+              <div className="sticky top-24 pt-12">
+                <AdSlot key={`left-${slug}`} slot={ADSENSE_BLOG_SIDEBAR_SLOT} />
+              </div>
+            </aside>
+
+            <BlogPostContent post={post} />
+
+            <aside aria-label="Advertisement" className="hidden xl:block">
+              <div className="sticky top-24 pt-12">
+                <AdSlot key={`right-${slug}`} slot={ADSENSE_BLOG_SIDEBAR_SLOT} />
+              </div>
+            </aside>
+          </div>
+        </>
+      ) : (
+        <BlogPostContent post={post} />
+      )}
 
       {relatedPosts.length > 0 && (
         <section className="w-[90%] max-w-4xl mx-auto py-12 border-t mt-12">
-          <h2 className="text-2xl font-bold mb-6 font-nunito">Related Posts</h2>
+          <h2 className="text-2xl font-bold mb-6 font-nunito">Keep reading</h2>
           <div className="grid gap-8 md:grid-cols-2">
             {relatedPosts.map((relatedPost) => (
               <BlogCard key={relatedPost.id} post={relatedPost} />
