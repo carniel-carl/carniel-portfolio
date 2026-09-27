@@ -36,6 +36,18 @@ model Project {
   live        String?
   code        String?
   stack       String[]
+  // Mobile / team showcase
+  platform     String?            // "web" (default when null) | "mobile" | "both"
+  status       String?            // "live" | "beta" | "prototype" | "internal" | "in-development"
+  role         String?            // e.g. "Mobile developer"
+  team         String?            // e.g. "Team of 6 at Acme"
+  highlights   String[] @default([]) // what you personally built
+  videoUrl     String?            // compressed screen recording (MP4)
+  posterUrl    String?            // first frame, shown before the video loads
+  screenshots  String[] @default([])
+  appStoreUrl  String?
+  playStoreUrl String?
+  betaUrl      String?            // TestFlight, APK or Expo link
   featured    Boolean  @default(false)
   visible     Boolean  @default(true)
   order       Int      @default(0)

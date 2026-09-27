@@ -44,6 +44,17 @@ export async function getProjects(): Promise<{
     live: p.live || undefined,
     code: p.code || undefined,
     stack: p.stack,
+    platform: (p.platform as ProjectDataType["platform"]) || "web",
+    status: (p.status as ProjectDataType["status"]) || undefined,
+    role: p.role || undefined,
+    team: p.team || undefined,
+    highlights: p.highlights,
+    videoUrl: p.videoUrl || undefined,
+    posterUrl: p.posterUrl || undefined,
+    screenshots: p.screenshots,
+    appStoreUrl: p.appStoreUrl || undefined,
+    playStoreUrl: p.playStoreUrl || undefined,
+    betaUrl: p.betaUrl || undefined,
   });
 
   return {

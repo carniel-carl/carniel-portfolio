@@ -3,6 +3,8 @@
 import FileDrop from "@/components/admin/form/FileDrop";
 import FormSection, { ToggleRow } from "@/components/admin/form/FormSection";
 import TagInput from "@/components/admin/form/TagInput";
+import VideoDrop from "@/components/admin/form/VideoDrop";
+import ScreenshotsDrop from "@/components/admin/form/ScreenshotsDrop";
 import { useFormShortcuts } from "@/components/admin/form/useFormShortcuts";
 import { Kbd } from "@/components/admin/shell/CommandMenu";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -21,7 +23,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { createProject, updateProject } from "@/lib/actions/projects";
 import { adminZ } from "@/lib/admin-z";
 import routes from "@/lib/routes";
-import { projectFormSchema, type ProjectFormValues } from "@/lib/schemas/project";
+import {
+  projectFormSchema,
+  type ProjectFormValues,
+} from "@/lib/schemas/project";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -42,7 +47,33 @@ interface ProjectFormData {
   stack: string[];
   featured: boolean;
   visible: boolean;
+  platform?: string | null;
+  status?: string | null;
+  role?: string | null;
+  team?: string | null;
+  highlights?: string[];
+  videoUrl?: string | null;
+  posterUrl?: string | null;
+  screenshots?: string[];
+  appStoreUrl?: string | null;
+  playStoreUrl?: string | null;
+  betaUrl?: string | null;
 }
+
+const PLATFORM_OPTIONS = [
+  { value: "web", label: "Web" },
+  { value: "mobile", label: "Mobile" },
+  { value: "both", label: "Web + Mobile" },
+] as const;
+
+const STATUS_OPTIONS = [
+  { value: "", label: "No label" },
+  { value: "live", label: "Live" },
+  { value: "beta", label: "In beta" },
+  { value: "prototype", label: "Prototype" },
+  { value: "internal", label: "Internal (NDA)" },
+  { value: "in-development", label: "In development" },
+] as const;
 
 interface ProjectFormProps {
   initialData?: ProjectFormData;
@@ -65,12 +96,25 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
       stack: initialData?.stack ?? [],
       featured: initialData?.featured ?? false,
       visible: initialData?.visible ?? true,
+      platform: (initialData?.platform as ProjectFormValues["platform"]) || "web",
+      status: (initialData?.status as ProjectFormValues["status"]) || "",
+      role: initialData?.role ?? "",
+      team: initialData?.team ?? "",
+      highlights: initialData?.highlights ?? [],
+      videoUrl: initialData?.videoUrl ?? "",
+      posterUrl: initialData?.posterUrl ?? "",
+      screenshots: initialData?.screenshots ?? [],
+      appStoreUrl: initialData?.appStoreUrl ?? "",
+      playStoreUrl: initialData?.playStoreUrl ?? "",
+      betaUrl: initialData?.betaUrl ?? "",
     },
   });
 
   const { isSubmitting, isDirty } = form.formState;
   const featured = useWatch({ control: form.control, name: "featured" });
   const description = useWatch({ control: form.control, name: "description" });
+  const platform = useWatch({ control: form.control, name: "platform" });
+  const isMobile = platform === "mobile" || platform === "both";
 
   const onSubmit = async (values: ProjectFormValues) => {
     try {
@@ -154,7 +198,111 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
             />
           </FormSection>
 
-          <FormSection title="Links" description="Both are optional. Visitors see a button for each one you add.">
+          <FormSection title="Type & status">
+            <FormField
+              control={form.control}
+              name="platform"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Platform</FormLabel>
+                  <div role="radiogroup" aria-label="Platform" className="flex w-fit rounded-full border p-1">
+                    {PLATFORM_OPTIONS.map((o) => (
+                      <button
+                        key={o.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={field.value === o.value}
+                        onClick={() => field.onChange(o.value)}
+                        className={cn(
+                          "h-8 rounded-full px-4 text-sm font-medium transition-colors",
+                          field.value === o.value
+                            ? "bg-foreground text-background"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                  <FormDescription>Mobile projects show in a phone frame and get store links.</FormDescription>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status label</FormLabel>
+                  <FormControl>
+                    <select
+                      className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-64"
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    >
+                      {STATUS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormDescription>
+                    Be upfront: &ldquo;Internal (NDA)&rdquo; for company apps you can only show, &ldquo;In beta&rdquo; for TestFlight or APK builds.
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+          </FormSection>
+
+          <FormSection title="Your role" description="What you did on this project. Recruiters read this first on team work.">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <FormControl>
+                      <Input className="h-10" placeholder="Mobile developer" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="team"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Team</FormLabel>
+                    <FormControl>
+                      <Input className="h-10" placeholder="Team of 6 at Acme" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="highlights"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>What you built</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      className="min-h-28 resize-y"
+                      placeholder={"Built the offline sync layer\nImplemented checkout and the payment SDK\nCut app start-up time from 3.1s to 1.4s"}
+                      value={field.value.join("\n")}
+                      onChange={(e) => field.onChange(e.target.value.split("\n"))}
+                    />
+                  </FormControl>
+                  <FormDescription>One per line. The first 3 show on the card.</FormDescription>
+                </FormItem>
+              )}
+            />
+          </FormSection>
+
+          <FormSection title="Links" description="All optional. Visitors see a button for each one you add.">
             <div className="grid gap-5 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -183,6 +331,46 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
                 )}
               />
             </div>
+            {isMobile && (
+              <div className="grid gap-5 sm:grid-cols-3">
+                <FormField
+                  control={form.control}
+                  name="appStoreUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>App Store</FormLabel>
+                      <FormControl>
+                        <Input className="h-10" type="url" placeholder="https://apps.apple.com/" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="playStoreUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Google Play</FormLabel>
+                      <FormControl>
+                        <Input className="h-10" type="url" placeholder="https://play.google.com/" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="betaUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Beta or demo</FormLabel>
+                      <FormControl>
+                        <Input className="h-10" type="url" placeholder="TestFlight, APK or Expo" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
           </FormSection>
 
           <FormSection title="Tech stack">
@@ -228,6 +416,38 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
               )}
             />
           </FormSection>
+
+          {isMobile && (
+            <>
+              <FormSection title="App preview video" description="Plays muted on loop inside a phone frame.">
+                <VideoDrop
+                  value={form.watch("videoUrl")}
+                  onChange={(url) => form.setValue("videoUrl", url, { shouldDirty: true })}
+                  onPoster={(url) => {
+                    form.setValue("posterUrl", url, { shouldDirty: true });
+                    // No cover yet? The poster frame makes a good one
+                    if (url && !form.getValues("img")) {
+                      form.setValue("img", url, { shouldDirty: true, shouldValidate: true });
+                    }
+                  }}
+                />
+              </FormSection>
+
+              <FormSection title="Screenshots" description="Portrait app screens. Shown when there's no video.">
+                <FormField
+                  control={form.control}
+                  name="screenshots"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="sr-only">Screenshots</FormLabel>
+                      <ScreenshotsDrop value={field.value} onChange={(urls) => form.setValue("screenshots", urls, { shouldDirty: true })} />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </FormSection>
+            </>
+          )}
 
           <FormSection title="Visibility">
             <FormField
