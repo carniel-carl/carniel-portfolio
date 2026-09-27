@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { toast } from "sonner";
+import type { EditorView } from "@tiptap/pm/view";
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit";
@@ -76,6 +78,34 @@ interface TiptapEditorProps {
   onChange: (html: string) => void;
   placeholder?: string;
 }
+
+const imageFilesFrom = (list: FileList | null | undefined) =>
+  Array.from(list ?? []).filter((file) => file.type.startsWith("image/"));
+
+// Pasted or dropped image files: upload each to UploadThing, then insert it
+// where it landed (clamped, in case the doc shrank during the upload)
+const uploadAndInsertImages = (view: EditorView, files: File[], at: number) => {
+  for (const file of files) {
+    const toastId = toast.loading(`Uploading ${file.name}...`);
+
+    handleImageUpload(file)
+      .then((url) => {
+        const { state } = view;
+        const pos = Math.min(at, state.doc.content.size);
+        const node = state.schema.nodes.image.create({
+          src: url,
+          alt: file.name.replace(/\.[^/.]+$/, ""),
+        });
+        view.dispatch(state.tr.insert(pos, node).scrollIntoView());
+        toast.success("Image uploaded", { id: toastId });
+      })
+      .catch((error: unknown) => {
+        toast.error(error instanceof Error ? error.message : "Image upload failed", {
+          id: toastId,
+        });
+      });
+  }
+};
 
 const MainToolbarContent = ({
   onHighlighterClick,
@@ -220,6 +250,22 @@ export default function TiptapEditor({
         autocapitalize: "off",
         "aria-label": "Main content area, start typing to enter text.",
       },
+      handlePaste: (view, event) => {
+        const files = imageFilesFrom(event.clipboardData?.files);
+        if (!files.length) return false;
+        event.preventDefault();
+        uploadAndInsertImages(view, files, view.state.selection.from);
+        return true;
+      },
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved) return false;
+        const files = imageFilesFrom(event.dataTransfer?.files);
+        if (!files.length) return false;
+        event.preventDefault();
+        const drop = view.posAtCoords({ left: event.clientX, top: event.clientY });
+        uploadAndInsertImages(view, files, drop?.pos ?? view.state.selection.from);
+        return true;
+      },
     },
     extensions: [
       StarterKit.configure({
@@ -248,7 +294,7 @@ export default function TiptapEditor({
         maxSize: MAX_FILE_SIZE,
         limit: 3,
         upload: handleImageUpload,
-        onError: (error) => console.error("Upload failed:", error),
+        onError: (error) => toast.error(error.message || "Image upload failed"),
       }),
     ],
     content,
