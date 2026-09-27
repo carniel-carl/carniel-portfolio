@@ -12,13 +12,16 @@ import PillLink, {
   pillClasses,
 } from "@/components/motion/PillLink";
 import { cn } from "@/lib/utils";
+import type { PortfolioData } from "@/lib/actions/utils";
 
 const ID = process.env.NEXT_PUBLIC_FORM_ID!;
 
 const fieldClass =
   "w-full rounded-none border-0 border-b border-foreground/25 bg-transparent px-0 py-3 text-lg text-foreground outline-none transition-colors duration-300 focus:border-accent-ink focus-visible:ring-0 md:text-xl";
 
-const Contact = () => {
+type ContactProps = PortfolioData;
+
+const Contact = ({ githubUrl, resumeUrl }: ContactProps) => {
   const formRef = useRef<HTMLFormElement | null>(null);
   const reduce = useReducedMotion();
   const [state, handleSubmit] = useForm(ID);
@@ -50,7 +53,7 @@ const Contact = () => {
 
         <div className="flex flex-wrap gap-3">
           <PillLink
-            href="/chimezie-resume.pdf"
+            href={resumeUrl || "/chimezie-resume.pdf"}
             variant="ghost"
             icon={<Download />}
             download="chimezie-resume"
@@ -62,20 +65,22 @@ const Contact = () => {
           >
             Download resume
           </PillLink>
-          <PillLink
-            href="https://github.com/carniel-carl"
-            variant="ghost"
-            icon={<Github />}
-            onClick={() =>
-              trackEvent("Social Link Clicked", {
-                platform: "github",
-                url: "https://github.com/carniel-carl",
-                source_page: "contact",
-              })
-            }
-          >
-            Github
-          </PillLink>
+          {githubUrl && (
+            <PillLink
+              href={githubUrl}
+              variant="ghost"
+              icon={<Github />}
+              onClick={() =>
+                trackEvent("Social Link Clicked", {
+                  platform: "github",
+                  url: githubUrl,
+                  source_page: "contact",
+                })
+              }
+            >
+              Github
+            </PillLink>
+          )}
         </div>
       </div>
 
