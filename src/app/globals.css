@@ -140,6 +140,12 @@
   body {
     @apply bg-background text-foreground overflow-x-hidden;
   }
+  /* Radix locks scroll with overflow:hidden on <body>, which only reaches the
+     viewport through overflow propagation. Lock <html> directly so the page
+     behind any open modal (blog search, admin command menu) can't scroll. */
+  html:has(> body[data-scroll-locked]) {
+    overflow: hidden;
+  }
 }
 
 /* HDR: UTILITIES */

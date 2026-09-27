@@ -84,10 +84,18 @@ async function getCategories() {
   cacheTag(CACHE_TAGS.categories);
   cacheLife("max");
 
-  return prisma.category.findMany({
+  const categories = await prisma.category.findMany({
     orderBy: { name: "asc" },
     select: { name: true, slug: true, color: true },
   });
+
+  // Alphabetical, but the catch-all "Other(s)" pill always goes last
+  const isOther = (c: { name: string; slug: string }) =>
+    /^others?$/i.test(c.name.trim()) || /^others?$/i.test(c.slug);
+  return [
+    ...categories.filter((c) => !isOther(c)),
+    ...categories.filter(isOther),
+  ];
 }
 
 async function getTotalPublishedCount() {

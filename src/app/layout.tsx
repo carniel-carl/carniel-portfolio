@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import ThemeWrapper from "@/context/theme-provider";
+import { SITE_URL } from "@/lib/site";
 
 // Display: variable width + optical size axes drive the kinetic headlines
 const display = Bricolage_Grotesque({
@@ -23,6 +24,8 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Resolves relative canonical / Open Graph URLs to absolute ones
+  metadataBase: new URL(SITE_URL),
   title: "Chimezie's portfolio",
   description:
     "Chimezie (Carniel) is a web and mobile developer building fast, accessible apps with React, Next.js and React Native.",
