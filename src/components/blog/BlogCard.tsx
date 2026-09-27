@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PenLine } from "lucide-react";
 import { ViewTransition } from "react";
 import { getContrastColor, cn } from "@/lib/utils";
+import { AUTHOR_NAME } from "@/lib/site";
 import {
   BLOG_FORWARD,
   blogCoverName,
@@ -19,6 +20,7 @@ interface BlogCardProps {
     category: { name: string; slug: string; color: string } | null;
     author: { name: string | null } | null;
     tags: string[];
+    readingMinutes?: number;
   };
   variant?: "default" | "lead";
 }
@@ -81,6 +83,12 @@ export default function BlogCard({ post, variant = "default" }: BlogCardProps) {
             </span>
           )}
           {date && <time>{date}</time>}
+          {post.readingMinutes && (
+            <span className="flex items-center gap-3">
+              <span className="size-1 rounded-full bg-foreground/30" aria-hidden="true" />
+              {post.readingMinutes} min read
+            </span>
+          )}
         </div>
 
         <ViewTransition name={blogTitleName(post.slug)} share="vt-morph-text">
@@ -111,9 +119,7 @@ export default function BlogCard({ post, variant = "default" }: BlogCardProps) {
           </p>
         )}
 
-        {post.author?.name && (
-          <p className="text-sm text-foreground/55">By {post.author.name}</p>
-        )}
+        <p className="text-sm text-foreground/55">By {AUTHOR_NAME}</p>
 
         {post.tags.length > 0 && (
           <div className="relative z-10 mt-1 flex flex-wrap gap-2">
