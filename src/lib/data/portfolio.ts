@@ -74,6 +74,8 @@ export async function getSkills() {
     id: s.id,
     title: s.title,
     iconName: s.iconName,
+    iconLib: s.iconLib,
+    iconSvg: s.iconSvg,
   }));
 }
 

@@ -60,6 +60,7 @@ model Skill {
   title    String
   iconName String
   iconLib  String
+  iconSvg  String? // Stored markup for Iconify icons, so the site never fetches at runtime
   order    Int    @default(0)
 }
 
