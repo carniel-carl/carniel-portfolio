@@ -1,5 +1,6 @@
 import BlogCard from "@/components/blog/BlogCard";
 import BlogPostContent from "@/components/blog/BlogPostContent";
+import ScrollToTopOnEnter from "@/components/blog/ScrollToTopOnEnter";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { getRecommendedPosts } from "@/lib/blog/recommendations";
 import prisma from "@/lib/prisma";
@@ -11,6 +12,8 @@ import { notFound } from "next/navigation";
 import PageTracker from "@/components/analytics/PageTracker";
 import AdSlot from "@/components/ads/AdSlot";
 import { ADSENSE_BLOG_SIDEBAR_SLOT, ADSENSE_CLIENT } from "@/lib/adsense";
+import { ViewTransition } from "react";
+import { BLOG_BACK, blogPageTransition } from "@/lib/blog/view-transitions";
 import { AUTHOR_NAME, SITE_NAME, SITE_URL, toMetaDescription } from "@/lib/site";
 
 async function getPost(slug: string) {
@@ -127,74 +130,82 @@ export default async function BlogPostPage({
   };
 
   return (
-    <div>
-      <script
-        type="application/ld+json"
-        // Escape "<" so post content can't close the script tag
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
-        }}
-      />
-      <PageTracker
-        event="Blog Post Viewed"
-        properties={{
-          slug,
-          title: post.title,
-          category: post.category?.name,
-          estimated_read_time: estimatedReadTime,
-        }}
-      />
-      <div className="w-[90%] max-w-3xl mx-auto pt-12">
-        <Link
-          href="/blog"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <ArrowLeft className="size-4" />
-          Back to Blog
-        </Link>
-      </div>
+    <ViewTransition
+      enter={blogPageTransition}
+      exit={blogPageTransition}
+      default="none"
+    >
+      <div>
+        <ScrollToTopOnEnter />
+        <script
+          type="application/ld+json"
+          // Escape "<" so post content can't close the script tag
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+        <PageTracker
+          event="Blog Post Viewed"
+          properties={{
+            slug,
+            title: post.title,
+            category: post.category?.name,
+            estimated_read_time: estimatedReadTime,
+          }}
+        />
+        <div className="w-[90%] max-w-3xl mx-auto pt-12">
+          <Link
+            href="/blog"
+            transitionTypes={[BLOG_BACK]}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          >
+            <ArrowLeft className="size-4" />
+            Back to Blog
+          </Link>
+        </div>
 
-      {showAds ? (
-        <>
-          {/* Plain <script>: AdSense rejects next/script's data-nscript
+        {showAds ? (
+          <>
+            {/* Plain <script>: AdSense rejects next/script's data-nscript
               attribute. React hoists async scripts to <head> and loads them once. */}
-          <script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
-            crossOrigin="anonymous"
-          />
+            <script
+              async
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+              crossOrigin="anonymous"
+            />
 
-          {/* Ad rails flank the article on wide screens; below xl it's content only */}
-          <div className="xl:grid xl:grid-cols-[160px_minmax(0,48rem)_160px] xl:justify-center xl:gap-10 2xl:grid-cols-[300px_minmax(0,48rem)_300px]">
-            <aside aria-label="Advertisement" className="hidden xl:block">
-              <div className="sticky top-24 pt-12">
-                <AdSlot key={`left-${slug}`} slot={ADSENSE_BLOG_SIDEBAR_SLOT} />
-              </div>
-            </aside>
+            {/* Ad rails flank the article on wide screens; below xl it's content only */}
+            <div className="xl:grid xl:grid-cols-[160px_minmax(0,48rem)_160px] xl:justify-center xl:gap-10 2xl:grid-cols-[300px_minmax(0,48rem)_300px]">
+              <aside aria-label="Advertisement" className="hidden xl:block">
+                <div className="sticky top-24 pt-12">
+                  <AdSlot key={`left-${slug}`} slot={ADSENSE_BLOG_SIDEBAR_SLOT} />
+                </div>
+              </aside>
 
-            <BlogPostContent post={post} />
+              <BlogPostContent post={post} />
 
-            <aside aria-label="Advertisement" className="hidden xl:block">
-              <div className="sticky top-24 pt-12">
-                <AdSlot key={`right-${slug}`} slot={ADSENSE_BLOG_SIDEBAR_SLOT} />
-              </div>
-            </aside>
-          </div>
-        </>
-      ) : (
-        <BlogPostContent post={post} />
-      )}
+              <aside aria-label="Advertisement" className="hidden xl:block">
+                <div className="sticky top-24 pt-12">
+                  <AdSlot key={`right-${slug}`} slot={ADSENSE_BLOG_SIDEBAR_SLOT} />
+                </div>
+              </aside>
+            </div>
+          </>
+        ) : (
+          <BlogPostContent post={post} />
+        )}
 
-      {relatedPosts.length > 0 && (
-        <section className="w-[90%] max-w-4xl mx-auto py-12 border-t mt-12">
-          <h2 className="text-2xl font-bold mb-6 font-nunito">Keep reading</h2>
-          <div className="grid gap-8 md:grid-cols-2">
-            {relatedPosts.map((relatedPost) => (
-              <BlogCard key={relatedPost.id} post={relatedPost} />
-            ))}
-          </div>
-        </section>
-      )}
-    </div>
+        {relatedPosts.length > 0 && (
+          <section className="w-[90%] max-w-4xl mx-auto py-12 border-t mt-12">
+            <h2 className="text-2xl font-bold mb-6 font-nunito">Keep reading</h2>
+            <div className="grid gap-8 md:grid-cols-2">
+              {relatedPosts.map((relatedPost) => (
+                <BlogCard key={relatedPost.id} post={relatedPost} />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </ViewTransition>
   );
 }

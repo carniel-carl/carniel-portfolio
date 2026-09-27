@@ -1,7 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { PenLine } from "lucide-react";
+import { ViewTransition } from "react";
 import { getContrastColor, cn } from "@/lib/utils";
+import {
+  BLOG_FORWARD,
+  blogCoverName,
+  blogTitleName,
+} from "@/lib/blog/view-transitions";
 
 interface BlogCardProps {
   post: {
@@ -34,26 +40,32 @@ export default function BlogCard({ post, variant = "default" }: BlogCardProps) {
         lead && "md:grid-cols-12 md:items-center md:gap-10",
       )}
     >
-      <div
-        className={cn(
-          "relative overflow-hidden rounded-[1.25rem] bg-surface",
-          lead ? "aspect-[16/10] md:col-span-7" : "aspect-[16/10]",
-        )}
+      {/* Only posts with a cover have a hero to morph into */}
+      <ViewTransition
+        name={post.coverImage ? blogCoverName(post.slug) : undefined}
+        share="vt-morph"
       >
-        {post.coverImage ? (
-          <Image
-            src={post.coverImage}
-            alt={post.title}
-            fill
-            sizes={lead ? "(max-width: 768px) 100vw, 58vw" : "(max-width: 768px) 100vw, 33vw"}
-            className="object-cover transition-transform duration-[1.2s] ease-expo group-hover:scale-[1.05]"
-          />
-        ) : (
-          <div className="grid h-full place-items-center text-foreground/25">
-            <PenLine className="size-10" />
-          </div>
-        )}
-      </div>
+        <div
+          className={cn(
+            "relative overflow-hidden rounded-[1.25rem] bg-surface",
+            lead ? "aspect-[16/10] md:col-span-7" : "aspect-[16/10]",
+          )}
+        >
+          {post.coverImage ? (
+            <Image
+              src={post.coverImage}
+              alt={post.title}
+              fill
+              sizes={lead ? "(max-width: 768px) 100vw, 58vw" : "(max-width: 768px) 100vw, 33vw"}
+              className="object-cover transition-transform duration-[1.2s] ease-expo group-hover:scale-[1.05]"
+            />
+          ) : (
+            <div className="grid h-full place-items-center text-foreground/25">
+              <PenLine className="size-10" />
+            </div>
+          )}
+        </div>
+      </ViewTransition>
 
       <div className={cn("flex flex-col gap-3", lead && "md:col-span-5")}>
         <div className="relative z-10 flex flex-wrap items-center gap-3 text-sm text-foreground/60">
@@ -71,19 +83,22 @@ export default function BlogCard({ post, variant = "default" }: BlogCardProps) {
           {date && <time>{date}</time>}
         </div>
 
-        <h2
-          className={cn(
-            "font-display font-semibold leading-[1.08] tracking-[-0.025em]",
-            lead ? "text-4xl md:text-6xl" : "text-2xl md:text-[1.75rem]",
-          )}
-        >
-          <Link
-            href={`/blog/${post.slug}`}
-            className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_2px] bg-left-bottom bg-no-repeat transition-[background-size] duration-700 ease-expo after:absolute after:inset-0 group-hover:bg-[length:100%_2px]"
+        <ViewTransition name={blogTitleName(post.slug)} share="vt-morph-text">
+          <h2
+            className={cn(
+              "font-display font-semibold leading-[1.08] tracking-[-0.025em]",
+              lead ? "text-4xl md:text-6xl" : "text-2xl md:text-[1.75rem]",
+            )}
           >
-            {post.title}
-          </Link>
-        </h2>
+            <Link
+              href={`/blog/${post.slug}`}
+              transitionTypes={[BLOG_FORWARD]}
+              className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_2px] bg-left-bottom bg-no-repeat transition-[background-size] duration-700 ease-expo after:absolute after:inset-0 group-hover:bg-[length:100%_2px]"
+            >
+              {post.title}
+            </Link>
+          </h2>
+        </ViewTransition>
 
         {post.excerpt && (
           <p

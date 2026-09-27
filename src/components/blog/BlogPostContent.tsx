@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { getContrastColor } from "@/lib/utils";
 import parse, {
@@ -13,6 +14,7 @@ import parse, {
 import sanitizeHtml from "sanitize-html";
 import { hastToReact, highlightCode } from "@/lib/lowlight";
 import CodeBlock from "@/components/blog/CodeBlock";
+import { blogCoverName, blogTitleName } from "@/lib/blog/view-transitions";
 
 const ALLOWED_TAGS = [
   "b", "i", "em", "strong", "a", "p", "ul", "ol", "li",
@@ -63,6 +65,7 @@ const parserOptions: HTMLReactParserOptions = {
 interface BlogPostContentProps {
   post: {
     title: string;
+    slug: string;
     content: string;
     coverImage: string | null;
     publishedAt: Date | string | null;
@@ -85,22 +88,27 @@ export default function BlogPostContent({
         </div>
       )}
 
+      {/* Morphs from the matching BlogCard (see lib/blog/view-transitions) */}
       {post.coverImage && (
-        <div className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden mb-8">
-          <Image
-            src={post.coverImage}
-            alt={post.title}
-            fill
-            className="object-cover"
-            priority
-          />
-        </div>
+        <ViewTransition name={blogCoverName(post.slug)} share="vt-morph">
+          <div className="relative w-full h-64 md:h-80 rounded-[1.25rem] overflow-hidden mb-8">
+            <Image
+              src={post.coverImage}
+              alt={post.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+        </ViewTransition>
       )}
 
       <header className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold mb-3 font-nunito">
-          {post.title}
-        </h1>
+        <ViewTransition name={blogTitleName(post.slug)} share="vt-morph-text">
+          <h1 className="text-3xl md:text-4xl font-bold mb-3 font-nunito">
+            {post.title}
+          </h1>
+        </ViewTransition>
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           {post.author?.name && <span>By {post.author.name}</span>}
           {post.publishedAt && (

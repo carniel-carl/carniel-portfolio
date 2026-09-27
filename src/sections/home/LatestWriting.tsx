@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, PenLine } from "lucide-react";
 import SplitText from "@/components/motion/SplitText";
@@ -9,6 +10,11 @@ import PillLink from "@/components/motion/PillLink";
 import routes from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import type { LatestPost } from "@/lib/data/portfolio";
+import {
+  BLOG_FORWARD,
+  blogCoverName,
+  blogTitleName,
+} from "@/lib/blog/view-transitions";
 
 const formatDate = (d: Date | string | null) =>
   d
@@ -57,45 +63,57 @@ const LatestWriting = ({ posts }: { posts: LatestPost[] }) => {
                 lead ? "md:col-span-7 md:row-span-2" : "md:col-span-5",
               )}
             >
-              <div
-                className={cn(
-                  "relative overflow-hidden rounded-[1.25rem] bg-surface",
-                  lead ? "aspect-[4/3]" : "aspect-[16/9]",
-                )}
+              {/* Morphs into the post hero (see lib/blog/view-transitions) */}
+              <ViewTransition
+                name={post.coverImage ? blogCoverName(post.slug) : undefined}
+                share="vt-morph"
               >
-                {post.coverImage ? (
-                  <Image
-                    src={post.coverImage}
-                    alt=""
-                    fill
-                    sizes={lead ? "(max-width: 768px) 100vw, 58vw" : "(max-width: 768px) 100vw, 40vw"}
-                    className="object-cover transition-transform duration-[1.2s] ease-expo group-hover:scale-[1.05]"
-                  />
-                ) : (
-                  <div className="grid h-full place-items-center text-foreground/30">
-                    <PenLine className="size-10" />
-                  </div>
-                )}
-              </div>
+                <div
+                  className={cn(
+                    "relative overflow-hidden rounded-[1.25rem] bg-surface",
+                    lead ? "aspect-[4/3]" : "aspect-[16/9]",
+                  )}
+                >
+                  {post.coverImage ? (
+                    <Image
+                      src={post.coverImage}
+                      alt=""
+                      fill
+                      sizes={lead ? "(max-width: 768px) 100vw, 58vw" : "(max-width: 768px) 100vw, 40vw"}
+                      className="object-cover transition-transform duration-[1.2s] ease-expo group-hover:scale-[1.05]"
+                    />
+                  ) : (
+                    <div className="grid h-full place-items-center text-foreground/30">
+                      <PenLine className="size-10" />
+                    </div>
+                  )}
+                </div>
+              </ViewTransition>
               <div className="flex flex-col gap-2">
                 <p className="text-sm text-foreground/60">
                   {[post.category?.name, formatDate(post.publishedAt)]
                     .filter(Boolean)
                     .join(", ")}
                 </p>
-                <h3
-                  className={cn(
-                    "font-display font-semibold leading-[1.08] tracking-[-0.025em]",
-                    lead ? "text-3xl md:text-5xl" : "text-2xl md:text-3xl",
-                  )}
+                <ViewTransition
+                  name={blogTitleName(post.slug)}
+                  share="vt-morph-text"
                 >
-                  <Link
-                    href={routes.public.blogPost(post.slug)}
-                    className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_2px] bg-left-bottom bg-no-repeat transition-[background-size] duration-700 ease-expo after:absolute after:inset-0 group-hover:bg-[length:100%_2px]"
+                  <h3
+                    className={cn(
+                      "font-display font-semibold leading-[1.08] tracking-[-0.025em]",
+                      lead ? "text-3xl md:text-5xl" : "text-2xl md:text-3xl",
+                    )}
                   >
-                    {post.title}
-                  </Link>
-                </h3>
+                    <Link
+                      href={routes.public.blogPost(post.slug)}
+                      transitionTypes={[BLOG_FORWARD]}
+                      className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_2px] bg-left-bottom bg-no-repeat transition-[background-size] duration-700 ease-expo after:absolute after:inset-0 group-hover:bg-[length:100%_2px]"
+                    >
+                      {post.title}
+                    </Link>
+                  </h3>
+                </ViewTransition>
                 {lead && post.excerpt && (
                   <p className="max-w-[55ch] leading-relaxed text-foreground/70 line-clamp-2">
                     {post.excerpt}

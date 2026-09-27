@@ -75,6 +75,21 @@ const PREF_KEY = "carniel:soundscape";
 const SPOTIFY_KEY = "carniel:spotify-uri";
 const EDGE = 12;
 
+// floating-ui commits each new position with flushSync, and a flushSync while
+// React is preparing a view transition makes React skip it (the blog card ->
+// post morph). The record bobs, so positions change every frame: sit out
+// frames while a transition is active; autoUpdate catches up right after.
+const inViewTransition = () => {
+  try {
+    return document.documentElement.matches(":active-view-transition");
+  } catch {
+    return false; // Browser without the pseudo-class
+  }
+};
+const pausedDuringViewTransition = (update: () => void) => () => {
+  if (!inViewTransition()) update();
+};
+
 // Grow the panel out of the corner nearest the record
 const originFor = (p: Placement) => {
   const [side, align] = p.split("-") as [string, string | undefined];
@@ -226,7 +241,9 @@ const SoundPlayer = () => {
     const floating = panelFloating.current;
     if (!open || !ref || !floating) return;
     // Follow the record while it bobs or is dragged
-    return autoUpdate(ref, floating, updatePanel, { animationFrame: true });
+    return autoUpdate(ref, floating, pausedDuringViewTransition(updatePanel), {
+      animationFrame: true,
+    });
   }, [open, panelMounted, panelRef, panelFloating, updatePanel]);
 
   const dismiss = useDismiss(panel.context, {
@@ -243,7 +260,9 @@ const SoundPlayer = () => {
     strategy: "fixed",
     middleware: [offset(12), flip({ padding: EDGE }), shift({ padding: EDGE })],
     whileElementsMounted: (ref, floating, update) =>
-      autoUpdate(ref, floating, update, { animationFrame: true }),
+      autoUpdate(ref, floating, pausedDuringViewTransition(update), {
+        animationFrame: true,
+      }),
   });
 
   // Restore preferences (never auto-plays)
@@ -451,7 +470,7 @@ const SoundPlayer = () => {
           setHint(false);
         }}
         className={cn(
-          "fixed bottom-5 right-5 z-[500] md:bottom-6 md:right-6",
+          "vt-chrome-player fixed bottom-5 right-5 z-[500] md:bottom-6 md:right-6",
           // Clear the floating section dock on phones
           onPortfolio && "max-md:bottom-24",
         )}
