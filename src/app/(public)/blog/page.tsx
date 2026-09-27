@@ -5,18 +5,31 @@ import Link from "next/link";
 import { Metadata } from "next";
 import BlogCard from "@/components/blog/BlogCard";
 import BlogSearch from "@/components/blog/BlogSearch";
-import { Button } from "@/components/ui/button";
+import CategoryPills, { type CategoryPill } from "@/components/blog/CategoryPills";
+import { readingMinutes } from "@/lib/blog/article";
+import { SITE_NAME } from "@/lib/site";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { getContrastColor } from "@/lib/utils";
 import PageTracker from "@/components/analytics/PageTracker";
 import routes from "@/lib/routes";
 import SplitText from "@/components/motion/SplitText";
 import { ViewTransition } from "react";
 import { blogPageTransition } from "@/lib/blog/view-transitions";
 
+const BLOG_DESCRIPTION =
+  "Notes on building for the web and mobile: React, Next.js, React Native, design and the craft in between, by Carniel.";
+
 export const metadata: Metadata = {
   title: "Blog | Chimezie's Portfolio",
-  description: "Read my latest blog posts",
+  description: BLOG_DESCRIPTION,
+  alternates: { canonical: "/blog" },
+  openGraph: {
+    type: "website",
+    url: "/blog",
+    siteName: SITE_NAME,
+    title: "Writing | Carniel",
+    description: BLOG_DESCRIPTION,
+  },
+  twitter: { card: "summary", title: "Writing | Carniel", description: BLOG_DESCRIPTION },
 };
 
 const POSTS_PER_PAGE = 6;
@@ -71,6 +84,7 @@ async function getPosts(
         coverImage: true,
         publishedAt: true,
         tags: true,
+        content: true,
         category: { select: { name: true, slug: true, color: true } },
         author: { select: { name: true } },
       },
@@ -78,18 +92,35 @@ async function getPosts(
     prisma.blogPost.count({ where }),
   ]);
 
-  return { posts, total };
+  // Only the read time leaves the server, not the full post body
+  return {
+    posts: posts.map(({ content, ...post }) => ({
+      ...post,
+      readingMinutes: readingMinutes(content),
+    })),
+    total,
+  };
 }
 
 async function getCategories() {
   "use cache";
   cacheTag(CACHE_TAGS.categories);
+  // Counts change when posts are published, so refresh on blog updates too
+  cacheTag(CACHE_TAGS.blog);
   cacheLife("max");
 
-  const categories = await prisma.category.findMany({
+  const rows = await prisma.category.findMany({
     orderBy: { name: "asc" },
-    select: { name: true, slug: true, color: true },
+    select: {
+      name: true,
+      slug: true,
+      color: true,
+      _count: { select: { posts: { where: { published: true } } } },
+    },
   });
+  const categories = rows
+    .map(({ _count, ...c }) => ({ ...c, count: _count.posts }))
+    .filter((c) => c.count > 0);
 
   // Alphabetical, but the catch-all "Other(s)" pill always goes last
   const isOther = (c: { name: string; slug: string }) =>
@@ -107,6 +138,13 @@ async function getTotalPublishedCount() {
 
   return prisma.blogPost.count({ where: { published: true } });
 }
+
+// 1 ... 4 5 6 ... 12: current page, its neighbours and both ends
+const pageList = (page: number, total: number): (number | "gap")[] => {
+  const pages = new Set([1, total, page - 1, page, page + 1]);
+  const sorted = [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
+  return sorted.flatMap((p, i) => (i > 0 && p - sorted[i - 1] > 1 ? ["gap" as const, p] : [p]));
+};
 
 const buildUrl = (p: number, cat?: string, t?: string, s?: string) => {
   const params = new URLSearchParams();
@@ -183,71 +221,54 @@ export default async function BlogPage({
         {totalPublished > 0 && (
           <>
             {search ? (
-              <div className="mb-8 flex items-center gap-3">
-                <span className="text-muted-foreground">
-                  Search results for: &ldquo;{search}&rdquo;
+              <div className="mb-10 flex flex-wrap items-center gap-3">
+                <span className="text-lg text-foreground/70">
+                  {total} {total === 1 ? "result" : "results"} for{" "}
+                  <span className="font-medium text-foreground">&ldquo;{search}&rdquo;</span>
                 </span>
-                <Link href={routes.public.blog}>
-                  <Button variant="outline" size="sm" className="rounded-full">
-                    <X className="size-3.5 mr-1" />
-                    Clear
-                  </Button>
+                <Link
+                  href={routes.public.blog}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-foreground/15 px-3.5 text-sm font-medium transition-colors hover:border-foreground/40"
+                >
+                  <X className="size-3.5" />
+                  Clear search
                 </Link>
               </div>
             ) : (
               <>
-                {/* Scrollable category tabs */}
-                <div className="mb-8 -mx-1 overflow-x-auto scrollbar-none">
-                  <div className="flex gap-2 px-1 pb-2 min-w-max">
-                    <Link href={routes.public.blog}>
-                      <Button
-                        variant={!categorySlug ? "default" : "outline"}
-                        size="sm"
-                        className="rounded-full"
-                      >
-                        All
-                      </Button>
-                    </Link>
-                    {categories.map((cat) => (
-                      <Link key={cat.slug} href={buildUrl(1, cat.slug, tag)}>
-                        <Button
-                          variant={
-                            categorySlug === cat.slug ? "default" : "outline"
-                          }
-                          size="sm"
-                          className="rounded-full border hover:!text-black hover:bg-[var(--cat-color)] hover:border-[var(--cat-color)] transition-colors"
-                          style={
-                            (categorySlug === cat.slug
-                              ? {
-                                  backgroundColor: cat.color,
-                                  color: getContrastColor(cat.color),
-                                  borderColor: cat.color,
-                                }
-                              : {
-                                  borderColor: cat.color,
-                                  color: cat.color,
-                                  "--cat-color": cat.color,
-                                }) as React.CSSProperties
-                          }
-                        >
-                          {cat.name}
-                        </Button>
-                      </Link>
-                    ))}
-                  </div>
+                <div className="mb-8">
+                  <CategoryPills
+                    items={[
+                      {
+                        key: "all",
+                        label: "All",
+                        href: buildUrl(1, undefined, tag),
+                        count: totalPublished,
+                        active: !categorySlug,
+                      },
+                      ...categories.map<CategoryPill>((cat) => ({
+                        key: cat.slug,
+                        label: cat.name,
+                        href: buildUrl(1, cat.slug, tag),
+                        count: cat.count,
+                        color: cat.color,
+                        active: categorySlug === cat.slug,
+                      })),
+                    ]}
+                  />
                 </div>
 
                 {tag && (
-                  <div className="mb-6 flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      Filtered by tag:
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm">
-                      {tag}
-                      <Link href={buildUrl(1, categorySlug)}>
-                        <X className="size-3.5 hover:text-destructive cursor-pointer" />
-                      </Link>
-                    </span>
+                  <div className="mb-8 flex items-center gap-3 text-sm">
+                    <span className="text-foreground/60">Tagged</span>
+                    <Link
+                      href={buildUrl(1, categorySlug)}
+                      aria-label={`Remove tag filter ${tag}`}
+                      className="group inline-flex h-9 items-center gap-1.5 rounded-full bg-foreground px-3.5 font-medium text-background transition-transform active:scale-95"
+                    >
+                      #{tag}
+                      <X className="size-3.5 opacity-70 transition-opacity group-hover:opacity-100" />
+                    </Link>
                   </div>
                 )}
               </>
@@ -285,45 +306,69 @@ export default async function BlogPage({
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-4 mt-12">
+              <nav
+                aria-label="Pagination"
+                className="mt-20 flex items-center justify-center gap-2"
+              >
                 {page > 1 ? (
                   <Link
                     href={buildUrl(page - 1, categorySlug, tag, search)}
                     prefetch={false}
+                    aria-label="Previous page"
+                    className="grid size-11 place-items-center rounded-full border border-foreground/15 transition-colors hover:border-foreground/40"
                   >
-                    <Button variant="outline" size="sm">
-                      <ChevronLeft className="size-4 mr-1" />
-                      Previous
-                    </Button>
+                    <ChevronLeft className="size-4" />
                   </Link>
                 ) : (
-                  <Button variant="outline" size="sm" disabled>
-                    <ChevronLeft className="size-4 mr-1" />
-                    Previous
-                  </Button>
+                  <span
+                    aria-hidden="true"
+                    className="grid size-11 place-items-center rounded-full border border-foreground/10 text-foreground/30"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </span>
                 )}
 
-                <span className="text-sm text-muted-foreground">
-                  Page {page} of {totalPages}
-                </span>
+                {pageList(page, totalPages).map((p, i) =>
+                  p === "gap" ? (
+                    <span key={`gap-${i}`} className="px-1 text-foreground/40" aria-hidden="true">
+                      &hellip;
+                    </span>
+                  ) : (
+                    <Link
+                      key={p}
+                      href={buildUrl(p, categorySlug, tag, search)}
+                      prefetch={false}
+                      aria-current={p === page ? "page" : undefined}
+                      aria-label={`Page ${p}`}
+                      className={
+                        p === page
+                          ? "grid size-11 place-items-center rounded-full bg-accent font-mono text-sm font-medium text-accent-on"
+                          : "grid size-11 place-items-center rounded-full font-mono text-sm text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                      }
+                    >
+                      {p}
+                    </Link>
+                  ),
+                )}
 
                 {page < totalPages ? (
                   <Link
                     href={buildUrl(page + 1, categorySlug, tag, search)}
                     prefetch={false}
+                    aria-label="Next page"
+                    className="grid size-11 place-items-center rounded-full border border-foreground/15 transition-colors hover:border-foreground/40"
                   >
-                    <Button variant="outline" size="sm">
-                      Next
-                      <ChevronRight className="size-4 ml-1" />
-                    </Button>
+                    <ChevronRight className="size-4" />
                   </Link>
                 ) : (
-                  <Button variant="outline" size="sm" disabled>
-                    Next
-                    <ChevronRight className="size-4 ml-1" />
-                  </Button>
+                  <span
+                    aria-hidden="true"
+                    className="grid size-11 place-items-center rounded-full border border-foreground/10 text-foreground/30"
+                  >
+                    <ChevronRight className="size-4" />
+                  </span>
                 )}
-              </div>
+              </nav>
             )}
           </>
         )}

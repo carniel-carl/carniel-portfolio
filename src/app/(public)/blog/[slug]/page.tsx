@@ -1,6 +1,9 @@
 import BlogCard from "@/components/blog/BlogCard";
 import BlogPostContent from "@/components/blog/BlogPostContent";
 import ScrollToTopOnEnter from "@/components/blog/ScrollToTopOnEnter";
+import ReadingProgress from "@/components/blog/ReadingProgress";
+import ShareBar from "@/components/blog/ShareBar";
+import AuthorCard from "@/components/blog/AuthorCard";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { getRecommendedPosts } from "@/lib/blog/recommendations";
 import prisma from "@/lib/prisma";
@@ -56,7 +59,7 @@ export async function generateMetadata({
 
   const url = `/blog/${post.slug}`;
   const description = post.excerpt?.trim() || toMetaDescription(post.content);
-  const authorName = post.author?.name || AUTHOR_NAME;
+  const authorName = AUTHOR_NAME;
   const images = post.coverImage
     ? [{ url: post.coverImage, alt: post.title }]
     : undefined;
@@ -120,7 +123,7 @@ export default async function BlogPostPage({
     image: post.coverImage ? [post.coverImage] : undefined,
     datePublished: (post.publishedAt ?? post.createdAt).toISOString(),
     dateModified: post.updatedAt.toISOString(),
-    author: { "@type": "Person", name: post.author?.name || AUTHOR_NAME, url: SITE_URL },
+    author: { "@type": "Person", name: AUTHOR_NAME, url: SITE_URL },
     publisher: { "@type": "Person", name: AUTHOR_NAME, url: SITE_URL },
     mainEntityOfPage: { "@type": "WebPage", "@id": postUrl },
     url: postUrl,
@@ -128,6 +131,15 @@ export default async function BlogPostPage({
     keywords: post.tags.length > 0 ? post.tags.join(", ") : undefined,
     wordCount: toMetaDescription(post.content, Infinity).split(" ").length,
   };
+
+  const articleFooter = (
+    <>
+      <div className="mt-10">
+        <ShareBar url={postUrl} title={post.title} />
+      </div>
+      <AuthorCard />
+    </>
+  );
 
   return (
     <ViewTransition
@@ -137,6 +149,7 @@ export default async function BlogPostPage({
     >
       <div>
         <ScrollToTopOnEnter />
+        <ReadingProgress targetId="post-article" />
         <script
           type="application/ld+json"
           // Escape "<" so post content can't close the script tag
@@ -153,14 +166,20 @@ export default async function BlogPostPage({
             estimated_read_time: estimatedReadTime,
           }}
         />
-        <div className="w-[90%] max-w-3xl mx-auto pt-12">
+        <div
+          className={
+            showAds
+              ? "mx-auto w-[90%] max-w-3xl pt-8 md:pt-10"
+              : "mx-auto w-[90%] max-w-[68rem] pt-8 md:pt-10"
+          }
+        >
           <Link
             href="/blog"
             transitionTypes={[BLOG_BACK]}
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+            className="group inline-flex h-10 items-center gap-2 rounded-full border border-foreground/15 pl-3 pr-4 text-sm font-medium text-foreground/75 transition-colors hover:border-foreground/40 hover:text-foreground"
           >
-            <ArrowLeft className="size-4" />
-            Back to Blog
+            <ArrowLeft className="size-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
+            All posts
           </Link>
         </div>
 
@@ -182,7 +201,7 @@ export default async function BlogPostPage({
                 </div>
               </aside>
 
-              <BlogPostContent post={post} />
+              <BlogPostContent post={post} layout="inline" footer={articleFooter} />
 
               <aside aria-label="Advertisement" className="hidden xl:block">
                 <div className="sticky top-24 pt-12">
@@ -192,13 +211,15 @@ export default async function BlogPostPage({
             </div>
           </>
         ) : (
-          <BlogPostContent post={post} />
+          <BlogPostContent post={post} layout="rail" footer={articleFooter} />
         )}
 
         {relatedPosts.length > 0 && (
-          <section className="w-[90%] max-w-4xl mx-auto py-12 border-t mt-12">
-            <h2 className="text-2xl font-bold mb-6 font-nunito">Keep reading</h2>
-            <div className="grid gap-8 md:grid-cols-2">
+          <section className="mx-auto mt-8 w-[90%] max-w-[68rem] border-t border-foreground/10 py-16 md:py-24">
+            <h2 className="mb-10 font-display text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-[0.95] tracking-[-0.04em] [font-stretch:75%] md:mb-14">
+              Keep reading
+            </h2>
+            <div className="grid gap-x-6 gap-y-14 md:grid-cols-2">
               {relatedPosts.map((relatedPost) => (
                 <BlogCard key={relatedPost.id} post={relatedPost} />
               ))}

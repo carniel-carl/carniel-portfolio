@@ -8,7 +8,8 @@ export const SITE_URL = (
 ).replace(/\/$/, "");
 
 export const SITE_NAME = "Chimezie's Portfolio";
-export const AUTHOR_NAME = "Chimezie";
+// Public byline for the blog (the admin account name is not shown)
+export const AUTHOR_NAME = "Carniel";
 
 // Plain-text summary for meta descriptions (~155 chars is what search results show)
 export function toMetaDescription(html: string, max = 155) {

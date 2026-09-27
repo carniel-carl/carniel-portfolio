@@ -29,6 +29,11 @@ export default function CodeBlock({ code, language, children }: CodeBlockProps) 
 
   return (
     <div className="code-block group relative">
+      {language && language !== "plaintext" && (
+        <span className="code-block-lang pointer-events-none absolute right-12 top-3.5 font-mono text-[0.7rem] uppercase tracking-wider">
+          {language}
+        </span>
+      )}
       <button
         type="button"
         onClick={handleCopy}

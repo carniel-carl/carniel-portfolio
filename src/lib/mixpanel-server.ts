@@ -89,7 +89,17 @@ const TRACKED_EVENTS = [
   "Resume Downloaded",
   "Social Link Clicked",
   "Project Link Clicked",
+  // Engagement (redesign)
+  "Blog Post Shared",
+  "Blog Search Result Opened",
+  "Author Card Clicked",
+  "Home CTA Clicked",
+  "Footer CTA Clicked",
 ];
+
+type Ranked = { label: string; count: number };
+const toRanked = (rows: [string, number][], limit = 10): Ranked[] =>
+  rows.slice(0, limit).map(([label, count]) => ({ label, count }));
 
 const PAGE_VIEW_EVENTS = new Set(["Home Viewed", "Portfolio Viewed"]);
 
@@ -147,6 +157,50 @@ function topProjectsFrom(events: RawEvent[]): ProjectClickData[] {
     .map(([project, total]) => ({ project, live_clicks: 0, code_clicks: 0, total }));
 }
 
+const SHARE_LABELS: Record<string, string> = {
+  copy_link: "Copy link",
+  x: "X",
+  linkedin: "LinkedIn",
+  whatsapp: "WhatsApp",
+};
+
+function sharesByPlatformFrom(events: RawEvent[]): Ranked[] {
+  const shares = events.filter((e) => e.event === "Blog Post Shared");
+  return toRanked(
+    tally(shares, (e) => {
+      const p = e.properties.platform as string | undefined;
+      return p ? (SHARE_LABELS[p] ?? p) : undefined;
+    }),
+  );
+}
+
+// Shares carry the post URL; the slug is its last path segment
+function topSharedPostsFrom(events: RawEvent[]): Ranked[] {
+  const shares = events.filter((e) => e.event === "Blog Post Shared");
+  return toRanked(
+    tally(shares, (e) => {
+      const url = e.properties.url as string | undefined;
+      return url?.split("/blog/")[1]?.split(/[?#]/)[0] || undefined;
+    }),
+  );
+}
+
+// Only searches that led to a post; opens from suggestions have no query
+function topSearchesFrom(events: RawEvent[]): Ranked[] {
+  const opens = events.filter((e) => e.event === "Blog Search Result Opened");
+  return toRanked(
+    tally(opens, (e) => {
+      const q = (e.properties.query as string | undefined)?.trim().toLowerCase();
+      return q || undefined;
+    }),
+  );
+}
+
+function authorCardTargetsFrom(events: RawEvent[]): Ranked[] {
+  const clicks = events.filter((e) => e.event === "Author Card Clicked");
+  return toRanked(tally(clicks, (e) => e.properties.target as string | undefined));
+}
+
 /**
  * Everything the analytics page needs from ONE raw export.
  * The export API is rate limited, so avoid one request per chart.
@@ -163,5 +217,9 @@ export async function getAnalyticsSnapshot(days: number = 30) {
     socialClicks: socialClicksFrom(events),
     topPosts: topBlogPostsFrom(events),
     topProjects: topProjectsFrom(events),
+    sharesByPlatform: sharesByPlatformFrom(events),
+    topSharedPosts: topSharedPostsFrom(events),
+    topSearches: topSearchesFrom(events),
+    authorCardTargets: authorCardTargetsFrom(events),
   };
 }
