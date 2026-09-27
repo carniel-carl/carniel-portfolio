@@ -78,7 +78,7 @@ export default function BlogPostContent({
   preview,
 }: BlogPostContentProps) {
   return (
-    <article className="w-[90%] max-w-3xl mx-auto py-12">
+    <article className="w-[90%] max-w-3xl mx-auto py-12 xl:w-full">
       {preview && !post.publishedAt && (
         <div className="mb-6 rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400">
           Preview Mode — This post is a draft and not yet published.

@@ -26,6 +26,10 @@ export const metadata: Metadata = {
   title: "Chimezie's portfolio",
   description:
     "Chimezie (Carniel) is a web and mobile developer building fast, accessible apps with React, Next.js and React Native.",
+  // Lets AdSense verify site ownership
+  ...(process.env.NEXT_PUBLIC_ADSENSE_CLIENT && {
+    other: { "google-adsense-account": process.env.NEXT_PUBLIC_ADSENSE_CLIENT },
+  }),
 };
 
 export default function RootLayout({

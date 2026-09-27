@@ -8,7 +8,6 @@ import {
 } from "framer-motion";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLenis } from "lenis/react";
-import Logo from "@/components/general/Logo";
 import SVGIcon from "@/components/general/SVGIcon";
 import { cn } from "@/lib/utils";
 
@@ -205,52 +204,4 @@ const PreLoader = ({
   );
 };
 
-const PagePreLoader = ({ isCompact }: { isCompact?: boolean }) => {
-  return (
-    <>
-      <motion.div
-        className={cn(
-          "flex flex-col items-center justify-center bg-background",
-          isCompact && "h-full w-full min-h-[50dvh]",
-          !isCompact && "fixed inset-0 z-50",
-        )}
-        initial={{ opacity: 1 }}
-        exit={{ opacity: 0, transition: { duration: 0.3 } }}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-          <div className="flex items-center gap-4">
-            <Logo className="scale-125 md:scale-150" size="2rem" />
-            <h1 className="font-display text-3xl font-semibold tracking-tight">
-              Carniel
-            </h1>
-          </div>
-        </motion.div>
-
-        <motion.div
-          className="mt-8 h-1 w-24 overflow-hidden rounded-full bg-muted"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <motion.div
-            className="h-full w-full rounded-full bg-accent"
-            initial={{ x: "-100%" }}
-            animate={{ x: "100%" }}
-            transition={{
-              repeat: Infinity,
-              duration: 1.2,
-              ease: "easeInOut",
-            }}
-          />
-        </motion.div>
-      </motion.div>
-    </>
-  );
-};
-
 export default PreLoader;
-export { PagePreLoader };
