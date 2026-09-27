@@ -13,7 +13,7 @@ const baseProjectSchema = z.object({
   name: z.string().min(1, "Name is required"),
   tag: z.string(),
   description: z.string().min(1, "Description is required"),
-  img: z.string().min(1, "Image is required"),
+  img: z.string(),
   mediaType: z.string(),
   live: z.string(),
   code: z.string(),
@@ -34,9 +34,24 @@ const baseProjectSchema = z.object({
   betaUrl: z.string(),
 });
 
-export const projectFormSchema = baseProjectSchema.refine(
-  (data) => !data.featured || data.tag.trim().length > 0,
-  { message: "Tag is required for featured projects", path: ["tag"] }
-);
+/** Mobile projects with a video or screenshots can use those as the cover. */
+export const hasOwnMedia = (data: {
+  platform?: string;
+  videoUrl?: string;
+  posterUrl?: string;
+  screenshots?: string[];
+}) =>
+  (data.platform === "mobile" || data.platform === "both") &&
+  Boolean(data.videoUrl || data.posterUrl || data.screenshots?.length);
+
+export const projectFormSchema = baseProjectSchema
+  .refine((data) => !data.featured || data.tag.trim().length > 0, {
+    message: "Tag is required for featured projects",
+    path: ["tag"],
+  })
+  .refine((data) => data.img.trim().length > 0 || hasOwnMedia(data), {
+    message: "Add a cover image, or a video or screenshots for a mobile app",
+    path: ["img"],
+  });
 
 export type ProjectFormValues = z.infer<typeof baseProjectSchema>;
