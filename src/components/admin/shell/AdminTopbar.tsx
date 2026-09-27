@@ -44,7 +44,10 @@ export default function AdminTopbar() {
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span aria-current="page" className="font-medium text-foreground">
+                  <span
+                    aria-current="page"
+                    className="font-medium text-foreground"
+                  >
                     {crumb.label}
                   </span>
                 )}
@@ -72,16 +75,6 @@ export default function AdminTopbar() {
       >
         <Sun className="dark:hidden" />
         <Moon className="hidden dark:block" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className={`${iconButton} hidden sm:inline-flex`}
-        asChild
-      >
-        <a href="/" target="_blank" rel="noopener" aria-label="View live site">
-          <ExternalLink />
-        </a>
       </Button>
     </PinnedHeader>
   );

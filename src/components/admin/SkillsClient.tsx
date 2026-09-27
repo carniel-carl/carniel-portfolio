@@ -4,6 +4,7 @@ import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import EmptyState from "@/components/admin/ui/EmptyState";
 import SearchField from "@/components/admin/ui/SearchField";
+import SkillIcon from "@/components/general/SkillIcon";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,10 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSkill, deleteSkill, updateSkill } from "@/lib/actions/skills";
 import { getIcon, iconNames } from "@/lib/icon-map";
+import { iconifyPreviewUrl, searchIconify } from "@/lib/iconify";
 import { cn } from "@/lib/utils";
 import { Loader2, Plus, SearchX, Trash2, Wrench } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const MAX_VISIBLE_ICONS = 60;
@@ -30,10 +32,25 @@ interface Skill {
   title: string;
   iconName: string;
   iconLib: string;
+  iconSvg?: string | null;
   order: number;
 }
 
-const emptyForm = { title: "", iconName: "", iconLib: "lucide", order: 0 };
+type IconSource = "iconify" | "lucide";
+
+const emptyForm = { title: "", iconName: "", iconLib: "iconify", order: 0 };
+
+// Monochrome preview that takes the text colour, without fetching the markup
+function IconifyGlyph({ id, className }: { id: string; className?: string }) {
+  const mask = `url(${iconifyPreviewUrl(id)}) center / contain no-repeat`;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("inline-block bg-current", className)}
+      style={{ mask, WebkitMask: mask }}
+    />
+  );
+}
 
 export default function SkillsClient({ skills }: { skills: Skill[] }) {
   const router = useRouter();
@@ -42,6 +59,11 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [iconSearch, setIconSearch] = useState("");
+  const [iconSource, setIconSource] = useState<IconSource>("iconify");
+  const [remote, setRemote] = useState<{ query: string; icons: string[]; error?: boolean }>({
+    query: "",
+    icons: [],
+  });
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -49,6 +71,7 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
     setEditingSkill(null);
     setForm({ ...emptyForm, order: skills.length });
     setIconSearch("");
+    setIconSource("iconify");
     setDialogOpen(true);
   };
 
@@ -61,6 +84,7 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
       order: skill.order,
     });
     setIconSearch("");
+    setIconSource(skill.iconLib === "iconify" ? "iconify" : "lucide");
     setDialogOpen(true);
   };
 
@@ -100,18 +124,40 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
     }
   };
 
+  const iconQuery = iconSearch.toLowerCase().trim();
+
   const filteredIcons = useMemo(() => {
-    const q = iconSearch.toLowerCase().trim();
-    const matches = q ? iconNames.filter((name) => name.toLowerCase().includes(q)) : iconNames;
+    const matches = iconQuery
+      ? iconNames.filter((name) => name.toLowerCase().includes(iconQuery))
+      : iconNames;
     return matches.slice(0, MAX_VISIBLE_ICONS);
-  }, [iconSearch]);
+  }, [iconQuery]);
+
+  // Debounced Iconify search; results are keyed by query so stale ones are ignored
+  useEffect(() => {
+    if (iconSource !== "iconify" || !iconQuery) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      searchIconify(iconQuery, controller.signal)
+        .then((icons) => setRemote({ query: iconQuery, icons }))
+        .catch(() => {
+          if (!controller.signal.aborted) setRemote({ query: iconQuery, icons: [], error: true });
+        });
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [iconQuery, iconSource]);
+
+  const remoteReady = remote.query === iconQuery;
+  const remoteIcons = remoteReady ? remote.icons : [];
 
   const filteredSkills = useMemo(() => {
     const q = query.toLowerCase().trim();
     return q ? skills.filter((s) => s.title.toLowerCase().includes(q)) : skills;
   }, [skills, query]);
 
-  const SelectedIcon = form.iconName ? getIcon(form.iconName) : null;
 
   return (
     <div>
@@ -157,7 +203,6 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
           ) : (
             <ul className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 sm:p-4 md:grid-cols-4 xl:grid-cols-6">
               {filteredSkills.map((skill) => {
-                const IconComponent = getIcon(skill.iconName);
                 return (
                   <li key={skill.id} className="group relative">
                     <button
@@ -167,7 +212,7 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
                       aria-label={`Edit ${skill.title}`}
                     >
                       <span className="grid size-11 place-items-center rounded-lg bg-card text-foreground/80 shadow-sm transition-colors group-hover:text-accent-ink">
-                        {IconComponent && <IconComponent className="size-6" />}
+                        <SkillIcon icon={skill} className="size-6" />
                       </span>
                       <span className="line-clamp-1 text-sm font-medium">{skill.title}</span>
                       <span className="tnum absolute left-3 top-2.5 text-[11px] text-muted-foreground">
@@ -228,54 +273,102 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="skill-icon-search">Icon</Label>
-                {SelectedIcon && (
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <SelectedIcon className="size-3.5 text-foreground" />
-                    {form.iconName}
+                {form.iconName && (
+                  <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                    {form.iconLib === "iconify" ? (
+                      <IconifyGlyph id={form.iconName} className="size-3.5 shrink-0 text-foreground" />
+                    ) : (
+                      <SkillIcon icon={form} className="size-3.5 shrink-0 text-foreground" />
+                    )}
+                    <span className="truncate">{form.iconName}</span>
                   </span>
                 )}
+              </div>
+              <div
+                role="tablist"
+                aria-label="Icon source"
+                className="inline-flex rounded-md bg-muted p-0.5 text-xs font-medium"
+              >
+                {(
+                  [
+                    ["iconify", "Logos"],
+                    ["lucide", "Built-in"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="tab"
+                    aria-selected={iconSource === value}
+                    onClick={() => setIconSource(value)}
+                    className={cn(
+                      "rounded px-3 py-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      iconSource === value && "bg-card text-foreground shadow-sm",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
               <SearchField
                 value={iconSearch}
                 onChange={setIconSearch}
-                placeholder="Search icons, e.g. React, Database, Globe"
+                placeholder={
+                  iconSource === "iconify"
+                    ? "Search logos, e.g. TanStack, Express, Docker"
+                    : "Search icons, e.g. Database, Globe"
+                }
               />
               <div
                 role="radiogroup"
                 aria-label="Icon"
                 className="grid max-h-52 grid-cols-6 gap-1.5 overflow-y-auto rounded-lg border bg-muted/40 p-2 sm:grid-cols-8"
               >
-                {filteredIcons.map((name) => {
-                  const Icon = getIcon(name);
-                  if (!Icon) return null;
-                  const selected = form.iconName === name;
-                  return (
-                    <button
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      key={name}
-                      onClick={() => setForm({ ...form, iconName: name, iconLib: "lucide" })}
-                      className={cn(
-                        "grid aspect-square place-items-center rounded-md text-foreground/80 transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        selected && "bg-card text-accent-ink ring-2 ring-accent-ink",
-                      )}
-                      title={name}
-                      aria-label={name}
-                    >
-                      <Icon className="size-5" />
-                    </button>
-                  );
-                })}
-                {filteredIcons.length === 0 && (
+                {iconSource === "iconify"
+                  ? remoteIcons.map((id) => (
+                      <IconOption
+                        key={id}
+                        label={id}
+                        selected={form.iconLib === "iconify" && form.iconName === id}
+                        onSelect={() => setForm({ ...form, iconName: id, iconLib: "iconify" })}
+                      >
+                        <IconifyGlyph id={id} className="size-5" />
+                      </IconOption>
+                    ))
+                  : filteredIcons.map((name) => {
+                      const Icon = getIcon(name);
+                      if (!Icon) return null;
+                      return (
+                        <IconOption
+                          key={name}
+                          label={name}
+                          selected={form.iconLib !== "iconify" && form.iconName === name}
+                          onSelect={() => setForm({ ...form, iconName: name, iconLib: "lucide" })}
+                        >
+                          <Icon className="size-5" />
+                        </IconOption>
+                      );
+                    })}
+                {iconSource === "iconify" && remoteIcons.length === 0 && (
+                  <p className="col-span-full py-6 text-center text-sm text-muted-foreground">
+                    {!iconQuery
+                      ? "Type a technology name to search 3,000+ brand logos."
+                      : !remoteReady
+                        ? "Searching…"
+                        : remote.error
+                          ? "Icon search is unavailable. Check your connection."
+                          : "No logos match. Try the Built-in tab."}
+                  </p>
+                )}
+                {iconSource === "lucide" && filteredIcons.length === 0 && (
                   <p className="col-span-full py-6 text-center text-sm text-muted-foreground">
                     No icons match. Try a broader word.
                   </p>
                 )}
               </div>
-              {filteredIcons.length === MAX_VISIBLE_ICONS && (
+              {iconSource === "lucide" && filteredIcons.length === MAX_VISIBLE_ICONS && (
                 <p className="text-xs text-muted-foreground">
                   Showing the first {MAX_VISIBLE_ICONS}. Keep typing to narrow it down.
                 </p>
@@ -309,5 +402,34 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
         onConfirm={handleDelete}
       />
     </div>
+  );
+}
+
+function IconOption({
+  label,
+  selected,
+  onSelect,
+  children,
+}: {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onSelect}
+      className={cn(
+        "grid aspect-square place-items-center rounded-md text-foreground/80 transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        selected && "bg-card text-accent-ink ring-2 ring-accent-ink",
+      )}
+      title={label}
+      aria-label={label}
+    >
+      {children}
+    </button>
   );
 }

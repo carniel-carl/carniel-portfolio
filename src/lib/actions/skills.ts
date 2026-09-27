@@ -4,6 +4,13 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { revalidateTag } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import { fetchIconifySvg } from "@/lib/iconify";
+
+// Iconify markup is resolved here rather than accepted from the client,
+// since it is rendered as raw HTML on the site
+async function resolveIconSvg(iconName: string, iconLib: string) {
+  return iconLib === "iconify" ? await fetchIconifySvg(iconName) : null;
+}
 
 export async function createSkill(data: {
   title: string;
@@ -23,6 +30,7 @@ export async function createSkill(data: {
       title: data.title,
       iconName: data.iconName,
       iconLib: data.iconLib,
+      iconSvg: await resolveIconSvg(data.iconName, data.iconLib),
       order: data.order || 0,
     },
   });
@@ -49,6 +57,7 @@ export async function updateSkill(
       title: data.title,
       iconName: data.iconName,
       iconLib: data.iconLib,
+      iconSvg: await resolveIconSvg(data.iconName, data.iconLib),
       order: data.order,
     },
   });

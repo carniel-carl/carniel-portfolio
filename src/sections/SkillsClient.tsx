@@ -1,15 +1,12 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { type LucideIcon } from "lucide-react";
-import { type IconType } from "react-icons";
-import { getIcon } from "@/lib/icon-map";
+import SkillIcon, { type SkillIconData } from "@/components/general/SkillIcon";
 import SplitText from "@/components/motion/SplitText";
 
-interface SkillData {
+interface SkillData extends SkillIconData {
   id: string;
   title: string;
-  iconName: string;
 }
 
 interface SkillsClientProps {
@@ -40,7 +37,6 @@ const SkillsClient = ({ skills }: SkillsClientProps) => {
           className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-3 md:mt-16 md:gap-x-10 md:gap-y-5"
         >
           {skills.map((data) => {
-            const Icon = getIcon(data.iconName);
             return (
               <li key={data.id} className="overflow-hidden pb-[0.12em]">
                 <motion.div
@@ -52,7 +48,7 @@ const SkillsClient = ({ skills }: SkillsClientProps) => {
                     },
                   }}
                 >
-                  <SkillWord Icon={Icon} title={data.title} />
+                  <SkillWord icon={data} title={data.title} />
                 </motion.div>
               </li>
             );
@@ -65,19 +61,17 @@ const SkillsClient = ({ skills }: SkillsClientProps) => {
 
 const SkillWord = ({
   title,
-  Icon,
+  icon,
 }: {
   title: string;
-  Icon: LucideIcon | IconType | null;
+  icon: SkillIconData;
 }) => {
   return (
     <span className="group inline-flex cursor-default items-center gap-3 md:gap-4">
-      {Icon && (
-        <Icon
-          aria-hidden="true"
-          className="size-6 shrink-0 text-accent-ink transition-transform duration-500 ease-expo group-hover:rotate-[-12deg] group-hover:scale-110 md:size-10"
-        />
-      )}
+      <SkillIcon
+        icon={icon}
+        className="size-6 shrink-0 text-accent-ink transition-transform duration-500 ease-expo group-hover:rotate-[-12deg] group-hover:scale-110 md:size-10"
+      />
       <span className="font-display text-3xl font-medium tracking-[-0.03em] text-foreground/85 transition-colors duration-300 group-hover:text-foreground md:text-5xl lg:text-6xl">
         {title}
       </span>
