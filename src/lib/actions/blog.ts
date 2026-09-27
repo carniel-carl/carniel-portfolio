@@ -141,6 +141,26 @@ export async function getPostRecommendations(
   return getRecommendedPosts(post.id, safeLimit);
 }
 
+/** Publishes a draft without resubmitting the rest of the post. */
+export async function publishBlogPost(id: string) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const existing = await prisma.blogPost.findUnique({
+    where: { id },
+    select: { published: true, publishedAt: true },
+  });
+  if (!existing) throw new Error("Not found");
+  if (existing.published) return;
+
+  await prisma.blogPost.update({
+    where: { id },
+    data: { published: true, publishedAt: existing.publishedAt ?? new Date() },
+  });
+
+  invalidateBlogCaches();
+}
+
 export async function deleteBlogPost(id: string) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");

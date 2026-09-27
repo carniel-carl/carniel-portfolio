@@ -41,7 +41,8 @@ const ThemeSwitch = () => {
     const root = document.documentElement;
     const willChange = resolve(next) !== (root.classList.contains("dark") ? "dark" : "light");
 
-    if (!document.startViewTransition || reduce || !willChange) {
+    // Browsers refuse view transitions in background tabs (InvalidStateError)
+    if (!document.startViewTransition || reduce || !willChange || document.hidden) {
       setTheme(next);
       return;
     }
@@ -63,7 +64,8 @@ const ThemeSwitch = () => {
       flushSync(() => setTheme(next));
     });
 
-    transition.ready.then(() => {
+    transition.ready
+      .then(() => {
       root.animate(
         {
           clipPath: [
@@ -77,7 +79,9 @@ const ThemeSwitch = () => {
           pseudoElement: "::view-transition-new(root)",
         },
       );
-    });
+    })
+      // An aborted transition rejects `ready`; the theme has still switched
+      .catch(() => {});
 
     transition.finished.finally(() => {
       delete root.dataset.themeSwitching;

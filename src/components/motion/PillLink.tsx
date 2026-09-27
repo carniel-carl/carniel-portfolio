@@ -77,6 +77,15 @@ const PillLink = ({
     </>
   );
 
+  // File downloads: plain same-tab <a> (next/link would prefetch/navigate)
+  if (rest.download !== undefined) {
+    return (
+      <a href={href} className={pillClasses(variant, className)} {...rest}>
+        {inner}
+      </a>
+    );
+  }
+
   if (external || href.startsWith("http") || href.endsWith(".pdf")) {
     return (
       <a
