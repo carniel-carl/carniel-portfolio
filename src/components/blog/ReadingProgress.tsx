@@ -20,11 +20,14 @@ export default function ReadingProgress({ targetId }: { targetId: string }) {
   });
   const scaleX = useSpring(scrollYProgress, { stiffness: 140, damping: 28, restDelta: 0.001 });
 
+  // The fixed box stays transparent: iOS Safari tints its status bar from a
+  // full-width fixed bar at the top edge (see globals.css)
   return (
-    <motion.div
-      aria-hidden="true"
-      className="fixed inset-x-0 top-0 z-[101] h-[3px] origin-left bg-accent"
-      style={{ scaleX: reduce ? scrollYProgress : scaleX }}
-    />
+    <div aria-hidden="true" className="fixed inset-x-0 top-0 z-[101] h-[3px]">
+      <motion.div
+        className="absolute inset-0 origin-left bg-accent"
+        style={{ scaleX: reduce ? scrollYProgress : scaleX }}
+      />
+    </div>
   );
 }

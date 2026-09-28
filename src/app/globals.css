@@ -136,6 +136,9 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 2rem;
+    /* Mobile Safari tints its bars from the root background when there's no
+       theme-color (before hydration, and on versions that ignore the tag) */
+    background-color: hsl(var(--background));
   }
   body {
     @apply bg-background text-foreground overflow-x-hidden;
@@ -157,6 +160,19 @@
     text-wrap: balance;
   }
 }
+
+/*
+  BROWSER-BAR COLOUR (iOS 26+ Safari)
+  Safari 26 ignores <meta name="theme-color">. It tints the status bar and
+  the area behind its bottom bar from the html/body background, unless a
+  position: fixed/sticky element sits at that edge (within ~4px of the top or
+  ~3px of the bottom, 80%+ wide, 3px+ tall): then it uses that element's own
+  background-color / backdrop-filter / border colour, and only re-reads it
+  when the element is added, removed or moved, not when it's recoloured.
+  So full-width fixed bars here keep their own box transparent and paint on
+  an absolute child (header, reading progress), and the footer is an inset
+  card in normal flow that ends on the page background.
+*/
 
 /*
   Z-INDEX SCALE (public site)

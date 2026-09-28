@@ -1,5 +1,5 @@
 import "./globals.css";
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import ThemeWrapper from "@/context/theme-provider";
@@ -55,14 +55,6 @@ export const metadata: Metadata = {
   ...(process.env.NEXT_PUBLIC_ADSENSE_CLIENT && {
     other: { "google-adsense-account": process.env.NEXT_PUBLIC_ADSENSE_CLIENT },
   }),
-};
-
-// Browser UI (mobile address bar, PWA title bar) follows the site's background
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ecebea" },
-    { media: "(prefers-color-scheme: dark)", color: "#0c0a09" },
-  ],
 };
 
 export default function RootLayout({

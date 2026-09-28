@@ -67,6 +67,13 @@ export async function generateMetadata({
   const url = `/blog/${post.slug}`;
   const description = post.excerpt?.trim() || toMetaDescription(post.content);
   const authorName = AUTHOR_NAME;
+  // The cover is already a 1200x630 share card on a CDN, so crawlers get it
+  // instantly. Posts without one use a static copy of the generic /blog card
+  const images = [
+    post.coverImage
+      ? { url: post.coverImage, alt: post.title }
+      : { url: "/images/og/blog.png", width: 1200, height: 630, alt: "Writing by Carniel" },
+  ];
 
   return {
     title: post.title,
@@ -89,11 +96,13 @@ export async function generateMetadata({
       authors: [authorName],
       section: post.category?.name,
       tags: post.tags,
+      images,
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description,
+      images,
     },
     robots: {
       index: true,

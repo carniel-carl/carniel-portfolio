@@ -56,7 +56,7 @@ const Letter = ({
   const wght = useTransform(smooth, [0, 1], [700, 800]);
   const mix = useTransform(smooth, [0, 1], [0, 100]);
   const fontVariationSettings = useMotionTemplate`"wdth" ${wdth}, "wght" ${wght}`;
-  const color = useMotionTemplate`color-mix(in srgb, var(--clr) ${mix}%, hsl(var(--foreground)))`;
+  const color = useMotionTemplate`color-mix(in srgb, var(--clr) ${mix}%, var(--name-ink, hsl(var(--foreground))))`;
 
   return (
     <motion.span
@@ -74,22 +74,41 @@ const Letter = ({
   );
 };
 
+export type NamePointer = {
+  x: MotionValue<number>;
+  presence: MotionValue<number>;
+  centers: React.RefObject<{ x: number; w: number }[]>;
+};
+
+// Pointer state behind the hover morph. Hand one instance to several
+// KineticNames (e.g. a masked copy) to keep them morphing in lockstep.
+export const useNamePointer = (): NamePointer => {
+  const x = useMotionValue(-9999);
+  const presence = useSpring(0, { stiffness: 120, damping: 20 });
+  const centers = useRef<{ x: number; w: number }[]>([]);
+  return { x, presence, centers };
+};
+
 const KineticName = ({
   name,
   state,
   style,
   className,
+  pointer,
+  decorative = false,
 }: {
   name: string;
   state: "hidden" | "visible";
   style?: { y: MotionValue<string> };
   className?: string;
+  pointer?: NamePointer;
+  // Visual-only copy: not a heading, hidden from assistive tech, no handlers
+  decorative?: boolean;
 }) => {
   const reduce = useReducedMotion() ?? false;
   const ref = useRef<HTMLHeadingElement>(null);
-  const centers = useRef<{ x: number; w: number }[]>([]);
-  const pointerX = useMotionValue(-9999);
-  const presence = useSpring(0, { stiffness: 120, damping: 20 });
+  const own = useNamePointer();
+  const { x: pointerX, presence, centers } = pointer ?? own;
 
   // Snapshot letter positions while the word is at rest
   const measure = () => {
@@ -122,6 +141,31 @@ const KineticName = ({
     presence.set(1);
   };
 
+  const letters = name.split("").map((ch, i) => (
+    <Letter
+      key={ch + i}
+      ch={ch}
+      index={i}
+      pointerX={pointerX}
+      presence={presence}
+      centers={centers}
+      state={state}
+      reduce={reduce}
+    />
+  ));
+
+  if (decorative) {
+    return (
+      <motion.div
+        aria-hidden="true"
+        style={reduce ? undefined : style}
+        className={cn("flex overflow-hidden", className)}
+      >
+        {letters}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.h1
       ref={ref}
@@ -132,18 +176,7 @@ const KineticName = ({
       onPointerLeave={() => presence.set(0)}
       className={cn("flex overflow-hidden", className)}
     >
-      {name.split("").map((ch, i) => (
-        <Letter
-          key={ch + i}
-          ch={ch}
-          index={i}
-          pointerX={pointerX}
-          presence={presence}
-          centers={centers}
-          state={state}
-          reduce={reduce}
-        />
-      ))}
+      {letters}
     </motion.h1>
   );
 };

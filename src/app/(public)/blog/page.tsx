@@ -440,7 +440,8 @@ export default async function BlogPage({
                       )}
                     </span>
                     <span className="col-start-2 font-mono text-sm tabular-nums text-foreground/55 md:col-start-auto">
-                      {new Intl.NumberFormat("en", { notation: "compact" }).format(post.views ?? 0)} views
+                      {new Intl.NumberFormat("en", { notation: "compact" }).format(post.views ?? 0)}{" "}
+                      {post.views === 1 ? "view" : "views"}
                     </span>
                   </Link>
                 </li>
