@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "framer-motion";
+import {
+  motion,
+  useInView,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useLenis } from "lenis/react";
@@ -16,8 +22,11 @@ import type { ContactInfo } from "@/lib/availability";
 
 type SocialLink = { name: string; link: string };
 
-// Curtain footer: the fixed panel sits behind the page and is uncovered by a
-// clip-path window as the last section scrolls away.
+// Inset card footer: a teal card with a page-background margin all round,
+// growing to full size as it scrolls in. It stays in normal flow (never
+// position: fixed) and ends on the page background, so iOS 26 Safari, which
+// tints the area behind its bottom bar from fixed elements at that edge or
+// else the page background, keeps that area in the theme colour.
 const Footer = ({
   socialLinks,
   contact,
@@ -29,9 +38,18 @@ const Footer = ({
   const pathname = usePathname();
   const lenis = useLenis();
   const onPortfolio = pathname === routes.public.portfolio;
-  // The fixed panel is always "in view" to an observer, so watch the window
   const windowRef = useRef<HTMLDivElement>(null);
   const revealed = useInView(windowRef, { once: true, amount: 0.5 });
+  const reduce = useReducedMotion();
+
+  // Grows from slightly inset to full size over its last stretch of scroll,
+  // anchored at the bottom: the arrival the old curtain reveal gave, without
+  // pinning anything to the viewport edge
+  const { scrollYProgress } = useScroll({
+    target: windowRef,
+    offset: ["start end", "end end"],
+  });
+  const scale = useTransform(scrollYProgress, [0, 1], [0.92, 1]);
 
   // The layout (and so this footer) survives client-side navigation, while
   // pages re-render with fresh data. Re-check availability when the footer
@@ -68,13 +86,13 @@ const Footer = ({
     "grid size-36 place-items-center rounded-full bg-accent-on text-center text-base font-medium text-accent transition-transform duration-500 ease-expo hover:scale-105 active:scale-95 md:size-44 md:text-lg";
 
   return (
-    <div
-      ref={windowRef}
-      className="relative h-[min(92dvh,44rem)]"
-      style={{ clipPath: "polygon(0% 0, 100% 0%, 100% 100%, 0 100%)" }}
-    >
-      <footer className="fixed bottom-0 left-0 h-[min(92dvh,44rem)] w-full bg-accent text-accent-on">
-        <div className="mx-auto flex h-full max-w-[1400px] flex-col justify-between px-4 pb-6 pt-16 md:px-8 md:pt-20">
+    // The page-background margin: this is what sits at the bottom edge
+    <div ref={windowRef} className="bg-background p-3 md:p-4">
+      <motion.footer
+        style={reduce ? undefined : { scale }}
+        className="min-h-[min(88dvh,42rem)] origin-bottom overflow-hidden rounded-[1.25rem] bg-accent text-accent-on"
+      >
+        <div className="mx-auto flex min-h-[min(88dvh,42rem)] max-w-[1400px] flex-col justify-between gap-16 px-5 pb-6 pt-14 md:px-8 md:pt-20">
           <div className="flex flex-col items-start justify-between gap-10 md:flex-row md:items-end">
             <SplitText
               as="h2"
@@ -167,7 +185,7 @@ const Footer = ({
             </div>
           </div>
         </div>
-      </footer>
+      </motion.footer>
     </div>
   );
 };

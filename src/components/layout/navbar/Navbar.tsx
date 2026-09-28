@@ -92,14 +92,20 @@ const Navbar = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
         initial={false}
         animate={{ y: hidden && !showMenu ? "-110%" : "0%" }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className={cn(
-          "vt-chrome-header fixed inset-x-0 top-0 z-[100] transition-[background-color,backdrop-filter,border-color] duration-500",
-          scrolled && !showMenu
-            ? "border-b border-foreground/[0.06] bg-background/70 backdrop-blur-xl"
-            : "border-b border-transparent",
-        )}
+        // No background, blur or border on the fixed box itself: iOS Safari
+        // would tint its status bar from them (see globals.css)
+        className="vt-chrome-header fixed inset-x-0 top-0 z-[100]"
       >
-        <nav className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-4 md:h-[4.5rem] md:px-8">
+        <div
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute inset-0 border-b transition-[opacity,border-color] duration-500",
+            scrolled && !showMenu
+              ? "border-foreground/[0.06] bg-background/70 opacity-100 backdrop-blur-xl"
+              : "border-transparent opacity-0",
+          )}
+        />
+        <nav className="relative mx-auto flex h-16 max-w-[1400px] items-center justify-between px-4 md:h-[4.5rem] md:px-8">
           {/* SUB: LOGO */}
           <div
             className="flex items-center gap-3"
