@@ -22,7 +22,18 @@ async function getPosts() {
   return JSON.parse(JSON.stringify(posts));
 }
 
+// Views change on every read, which never touches the blog tag, so they get
+// their own short-lived entry instead of riding on the post list's cache
+async function getViewCounts() {
+  "use cache";
+  cacheTag(CACHE_TAGS.blog);
+  cacheLife("minutes");
+
+  const rows = await prisma.blogPost.findMany({ select: { id: true, views: true } });
+  return Object.fromEntries(rows.map((r) => [r.id, r.views ?? 0]));
+}
+
 export default async function BlogAdminPage() {
-  const posts = await getPosts();
-  return <BlogClient posts={posts} />;
+  const [posts, views] = await Promise.all([getPosts(), getViewCounts()]);
+  return <BlogClient posts={posts} views={views} />;
 }

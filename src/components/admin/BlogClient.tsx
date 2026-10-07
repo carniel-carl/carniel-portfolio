@@ -36,6 +36,9 @@ import { toast } from "sonner";
 
 const PAGE_SIZE = 20;
 
+const formatViews = (n: number) =>
+  new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+
 interface BlogPost {
   id: string;
   title: string;
@@ -51,7 +54,14 @@ interface BlogPost {
 
 type Filter = "all" | "live" | "drafts";
 
-export default function BlogClient({ posts }: { posts: BlogPost[] }) {
+export default function BlogClient({
+  posts,
+  views,
+}: {
+  posts: BlogPost[];
+  /** View counts keyed by post id */
+  views: Record<string, number>;
+}) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -184,8 +194,30 @@ export default function BlogClient({ posts }: { posts: BlogPost[] }) {
                     <span className="hidden sm:inline">
                       {" "}· {post.author?.name ?? "Unknown author"}
                     </span>
+                    {post.published && (
+                      <span className="tnum sm:hidden">
+                        {" "}· {formatViews(views[post.id] ?? 0)}{" "}
+                        {views[post.id] === 1 ? "view" : "views"}
+                      </span>
+                    )}
                   </p>
                 </div>
+                {/* Drafts can't be read yet, so they keep the column empty */}
+                <span
+                  className="tnum hidden w-16 shrink-0 items-center justify-end gap-1.5 text-xs text-muted-foreground sm:flex"
+                  aria-label={
+                    post.published
+                      ? `${views[post.id] ?? 0} ${views[post.id] === 1 ? "view" : "views"}`
+                      : undefined
+                  }
+                >
+                  {post.published && (
+                    <>
+                      <Eye className="size-3.5" aria-hidden="true" />
+                      {formatViews(views[post.id] ?? 0)}
+                    </>
+                  )}
+                </span>
                 <RelativeTime
                   date={post.updatedAt}
                   className="hidden shrink-0 text-xs text-muted-foreground md:block"
