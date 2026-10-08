@@ -193,14 +193,6 @@ export default async function BlogPostPage({
 
         {showAds ? (
           <>
-            {/* Plain <script>: AdSense rejects next/script's data-nscript
-              attribute. React hoists async scripts to <head> and loads them once. */}
-            <script
-              async
-              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
-              crossOrigin="anonymous"
-            />
-
             {/* Ad rails flank the article on wide screens; below xl it's content only */}
             <div className="xl:grid xl:grid-cols-[160px_minmax(0,48rem)_160px] xl:justify-center xl:gap-10 2xl:grid-cols-[300px_minmax(0,48rem)_300px]">
               <aside aria-label="Advertisement" className="hidden xl:block">

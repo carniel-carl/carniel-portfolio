@@ -10,6 +10,7 @@ import {
   SITE_TITLE,
   SITE_URL,
 } from "@/lib/site";
+import { ADSENSE_CLIENT } from "@/lib/adsense";
 
 // Display: variable width + optical size axes drive the kinetic headlines
 const display = Bricolage_Grotesque({
@@ -52,8 +53,8 @@ export const metadata: Metadata = {
   },
   twitter: { card: "summary_large_image", creator: "@dripcarniel" },
   // Lets AdSense verify site ownership
-  ...(process.env.NEXT_PUBLIC_ADSENSE_CLIENT && {
-    other: { "google-adsense-account": process.env.NEXT_PUBLIC_ADSENSE_CLIENT },
+  ...(ADSENSE_CLIENT && {
+    other: { "google-adsense-account": ADSENSE_CLIENT },
   }),
 };
 
@@ -64,6 +65,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      {ADSENSE_CLIENT && (
+        <head>
+          {/* Plain <script>: AdSense rejects next/script's data-nscript attribute */}
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+            crossOrigin="anonymous"
+          />
+        </head>
+      )}
       <body
         className={`${display.variable} ${sans.variable} ${mono.variable} font-sans antialiased overscroll-none relative min-h-screen`}
       >
