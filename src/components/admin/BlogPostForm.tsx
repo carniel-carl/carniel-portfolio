@@ -97,10 +97,14 @@ export default function BlogPostForm({ initialData, isEdit, categories }: BlogPo
     try {
       if (isEdit && initialData?.id) {
         await updateBlogPost(initialData.id, values);
+        form.reset(values);
       } else {
         await createBlogPost(values);
+        // Cache Components keeps this route mounted (hidden) after navigating
+        // away, so clear it or "New post" reopens with the saved post in it.
+        form.reset();
+        setSlugTouched(false);
       }
-      form.reset(values);
       toast.success(
         values.published ? (isEdit ? "Post updated" : "Post published") : "Draft saved",
       );
