@@ -303,6 +303,14 @@ export default function TiptapEditor({
     },
   });
 
+  // Follow external changes to `content` (e.g. the form being reset).
+  // Typing round-trips through onChange, so this is a no-op while editing.
+  useEffect(() => {
+    if (editor && !editor.isDestroyed && content !== editor.getHTML()) {
+      editor.commands.setContent(content, { emitUpdate: false });
+    }
+  }, [content, editor]);
+
   useEffect(() => {
     if (!isMobile && mobileView !== "main") {
       setMobileView("main");
