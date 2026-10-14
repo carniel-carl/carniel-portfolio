@@ -1,5 +1,6 @@
 "use client";
 
+import AddExistingPostDialog from "@/components/admin/AddExistingPostDialog";
 import FileDrop from "@/components/admin/form/FileDrop";
 import FormSection, { ToggleRow } from "@/components/admin/form/FormSection";
 import { useFormShortcuts } from "@/components/admin/form/useFormShortcuts";
@@ -28,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   addPostToSeries,
   deleteSeries,
+  publishEpisodes,
   removePostFromSeries,
   reorderSeriesEpisodes,
   setEpisodeLevel,
@@ -62,10 +64,12 @@ import {
   Eye,
   GripVertical,
   Layers,
+  Link2,
   Loader2,
   MoreHorizontal,
   Pencil,
   Plus,
+  Send,
   Trash2,
   Unlink,
 } from "lucide-react";
@@ -96,12 +100,12 @@ const NO_LEVEL = "none";
 export default function SeriesEditor({
   series,
   episodes: initialEpisodes,
-  available,
+  hasStandalonePosts,
 }: {
   series: SeriesDetails;
   episodes: EpisodeRow[];
-  /** Posts not in any series, for "Add existing post" */
-  available: { id: string; title: string; published: boolean }[];
+  /** Whether any post is outside a series, to offer "Add existing post" */
+  hasStandalonePosts: boolean;
 }) {
   const router = useRouter();
   const [episodes, setEpisodes] = useState(initialEpisodes);
@@ -120,11 +124,24 @@ export default function SeriesEditor({
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<EpisodeRow | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [confirmPublish, setConfirmPublish] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const dirty = JSON.stringify(form) !== JSON.stringify(saved);
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
   const liveCount = episodes.filter((e) => e.published).length;
+  const drafts = episodes.filter((e) => !e.published);
+  // Ids of episodes published since they were ticked drop out here
+  const selectedDrafts = drafts.filter((e) => selected.has(e.id));
+  const allDraftsSelected = drafts.length > 0 && selectedDrafts.length === drafts.length;
+  const toggleSelected = (id: string) =>
+    setSelected((s) => {
+      const next = new Set(s);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
   // Readers only see published episodes, numbered among themselves
   let publicNumber = 0;
   const publicNumbers = episodes.map((e) => (e.published ? ++publicNumber : null));
@@ -188,8 +205,21 @@ export default function SeriesEditor({
       await addPostToSeries(series.id, postId);
       toast.success("Added as the last episode");
       router.refresh();
+      return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not add the post");
+      return false;
+    }
+  };
+
+  const publishSelected = async () => {
+    try {
+      const count = await publishEpisodes(series.id, selectedDrafts.map((e) => e.id));
+      toast.success(`${count} ${count === 1 ? "episode" : "episodes"} published`);
+      setSelected(new Set());
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not publish the episodes");
     }
   };
 
@@ -227,20 +257,11 @@ export default function SeriesEditor({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {available.length > 0 && (
-              <Select value="" onValueChange={addExisting}>
-                <SelectTrigger className="h-9 w-auto gap-2" aria-label="Add an existing post">
-                  <SelectValue placeholder="Add existing post" />
-                </SelectTrigger>
-                <SelectContent className="max-w-[min(28rem,90vw)]">
-                  {available.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      <span className="truncate">{p.title}</span>
-                      {!p.published && <span className="ml-2 text-xs text-muted-foreground">Draft</span>}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {hasStandalonePosts && (
+              <Button variant="outline" size="sm" className="hover:bg-muted" onClick={() => setAddOpen(true)}>
+                <Link2 />
+                Add existing post
+              </Button>
             )}
             <Link href={routes.admin.blogNewInSeries(series.id)} className={buttonVariants({ size: "sm" })}>
               <Plus />
@@ -257,27 +278,57 @@ export default function SeriesEditor({
             className="rounded-none border-0"
           />
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            modifiers={[restrictToVerticalAxis]}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={episodes.map((e) => e.id)} strategy={verticalListSortingStrategy}>
-              <ol className="divide-y">
-                {episodes.map((episode, i) => (
-                  <SortableEpisode
-                    key={episode.id}
-                    episode={episode}
-                    position={i + 1}
-                    publicNumber={publicNumbers[i]}
-                    onLevel={(value) => changeLevel(episode, value)}
-                    onRemove={() => setRemoveTarget(episode)}
+          <>
+            {drafts.length > 0 && (
+              <div className="flex min-h-12 items-center gap-3 border-b bg-muted/40 px-3 py-2 sm:px-4">
+                <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    className="size-4 shrink-0 cursor-pointer accent-primary"
+                    checked={allDraftsSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = selectedDrafts.length > 0 && !allDraftsSelected;
+                    }}
+                    onChange={() => setSelected(new Set(allDraftsSelected ? [] : drafts.map((e) => e.id)))}
                   />
-                ))}
-              </ol>
-            </SortableContext>
-          </DndContext>
+                  <span className="truncate">
+                    {selectedDrafts.length
+                      ? `${selectedDrafts.length} of ${drafts.length} ${drafts.length === 1 ? "draft" : "drafts"} selected`
+                      : `Select all ${drafts.length} ${drafts.length === 1 ? "draft" : "drafts"}`}
+                  </span>
+                </label>
+                {selectedDrafts.length > 0 && (
+                  <Button size="sm" onClick={() => setConfirmPublish(true)}>
+                    <Send />
+                    Publish {selectedDrafts.length}
+                  </Button>
+                )}
+              </div>
+            )}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis]}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={episodes.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+                <ol className="divide-y">
+                  {episodes.map((episode, i) => (
+                    <SortableEpisode
+                      key={episode.id}
+                      episode={episode}
+                      position={i + 1}
+                      publicNumber={publicNumbers[i]}
+                      selected={selected.has(episode.id)}
+                      onSelect={episode.published ? undefined : () => toggleSelected(episode.id)}
+                      onLevel={(value) => changeLevel(episode, value)}
+                      onRemove={() => setRemoveTarget(episode)}
+                    />
+                  ))}
+                </ol>
+              </SortableContext>
+            </DndContext>
+          </>
         )}
       </section>
 
@@ -396,6 +447,27 @@ export default function SeriesEditor({
         }
         onConfirm={handleDelete}
       />
+      <AddExistingPostDialog open={addOpen} onOpenChange={setAddOpen} onAdd={addExisting} />
+      <ConfirmDialog
+        open={confirmPublish}
+        onOpenChange={setConfirmPublish}
+        title={`Publish ${selectedDrafts.length} ${selectedDrafts.length === 1 ? "episode" : "episodes"}?`}
+        description={
+          <>
+            They go live on the blog and in the series right away:
+            <span className="mt-2 block space-y-1">
+              {selectedDrafts.map((e) => (
+                <span key={e.id} className="block truncate font-medium text-foreground">
+                  {e.title}
+                </span>
+              ))}
+            </span>
+          </>
+        }
+        confirmLabel="Publish"
+        confirmVariant="default"
+        onConfirm={publishSelected}
+      />
       <ConfirmDialog
         open={!!removeTarget}
         onOpenChange={(o) => !o && setRemoveTarget(null)}
@@ -417,12 +489,17 @@ function SortableEpisode({
   episode,
   position,
   publicNumber,
+  selected,
+  onSelect,
   onLevel,
   onRemove,
 }: {
   episode: EpisodeRow;
   position: number;
   publicNumber: number | null;
+  selected: boolean;
+  /** Only drafts can be selected, for publishing together */
+  onSelect?: () => void;
   onLevel: (value: string) => void;
   onRemove: () => void;
 }) {
@@ -438,6 +515,18 @@ function SortableEpisode({
         isDragging && "z-10 shadow-lg ring-2 ring-accent-ink",
       )}
     >
+      {onSelect ? (
+        <input
+          type="checkbox"
+          className="size-4 shrink-0 cursor-pointer accent-primary"
+          checked={selected}
+          onChange={onSelect}
+          aria-label={`Select ${episode.title}`}
+        />
+      ) : (
+        <span className="size-4 shrink-0" aria-hidden />
+      )}
+
       <button
         type="button"
         ref={setActivatorNodeRef}
