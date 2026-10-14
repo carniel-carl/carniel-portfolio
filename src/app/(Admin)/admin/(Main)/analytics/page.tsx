@@ -2,8 +2,7 @@ import RankedList from "@/components/admin/analytics/RankedList";
 import { RefreshAnalyticsButton } from "@/components/admin/RefreshAnalyticsButton";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import StatTile from "@/components/admin/ui/StatTile";
-import { CACHE_TAGS } from "@/lib/cache-tags";
-import { getAnalyticsSnapshot } from "@/lib/mixpanel-server";
+import { getAnalyticsData } from "@/lib/analytics-data";
 import dayjs from "dayjs";
 import {
   BookOpen,
@@ -21,16 +20,8 @@ import {
   UserRound,
 } from "lucide-react";
 import type { Metadata } from "next";
-import { cacheLife, cacheTag } from "next/cache";
 
 export const metadata: Metadata = { title: "Analytics" };
-
-async function getAnalyticsData() {
-  "use cache";
-  cacheTag(CACHE_TAGS.analytics);
-  cacheLife("hours");
-  return getAnalyticsSnapshot(30);
-}
 
 const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
 function countryName(code: string) {
