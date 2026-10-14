@@ -9,6 +9,7 @@ import CategoryPills, { type CategoryPill } from "@/components/blog/CategoryPill
 import { readingMinutes } from "@/lib/blog/article";
 import { getSeriesList, STANDALONE_POST } from "@/lib/blog/series";
 import SeriesCard from "@/components/blog/series/SeriesCard";
+import SeriesShelf from "@/components/blog/series/SeriesShelf";
 import { BASE_OPEN_GRAPH, ogImage, SITE_NAME } from "@/lib/site";
 import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import PageTracker from "@/components/analytics/PageTracker";
@@ -188,8 +189,8 @@ async function getStandaloneCount() {
   return prisma.blogPost.count({ where: { published: true, ...STANDALONE_POST } });
 }
 
-// Series cards shown at the top of the first browse page
-const SERIES_ON_FEED = 3;
+// Series cards on the shelf at the top of the first browse page
+const SERIES_ON_FEED = 12;
 
 const buildUrl = (p: number, cat?: string, t?: string, s?: string) => {
   const params = new URLSearchParams();
@@ -367,34 +368,39 @@ export default async function BlogPage({
 
             {feedSeries.length > 0 && (
               <section aria-labelledby="feed-series" className="mb-14 md:mb-20">
-                <div className="mb-6 flex items-end justify-between gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <h2
-                      id="feed-series"
-                      className="font-display text-3xl font-semibold tracking-[-0.03em] md:text-4xl"
-                    >
-                      Series
-                    </h2>
-                    <p className="text-foreground/65">
-                      Learn a topic start to finish, one episode at a time.
-                    </p>
-                  </div>
-                  {!categorySlug && allSeries.length > 0 && (
-                    <Link
-                      href={routes.public.blogSeries}
-                      className="group inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-foreground/15 px-4 text-sm font-medium transition-colors hover:border-foreground/40"
-                    >
-                      All series
-                      <span className="tnum text-foreground/55">{allSeries.length}</span>
-                      <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
-                    </Link>
-                  )}
-                </div>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <SeriesShelf
+                  label="Series"
+                  header={
+                    <div className="flex flex-col gap-1.5">
+                      <h2
+                        id="feed-series"
+                        className="font-display text-3xl font-semibold tracking-[-0.03em] md:text-4xl"
+                      >
+                        Series
+                      </h2>
+                      <p className="text-foreground/65">
+                        Follow a story or a topic from start to finish, one episode at a time.
+                      </p>
+                    </div>
+                  }
+                  actions={
+                    !categorySlug &&
+                    allSeries.length > 0 && (
+                      <Link
+                        href={routes.public.blogSeries}
+                        className="group inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-foreground/15 px-4 text-sm font-medium transition-colors hover:border-foreground/40"
+                      >
+                        All series
+                        <span className="tnum text-foreground/55">{allSeries.length}</span>
+                        <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+                      </Link>
+                    )
+                  }
+                >
                   {feedSeries.map((s) => (
                     <SeriesCard key={s.id} series={s} />
                   ))}
-                </div>
+                </SeriesShelf>
               </section>
             )}
             {feedSeries.length > 0 && rest.some(Boolean) && (

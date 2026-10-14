@@ -1,11 +1,13 @@
 // Server Component: sanitising, parsing and syntax highlighting all happen on
 // the server, so sanitize-html / html-react-parser / lowlight never ship to
-// the browser. Only CodeBlock (copy button) and the TOC are client islands.
+// the browser. Only CodeBlock (copy button), the TOC and PlaceMarker (the
+// reader's "you stopped here" mark) are client islands.
 import Image from "next/image";
 import Link from "next/link";
 import { ViewTransition, type ReactNode } from "react";
 import { renderRichText, sanitizeRichText } from "@/components/content/RichText";
 import TableOfContents from "@/components/blog/TableOfContents";
+import PlaceMarker from "@/components/blog/PlaceMarker";
 import AuthorHoverCard from "@/components/blog/AuthorHoverCard";
 import LevelBadge from "@/components/blog/series/LevelBadge";
 import { getAbout } from "@/lib/data/portfolio";
@@ -152,7 +154,13 @@ export default async function BlogPostContent({
             </div>
           )}
 
-          <div className="tiptap-content">{renderRichText(html)}</div>
+          {preview ? (
+            <div className="tiptap-content">{renderRichText(html)}</div>
+          ) : (
+            <PlaceMarker slug={post.slug}>
+              <div className="tiptap-content">{renderRichText(html)}</div>
+            </PlaceMarker>
+          )}
 
           {post.tags.length > 0 && (
             <div className="mt-14 flex flex-wrap gap-2 border-t border-foreground/10 pt-8">
