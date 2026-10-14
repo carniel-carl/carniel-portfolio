@@ -22,6 +22,7 @@ import { BLOG_BACK, blogPageTransition } from "@/lib/blog/view-transitions";
 import {
   AUTHOR_NAME,
   BASE_OPEN_GRAPH,
+  ogImage,
   SITE_URL,
   toMetaDescription,
 } from "@/lib/site";
@@ -72,7 +73,7 @@ export async function generateMetadata({
   const images = [
     post.coverImage
       ? { url: post.coverImage, alt: post.title }
-      : { url: "/images/og/blog.png", width: 1200, height: 630, alt: "Writing by Carniel" },
+      : ogImage("/images/og/blog.png", "Writing by Carniel"),
   ];
 
   return {

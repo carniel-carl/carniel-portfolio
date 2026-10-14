@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import routes from "@/lib/routes";
-import { BASE_OPEN_GRAPH, SITE_NAME } from "@/lib/site";
+import { BASE_OPEN_GRAPH, ogImage, SITE_NAME } from "@/lib/site";
 
 const PRIVACY_DESCRIPTION =
   "How carniel.vercel.app collects, uses and protects information about visitors.";
@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     url: "/privacy",
     title: `Privacy policy · ${SITE_NAME}`,
     description: PRIVACY_DESCRIPTION,
+    images: [ogImage("/images/og/privacy.png", `Privacy policy · ${SITE_NAME}`)],
   },
 };
 

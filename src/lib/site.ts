@@ -9,13 +9,18 @@ export const SITE_URL = (
 
 export const SITE_NAME = "Chimezie Carniel";
 export const SITE_TITLE = `${SITE_NAME} · Web & mobile developer`;
+// Static share cards in public/images/og, served from the CDN. Pages with
+// their own image (post covers, project shots) use that instead.
+export const ogImage = (url: string, alt: string) => ({ url, width: 1200, height: 630, alt });
+export const SITE_OG_IMAGE = ogImage("/images/og/site.png", SITE_TITLE);
 // Child metadata replaces the parent's openGraph object instead of merging,
 // so every page spreads this in rather than relying on the root layout
 export const BASE_OPEN_GRAPH = {
-  type: "website",
+  type: "website" as const,
   siteName: SITE_NAME,
   locale: "en_US",
-} as const;
+  images: [SITE_OG_IMAGE],
+};
 export const SITE_DESCRIPTION =
   "Chimezie (Carniel) is a web and mobile developer building fast, accessible apps with React, Next.js and React Native.";
 // Public byline for the blog (the admin account name is not shown)
