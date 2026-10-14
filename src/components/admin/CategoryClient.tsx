@@ -1,5 +1,6 @@
 "use client";
 
+import { useActionToast } from "@/components/admin/useActionToast";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import EmptyState from "@/components/admin/ui/EmptyState";
@@ -33,10 +34,8 @@ import {
 } from "@/lib/schemas/category";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Loader2, Lock, Pencil, Plus, Tags, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { toast } from "sonner";
 
 const COLOR_PALETTE = [
   { hex: "#ef4444", name: "Red" },
@@ -76,7 +75,7 @@ export default function CategoryClient({
 }: {
   categories: Category[];
 }) {
-  const router = useRouter();
+  const runAction = useActionToast(categories);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
@@ -107,32 +106,24 @@ export default function CategoryClient({
   };
 
   const onSubmit = async (values: CategoryFormValues) => {
-    try {
-      if (editingId) {
-        await updateCategory(editingId, values);
-        toast.success("Category updated");
-      } else {
-        await createCategory(values);
-        toast.success("Category created");
-      }
-      setDialogOpen(false);
-      router.refresh();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Something went wrong",
-      );
-    }
+    const saved = await runAction(
+      () => (editingId ? updateCategory(editingId, values) : createCategory(values)),
+      {
+        loading: editingId ? "Saving category…" : "Creating category…",
+        success: editingId ? "Category updated" : "Category created",
+        error: (error) => (error instanceof Error ? error.message : "Something went wrong"),
+      },
+    );
+    if (saved) setDialogOpen(false);
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      await deleteCategory(deleteTarget.id);
-      toast.success("Category deleted");
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not delete");
-    }
+    await runAction(() => deleteCategory(deleteTarget.id), {
+      loading: "Deleting category…",
+      success: "Category deleted",
+      error: (error) => (error instanceof Error ? error.message : "Could not delete"),
+    });
   };
 
   const submitting = form.formState.isSubmitting;

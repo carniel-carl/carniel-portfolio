@@ -4,6 +4,7 @@ import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import EmptyState from "@/components/admin/ui/EmptyState";
 import Pagination from "@/components/admin/ui/Pagination";
+import { useActionToast } from "@/components/admin/useActionToast";
 import SearchField from "@/components/admin/ui/SearchField";
 import SegmentedTabs from "@/components/admin/ui/SegmentedTabs";
 import RelativeTime from "@/components/admin/ui/RelativeTime";
@@ -33,9 +34,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 
 const formatViews = (n: number) =>
   new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(n);
@@ -86,7 +85,7 @@ export default function BlogClient({
   /** Posts matching the current filter and search */
   total: number;
 }) {
-  const router = useRouter();
+  const runAction = useActionToast(posts);
   const [deleteTarget, setDeleteTarget] = useState<BlogPost | null>(null);
   const search = useUrlSearch(query, (q) => listUrl(filter, q));
 
@@ -94,13 +93,11 @@ export default function BlogClient({
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      await deleteBlogPost(deleteTarget.id);
-      toast.success("Post deleted");
-      router.refresh();
-    } catch {
-      toast.error("Could not delete post");
-    }
+    await runAction(() => deleteBlogPost(deleteTarget.id), {
+      loading: "Deleting post…",
+      success: "Post deleted",
+      error: "Could not delete post",
+    });
   };
 
   return (

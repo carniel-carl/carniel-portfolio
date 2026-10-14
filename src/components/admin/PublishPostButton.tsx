@@ -1,26 +1,24 @@
 "use client";
 
+import { useActionToast } from "@/components/admin/useActionToast";
 import { Button } from "@/components/ui/button";
 import { publishBlogPost } from "@/lib/actions/blog";
 import { Loader2, Send } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 
 export default function PublishPostButton({ id }: { id: string }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const runAction = useActionToast();
+  const [pending, setPending] = useState(false);
 
-  const handlePublish = () =>
-    startTransition(async () => {
-      try {
-        await publishBlogPost(id);
-        toast.success("Post published");
-        router.refresh();
-      } catch {
-        toast.error("Could not publish post");
-      }
+  const handlePublish = async () => {
+    setPending(true);
+    await runAction(() => publishBlogPost(id), {
+      loading: "Publishing post…",
+      success: "Post published",
+      error: "Could not publish post",
     });
+    setPending(false);
+  };
 
   return (
     <Button onClick={handlePublish} disabled={pending}>

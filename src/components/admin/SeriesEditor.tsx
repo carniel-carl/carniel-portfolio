@@ -1,6 +1,7 @@
 "use client";
 
 import AddExistingPostDialog from "@/components/admin/AddExistingPostDialog";
+import { useActionToast } from "@/components/admin/useActionToast";
 import FileDrop from "@/components/admin/form/FileDrop";
 import FormSection, { ToggleRow } from "@/components/admin/form/FormSection";
 import { useFormShortcuts } from "@/components/admin/form/useFormShortcuts";
@@ -108,6 +109,7 @@ export default function SeriesEditor({
   hasStandalonePosts: boolean;
 }) {
   const router = useRouter();
+  const runAction = useActionToast(initialEpisodes);
   const [episodes, setEpisodes] = useState(initialEpisodes);
   // Server data wins after every refresh
   useEffect(() => setEpisodes(initialEpisodes), [initialEpisodes]);
@@ -152,16 +154,19 @@ export default function SeriesEditor({
       return;
     }
     setSaving(true);
-    try {
-      await updateSeries(series.id, form);
-      setSaved(form);
-      toast.success("Series saved");
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the series");
-    } finally {
-      setSaving(false);
-    }
+    const values = form;
+    await runAction(
+      async () => {
+        await updateSeries(series.id, values);
+        setSaved(values);
+      },
+      {
+        loading: "Saving series…",
+        success: "Series saved",
+        error: (error) => (error instanceof Error ? error.message : "Could not save the series"),
+      },
+    );
+    setSaving(false);
   };
   useFormShortcuts({ onSave: save, dirty: dirty && !saving });
 
@@ -200,49 +205,39 @@ export default function SeriesEditor({
     }
   };
 
-  const addExisting = async (postId: string) => {
-    try {
-      await addPostToSeries(series.id, postId);
-      toast.success("Added as the last episode");
-      router.refresh();
-      return true;
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not add the post");
-      return false;
-    }
-  };
+  const addExisting = (postId: string) =>
+    runAction(() => addPostToSeries(series.id, postId), {
+      loading: "Adding episode…",
+      success: "Added as the last episode",
+      error: (error) => (error instanceof Error ? error.message : "Could not add the post"),
+    });
 
   const publishSelected = async () => {
-    try {
-      const count = await publishEpisodes(series.id, selectedDrafts.map((e) => e.id));
-      toast.success(`${count} ${count === 1 ? "episode" : "episodes"} published`);
-      setSelected(new Set());
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not publish the episodes");
-    }
+    const count = selectedDrafts.length;
+    const published = await runAction(() => publishEpisodes(series.id, selectedDrafts.map((e) => e.id)), {
+      loading: `Publishing ${count} ${count === 1 ? "episode" : "episodes"}…`,
+      success: (n) => `${n} ${n === 1 ? "episode" : "episodes"} published`,
+      error: (error) => (error instanceof Error ? error.message : "Could not publish the episodes"),
+    });
+    if (published) setSelected(new Set());
   };
 
   const removeEpisode = async () => {
     if (!removeTarget) return;
-    try {
-      await removePostFromSeries(removeTarget.id);
-      toast.success("Removed from the series. The post itself is unchanged.");
-      router.refresh();
-    } catch {
-      toast.error("Could not remove the episode");
-    }
+    await runAction(() => removePostFromSeries(removeTarget.id), {
+      loading: "Removing episode…",
+      success: "Removed from the series. The post itself is unchanged.",
+      error: "Could not remove the episode",
+    });
   };
 
   const handleDelete = async () => {
-    try {
-      await deleteSeries(series.id);
-      toast.success("Series deleted");
-      router.push(routes.admin.blogSeries);
-      router.refresh();
-    } catch {
-      toast.error("Could not delete the series");
-    }
+    await runAction(() => deleteSeries(series.id), {
+      loading: "Deleting series…",
+      success: "Series deleted",
+      error: "Could not delete the series",
+      navigateTo: routes.admin.blogSeries,
+    });
   };
 
   return (
