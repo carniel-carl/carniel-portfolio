@@ -7,8 +7,10 @@ import BlogCard from "@/components/blog/BlogCard";
 import BlogSearch from "@/components/blog/BlogSearch";
 import CategoryPills, { type CategoryPill } from "@/components/blog/CategoryPills";
 import { readingMinutes } from "@/lib/blog/article";
+import { getSeriesList, STANDALONE_POST } from "@/lib/blog/series";
+import SeriesCard from "@/components/blog/series/SeriesCard";
 import { BASE_OPEN_GRAPH, ogImage, SITE_NAME } from "@/lib/site";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import PageTracker from "@/components/analytics/PageTracker";
 import routes from "@/lib/routes";
 import SplitText from "@/components/motion/SplitText";
@@ -74,6 +76,9 @@ async function getPosts(
       published: true,
       ...(categorySlug && { category: { slug: categorySlug } }),
       ...(tag && { tags: { has: tag } }),
+      // Browsing shows series as one card each instead of every episode;
+      // tag filters and search still find individual episodes
+      ...(!tag && STANDALONE_POST),
     };
   }
 
@@ -94,6 +99,7 @@ async function getPosts(
         content: true,
         category: { select: { name: true, slug: true, color: true } },
         author: { select: { name: true } },
+        series: { select: { title: true, slug: true } },
       },
     }),
     prisma.blogPost.count({ where }),
@@ -122,11 +128,16 @@ async function getCategories() {
       name: true,
       slug: true,
       color: true,
-      _count: { select: { posts: { where: { published: true } } } },
+      _count: { select: { posts: { where: { published: true, ...STANDALONE_POST } } } },
     },
   });
+  // A category's count is what its filter shows: standalone posts plus series cards
+  const series = await getSeriesList();
   const categories = rows
-    .map(({ _count, ...c }) => ({ ...c, count: _count.posts }))
+    .map(({ _count, ...c }) => ({
+      ...c,
+      count: _count.posts + series.filter((s) => s.categorySlugs.includes(c.slug)).length,
+    }))
     .filter((c) => c.count > 0);
 
   // Alphabetical, but the catch-all "Other(s)" pill always goes last
@@ -168,6 +179,17 @@ async function getTotalPublishedCount() {
   return prisma.blogPost.count({ where: { published: true } });
 }
 
+async function getStandaloneCount() {
+  "use cache";
+  cacheTag(CACHE_TAGS.blog);
+  cacheLife("max");
+
+  return prisma.blogPost.count({ where: { published: true, ...STANDALONE_POST } });
+}
+
+// Series cards shown at the top of the first browse page
+const SERIES_ON_FEED = 3;
+
 // 1 ... 4 5 6 ... 12: current page, its neighbours and both ends
 const pageList = (page: number, total: number): (number | "gap")[] => {
   const pages = new Set([1, total, page - 1, page, page + 1]);
@@ -207,12 +229,23 @@ export default async function BlogPage({
   const firstPageSize = withLead ? POSTS_PER_PAGE + 1 : POSTS_PER_PAGE;
   const skip = page === 1 ? 0 : firstPageSize + (page - 2) * POSTS_PER_PAGE;
   const take = page === 1 ? firstPageSize : POSTS_PER_PAGE;
-  const [{ posts, total }, categories, totalPublished, mostRead] = await Promise.all([
-    getPosts(skip, take, categorySlug, tag, search),
-    getCategories(),
-    getTotalPublishedCount(),
-    unfiltered ? getMostRead() : Promise.resolve([]),
-  ]);
+  const [{ posts, total }, categories, totalPublished, standaloneCount, allSeries, mostRead] =
+    await Promise.all([
+      getPosts(skip, take, categorySlug, tag, search),
+      getCategories(),
+      getTotalPublishedCount(),
+      getStandaloneCount(),
+      getSeriesList(),
+      unfiltered ? getMostRead() : Promise.resolve([]),
+    ]);
+
+  // Series sit on the first page when browsing (all posts or one category)
+  const browsing = page === 1 && !tag && !search;
+  const feedSeries = browsing
+    ? categorySlug
+      ? allSeries.filter((s) => s.categorySlugs.includes(categorySlug))
+      : allSeries.slice(0, SERIES_ON_FEED)
+    : [];
 
   const totalPages =
     total <= firstPageSize ? 1 : 1 + Math.ceil((total - firstPageSize) / POSTS_PER_PAGE);
@@ -280,7 +313,7 @@ export default async function BlogPage({
                         key: "all",
                         label: "All",
                         href: buildUrl(1, undefined, tag),
-                        count: totalPublished,
+                        count: standaloneCount + allSeries.length,
                         active: !categorySlug,
                       },
                       ...categories.map<CategoryPill>((cat) => ({
@@ -313,7 +346,7 @@ export default async function BlogPage({
           </>
         )}
 
-        {posts.length === 0 ? (
+        {posts.length === 0 && feedSeries.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-[1.25rem] border border-dashed border-foreground/20 px-6 py-24 text-center">
             <p className="font-display text-3xl font-semibold tracking-[-0.02em] md:text-4xl">
               {totalPublished === 0 ? "First posts are on the way" : "Nothing found"}
@@ -336,6 +369,44 @@ export default async function BlogPage({
               <div className="mb-14 md:mb-20">
                 <BlogCard post={lead} variant="lead" />
               </div>
+            )}
+
+            {feedSeries.length > 0 && (
+              <section aria-labelledby="feed-series" className="mb-14 md:mb-20">
+                <div className="mb-6 flex items-end justify-between gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <h2
+                      id="feed-series"
+                      className="font-display text-3xl font-semibold tracking-[-0.03em] md:text-4xl"
+                    >
+                      Series
+                    </h2>
+                    <p className="text-foreground/65">
+                      Learn a topic start to finish, one episode at a time.
+                    </p>
+                  </div>
+                  {!categorySlug && allSeries.length > 0 && (
+                    <Link
+                      href={routes.public.blogSeries}
+                      className="group inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-foreground/15 px-4 text-sm font-medium transition-colors hover:border-foreground/40"
+                    >
+                      All series
+                      <span className="tnum text-foreground/55">{allSeries.length}</span>
+                      <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+                    </Link>
+                  )}
+                </div>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {feedSeries.map((s) => (
+                    <SeriesCard key={s.id} series={s} />
+                  ))}
+                </div>
+              </section>
+            )}
+            {feedSeries.length > 0 && rest.some(Boolean) && (
+              <h2 className="mb-6 font-display text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
+                Posts
+              </h2>
             )}
             <div className="grid gap-x-6 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
               {rest.map((post) => post && <BlogCard key={post.id} post={post} />)}

@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   adminNavGroups,
   categoriesNavItem,
+  seriesNavItem,
 } from "@/lib/admin-nav";
 import routes from "@/lib/routes";
 import {
@@ -133,6 +134,16 @@ function CommandMenuDialog({ open, setOpen }: CommandMenuContextValue) {
                   >
                     <categoriesNavItem.icon className="text-muted-foreground" />
                     {categoriesNavItem.label}
+                  </CommandItem>
+                )}
+                {group.label === "Content" && (
+                  <CommandItem
+                    className={itemClass}
+                    keywords={seriesNavItem.keywords}
+                    onSelect={() => run(() => router.push(seriesNavItem.href))}
+                  >
+                    <seriesNavItem.icon className="text-muted-foreground" />
+                    {seriesNavItem.label}
                   </CommandItem>
                 )}
               </CommandGroup>

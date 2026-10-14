@@ -94,6 +94,27 @@ model BlogPost {
   author      User      @relation(fields: [authorId], references: [id])
   categoryId  String    @db.ObjectId
   category    Category  @relation(fields: [categoryId], references: [id])
+  // Learning series: a post can be one episode of a course
+  seriesId    String?   @db.ObjectId
+  series      Series?   @relation(fields: [seriesId], references: [id])
+  seriesOrder Int?      // Position among the series' episodes (drafts included), 1-based
+  level       String?   // "beginner" | "intermediate" | "advanced"
+
+  @@index([seriesId, seriesOrder])
+}
+
+// A course of posts read in order, e.g. "Next.js from zero". Public once it
+// has a published episode; episode numbers count published episodes only.
+model Series {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String     @unique
+  description String?
+  coverImage  String?
+  completed   Boolean    @default(false) // false shows "More episodes coming"
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  posts       BlogPost[]
 }
 
 model Category {

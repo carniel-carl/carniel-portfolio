@@ -19,13 +19,14 @@ const utapi = new UTApi();
 // File keys are long random strings, so a substring match is reliable and
 // catches URLs in any form (utfs.io, *.ufs.sh, inside post HTML, ...).
 async function collectReferences() {
-  const [about, projects, posts, socials] = await Promise.all([
+  const [about, projects, posts, series, socials] = await Promise.all([
     prisma.about.findMany(),
     prisma.project.findMany(),
     prisma.blogPost.findMany({ select: { coverImage: true, content: true } }),
+    prisma.series.findMany({ select: { coverImage: true } }),
     prisma.socialLink.findMany(),
   ]);
-  return JSON.stringify([about, projects, posts, socials]);
+  return JSON.stringify([about, projects, posts, series, socials]);
 }
 
 async function listAllFiles() {

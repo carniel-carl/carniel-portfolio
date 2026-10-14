@@ -1,5 +1,6 @@
 import BlogCard from "@/components/blog/BlogCard";
 import BlogPostContent from "@/components/blog/BlogPostContent";
+import { getEpisodeParts } from "@/components/blog/series/episodeParts";
 import ScrollToTopOnEnter from "@/components/blog/ScrollToTopOnEnter";
 import ReadingProgress from "@/components/blog/ReadingProgress";
 import ShareBar from "@/components/blog/ShareBar";
@@ -14,6 +15,7 @@ import { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import routes from "@/lib/routes";
 import PageTracker from "@/components/analytics/PageTracker";
 import AdSlot from "@/components/ads/AdSlot";
 import { ADSENSE_BLOG_SIDEBAR_SLOT, ADSENSE_CLIENT } from "@/lib/adsense";
@@ -123,7 +125,10 @@ export default async function BlogPostPage({
 
   if (!post || !post.published) notFound();
 
-  const relatedPosts = await getRecommendedPosts(post.id);
+  const [relatedPosts, episode] = await Promise.all([
+    getRecommendedPosts(post.id),
+    getEpisodeParts(post),
+  ]);
 
   const showAds = Boolean(ADSENSE_CLIENT && ADSENSE_BLOG_SIDEBAR_SLOT);
   const estimatedReadTime = `${Math.max(1, Math.ceil(post.content.split(/\s+/).length / 200))} min`;
@@ -145,10 +150,19 @@ export default async function BlogPostPage({
     articleSection: post.category?.name,
     keywords: post.tags.length > 0 ? post.tags.join(", ") : undefined,
     wordCount: toMetaDescription(post.content, Infinity).split(" ").length,
+    ...(episode && {
+      position: episode.episodeNumber,
+      isPartOf: {
+        "@type": "CreativeWorkSeries",
+        name: episode.series.title,
+        url: `${SITE_URL}${routes.public.series(episode.series.slug)}`,
+      },
+    }),
   };
 
   const articleFooter = (
     <>
+      {episode?.pager}
       <div className="mt-10">
         <ShareBar url={postUrl} title={post.title} />
       </div>
@@ -173,6 +187,7 @@ export default async function BlogPostPage({
             title: post.title,
             category: post.category?.name,
             estimated_read_time: estimatedReadTime,
+            ...(episode && { series: episode.series.title, episode: episode.episodeNumber }),
           }}
         />
         <div
@@ -202,7 +217,14 @@ export default async function BlogPostPage({
                 </div>
               </aside>
 
-              <BlogPostContent post={post} layout="inline" footer={articleFooter} meta={<PostViews slug={post.slug} />} />
+              <BlogPostContent
+                post={post}
+                layout="inline"
+                footer={articleFooter}
+                meta={<PostViews slug={post.slug} />}
+                kicker={episode?.kicker}
+                beforeBody={episode?.navigator}
+              />
 
               <aside aria-label="Advertisement" className="hidden xl:block">
                 <div className="sticky top-24 pt-12">
@@ -212,7 +234,14 @@ export default async function BlogPostPage({
             </div>
           </>
         ) : (
-          <BlogPostContent post={post} layout="rail" footer={articleFooter} meta={<PostViews slug={post.slug} />} />
+          <BlogPostContent
+            post={post}
+            layout="rail"
+            footer={articleFooter}
+            meta={<PostViews slug={post.slug} />}
+            kicker={episode?.kicker}
+            beforeBody={episode?.navigator}
+          />
         )}
 
         {relatedPosts.length > 0 && (

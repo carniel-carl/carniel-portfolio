@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PenLine } from "lucide-react";
+import { Layers, PenLine } from "lucide-react";
 import { ViewTransition } from "react";
 import { getContrastColor, cn } from "@/lib/utils";
 import { AUTHOR_NAME } from "@/lib/site";
+import routes from "@/lib/routes";
 import {
   BLOG_FORWARD,
   blogCoverName,
@@ -21,6 +22,7 @@ interface BlogCardProps {
     author: { name: string | null } | null;
     tags: string[];
     readingMinutes?: number;
+    series?: { title: string; slug: string } | null;
   };
   variant?: "default" | "lead";
 }
@@ -81,6 +83,16 @@ export default function BlogCard({ post, variant = "default" }: BlogCardProps) {
             >
               {post.category.name}
             </span>
+          )}
+          {post.series && (
+            <Link
+              href={routes.public.series(post.series.slug)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-3 py-1 text-xs font-medium text-foreground/80 transition-colors hover:border-foreground/45 hover:text-foreground"
+            >
+              <Layers className="size-3 text-accent-ink dark:text-accent" aria-hidden="true" />
+              <span className="sr-only">Series: </span>
+              {post.series.title}
+            </Link>
           )}
           {date && <time>{date}</time>}
           {post.readingMinutes && (

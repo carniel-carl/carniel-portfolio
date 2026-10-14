@@ -3,6 +3,8 @@ import { revalidateTag } from "next/cache";
 import { UTApi, UTFile } from "uploadthing/server";
 import { z } from "zod";
 import { sanitizeRichText } from "@/components/content/RichText";
+import { isLevel, LEVELS } from "@/lib/blog/levels";
+import { placeInSeries, RESERVED_POST_SLUGS } from "@/lib/blog/series";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import { toSlug } from "@/lib/projects/slug";
@@ -15,6 +17,7 @@ import { SITE_URL } from "@/lib/site";
 
 export const MCP_INSTRUCTIONS = `Tools for drafting posts on Chimezie Carniel's portfolio blog.
 Workflow: call list_categories (and list_posts to avoid repeating a topic), upload any images with upload_image, then create_draft. Revise with update_draft.
+Series: a multi-part tutorial or course is a series of episodes read in order, ideally from beginner to advanced. Call list_series first and continue an existing series rather than starting a parallel one. To start one, create_series, then create_draft once per episode with the series and a level. Episodes are appended in order unless you pass an episode position. Each episode should stand on its own page but build on the previous one: open by recapping what the reader already knows and end by setting up the next episode. Use get_series to see the current outline before adding to it.
 Posts are always saved as drafts. You cannot publish; the owner reviews and publishes each draft in the admin, so share the preview link you get back.`;
 
 const CONTENT_FORMAT = `Post body as HTML. The title renders separately, so don't repeat it or use <h1>.
@@ -76,8 +79,61 @@ async function resolveCategoryId(ref: string) {
 }
 
 async function uniqueSlug(base: string, ignoreId?: string) {
+  if (RESERVED_POST_SLUGS.has(base)) return `${base}-${Date.now()}`;
   const conflict = await prisma.blogPost.findUnique({ where: { slug: base }, select: { id: true } });
   return conflict && conflict.id !== ignoreId ? `${base}-${Date.now()}` : base;
+}
+
+const seriesLink = (slug: string) => `${SITE_URL}/blog/series/${slug}`;
+const seriesAdminLink = (id: string) => `${SITE_URL}/admin/blog/series/${id}`;
+
+// Accepts a series id, slug or title, like categories
+async function resolveSeriesId(ref: string) {
+  const needle = ref.trim().toLowerCase();
+  const series = await prisma.series.findMany({ select: { id: true, title: true, slug: true } });
+  const match = series.find(
+    (s) => s.id === ref.trim() || s.slug === needle || s.title.toLowerCase() === needle,
+  );
+  if (!match) {
+    const titles = series.map((s) => s.title).join(", ") || "none yet";
+    throw new Error(`Unknown series "${ref}". Available: ${titles}. Use create_series to start one.`);
+  }
+  return match.id;
+}
+
+async function seriesOutline(id: string) {
+  const series = await prisma.series.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      coverImage: true,
+      completed: true,
+      posts: {
+        orderBy: [{ seriesOrder: "asc" }, { createdAt: "asc" }],
+        select: { id: true, title: true, slug: true, excerpt: true, level: true, published: true },
+      },
+    },
+  });
+  if (!series) throw new Error(`No series with id ${id}`);
+
+  let publicNumber = 0;
+  const { posts, ...rest } = series;
+  return {
+    ...rest,
+    public: posts.some((p) => p.published),
+    links: { site: seriesLink(series.slug), admin: seriesAdminLink(series.id) },
+    episodes: posts.map((p, i) => ({
+      position: i + 1,
+      // What readers see; drafts aren't numbered until published
+      episodeNumber: p.published ? ++publicNumber : null,
+      ...p,
+      status: p.published ? "published" : "draft",
+      links: adminLinks(p.id),
+    })),
+  };
 }
 
 const cleanTags = (tags: string[]) => [...new Set(tags.map((t) => t.trim()).filter(Boolean))];
@@ -122,7 +178,10 @@ const postSummary = {
   published: true,
   publishedAt: true,
   updatedAt: true,
+  level: true,
+  seriesOrder: true,
   category: { select: { name: true } },
+  series: { select: { title: true, slug: true } },
 } as const;
 
 export function registerBlogTools(server: McpServer) {
@@ -211,6 +270,134 @@ export function registerBlogTools(server: McpServer) {
   );
 
   server.registerTool(
+    "list_series",
+    {
+      title: "List series",
+      description:
+        "Every learning series (multi-part tutorial) with its episode counts. Check here before starting a new series so related episodes stay together.",
+      inputSchema: {},
+      annotations: { readOnlyHint: true },
+    },
+    guard(async () => {
+      const rows = await prisma.series.findMany({
+        orderBy: { updatedAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          completed: true,
+          posts: { select: { published: true } },
+        },
+      });
+      return rows.map(({ posts, ...s }) => ({
+        ...s,
+        episodes: posts.length,
+        published: posts.filter((p) => p.published).length,
+        drafts: posts.filter((p) => !p.published).length,
+      }));
+    }),
+  );
+
+  server.registerTool(
+    "get_series",
+    {
+      title: "Get series outline",
+      description:
+        "A series with every episode in reading order (drafts included): position, public episode number, level and status. Read it before adding or reordering episodes.",
+      inputSchema: { series: z.string().min(1).describe("Series id, slug or title") },
+      annotations: { readOnlyHint: true },
+    },
+    guard(async ({ series }: { series: string }) => seriesOutline(await resolveSeriesId(series))),
+  );
+
+  const seriesFields = {
+    title: z.string().trim().min(1).max(120).describe("Course-style title, e.g. \"Next.js from zero\""),
+    description: z
+      .string()
+      .trim()
+      .max(400)
+      .optional()
+      .describe("Who it's for and what they can do by the last episode. One to three sentences"),
+    coverImage: z
+      .string()
+      .optional()
+      .describe("Cover image: an https URL or base64 data URI, re-hosted automatically. 1200x630 fits best"),
+    slug: z.string().optional().describe("URL slug under /blog/series/; derived from the title when omitted"),
+  };
+
+  server.registerTool(
+    "create_series",
+    {
+      title: "Create series",
+      description:
+        "Starts a learning series: a course of posts read in order. It stays private until the owner publishes an episode. Then add episodes with create_draft, passing this series.",
+      inputSchema: seriesFields,
+    },
+    guard(
+      async (input: { title: string; description?: string; coverImage?: string; slug?: string }) => {
+        const slug = toSlug(input.slug || input.title);
+        const taken = await prisma.series.findUnique({ where: { slug }, select: { id: true } });
+        if (taken) throw new Error(`A series already uses the slug "${slug}". Use it, or pass another slug.`);
+
+        const series = await prisma.series.create({
+          data: {
+            title: input.title,
+            slug,
+            description: input.description || null,
+            coverImage: input.coverImage ? await storeImage(input.coverImage, slug) : null,
+          },
+          select: { id: true },
+        });
+        invalidateBlog();
+        return seriesOutline(series.id);
+      },
+    ),
+  );
+
+  server.registerTool(
+    "update_series",
+    {
+      title: "Update series",
+      description:
+        "Edits a series that has no published episodes yet. Only the fields you pass change. Series already live on the blog are edited in the admin.",
+      inputSchema: {
+        series: z.string().min(1).describe("Series id, slug or title"),
+        ...Object.fromEntries(Object.entries(seriesFields).map(([key, schema]) => [key, schema.optional()])),
+      } as { series: z.ZodString } & { [K in keyof typeof seriesFields]: z.ZodOptional<(typeof seriesFields)[K]> },
+    },
+    guard(
+      async ({
+        series: ref,
+        ...input
+      }: { series: string; title?: string; description?: string; coverImage?: string; slug?: string }) => {
+        const id = await resolveSeriesId(ref);
+        const live = await prisma.blogPost.count({ where: { seriesId: id, published: true } });
+        if (live) throw new Error("This series is live. Edit it in the admin.");
+
+        let slug: string | undefined;
+        if (input.slug) {
+          slug = toSlug(input.slug);
+          const taken = await prisma.series.findUnique({ where: { slug }, select: { id: true } });
+          if (taken && taken.id !== id) throw new Error(`A series already uses the slug "${slug}".`);
+        }
+
+        await prisma.series.update({
+          where: { id },
+          data: {
+            ...(input.title && { title: input.title }),
+            ...(slug && { slug }),
+            ...(input.description !== undefined && { description: input.description || null }),
+            ...(input.coverImage && { coverImage: await storeImage(input.coverImage, slug ?? id) }),
+          },
+        });
+        invalidateBlog();
+        return seriesOutline(id);
+      },
+    ),
+  );
+
+  server.registerTool(
     "upload_image",
     {
       title: "Upload image",
@@ -237,6 +424,20 @@ export function registerBlogTools(server: McpServer) {
       .optional()
       .describe("Cover image: an https URL or base64 data URI, re-hosted automatically. 1200x630 landscape fits best"),
     slug: z.string().optional().describe("URL slug; derived from the title when omitted"),
+    series: z
+      .string()
+      .optional()
+      .describe("Make this an episode of a series (id, slug or title from list_series). In update_draft, \"none\" takes it out"),
+    episode: z
+      .number()
+      .int()
+      .min(1)
+      .optional()
+      .describe("Position in the series, 1 = first. Omit to append (or, when updating, to keep its place)"),
+    level: z
+      .enum(LEVELS)
+      .optional()
+      .describe("Difficulty: beginner, intermediate or advanced. Set it on every episode of a series"),
   };
 
   type DraftInput = {
@@ -247,6 +448,26 @@ export function registerBlogTools(server: McpServer) {
     tags?: string[];
     coverImage?: string;
     slug?: string;
+    series?: string;
+    episode?: number;
+    level?: string;
+  };
+
+  // Episode placement, then the reply the agent sees
+  const placeAndDescribe = async (post: { id: string; slug: string }, seriesId: string | null | undefined, episode?: number) => {
+    if (seriesId !== undefined) await placeInSeries(post.id, seriesId, episode);
+    const row = await prisma.blogPost.findUnique({
+      where: { id: post.id },
+      select: { seriesId: true, seriesOrder: true, series: { select: { title: true } } },
+    });
+    return {
+      ...post,
+      status: "draft",
+      ...(row?.seriesId && {
+        series: { id: row.seriesId, title: row.series?.title, position: row.seriesOrder },
+      }),
+      links: adminLinks(post.id),
+    };
   };
 
   server.registerTool(
@@ -254,11 +475,15 @@ export function registerBlogTools(server: McpServer) {
     {
       title: "Create draft post",
       description:
-        "Saves a new blog post as an unpublished draft for review in the admin. Returns the post id plus preview and edit links.",
+        "Saves a new blog post as an unpublished draft for review in the admin. Pass series to make it the next episode of a learning series. Returns the post id plus preview and edit links.",
       inputSchema: draftFields,
     },
     guard(async (input: DraftInput) => {
-      const [authorId, categoryId] = await Promise.all([getAuthorId(), resolveCategoryId(input.category)]);
+      const [authorId, categoryId, seriesId] = await Promise.all([
+        getAuthorId(),
+        resolveCategoryId(input.category),
+        input.series ? resolveSeriesId(input.series) : undefined,
+      ]);
       const slug = await uniqueSlug(toSlug(input.slug || input.title));
       const coverImage = input.coverImage ? await storeImage(input.coverImage, slug) : null;
 
@@ -270,6 +495,7 @@ export function registerBlogTools(server: McpServer) {
           excerpt: input.excerpt || null,
           coverImage,
           tags: cleanTags(input.tags ?? []),
+          level: isLevel(input.level) ? input.level : null,
           published: false,
           publishedAt: null,
           authorId,
@@ -278,8 +504,9 @@ export function registerBlogTools(server: McpServer) {
         select: { id: true, slug: true },
       });
 
+      const reply = await placeAndDescribe(post, seriesId, input.episode);
       invalidateBlog();
-      return { ...post, status: "draft", links: adminLinks(post.id) };
+      return reply;
     }),
   );
 
@@ -287,17 +514,31 @@ export function registerBlogTools(server: McpServer) {
     "update_draft",
     {
       title: "Update draft post",
-      description: "Edits an unpublished draft. Only the fields you pass change. Published posts can't be edited here.",
+      description:
+        "Edits an unpublished draft. Only the fields you pass change. Pass series and/or episode to move it within or between series. Published posts can't be edited here.",
       inputSchema: {
         id: z.string().regex(/^[0-9a-f]{24}$/i, "Use the post id from create_draft or list_posts"),
         ...Object.fromEntries(Object.entries(draftFields).map(([key, schema]) => [key, schema.optional()])),
       } as { id: z.ZodString } & { [K in keyof typeof draftFields]: z.ZodOptional<(typeof draftFields)[K]> },
     },
     guard(async ({ id, ...input }: { id: string } & Partial<DraftInput>) => {
-      const existing = await prisma.blogPost.findUnique({ where: { id }, select: { published: true, slug: true } });
+      const existing = await prisma.blogPost.findUnique({
+        where: { id },
+        select: { published: true, slug: true, seriesId: true },
+      });
       if (!existing) throw new Error(`No post with id ${id}`);
       if (existing.published) throw new Error("This post is live. Edit published posts in the admin.");
 
+      // Resolved before writing, so a bad series name changes nothing.
+      // "none" detaches; an episode number alone moves it within its current series
+      const seriesId =
+        input.series === undefined
+          ? input.episode && existing.seriesId
+            ? existing.seriesId
+            : undefined
+          : input.series.trim().toLowerCase() === "none"
+            ? null
+            : await resolveSeriesId(input.series);
       const slug = input.slug ? await uniqueSlug(toSlug(input.slug), id) : undefined;
       const post = await prisma.blogPost.update({
         where: { id },
@@ -309,12 +550,14 @@ export function registerBlogTools(server: McpServer) {
           ...(input.tags && { tags: cleanTags(input.tags) }),
           ...(input.category && { categoryId: await resolveCategoryId(input.category) }),
           ...(input.coverImage && { coverImage: await storeImage(input.coverImage, slug ?? existing.slug) }),
+          ...(input.level && { level: isLevel(input.level) ? input.level : null }),
         },
         select: { id: true, slug: true },
       });
 
+      const reply = await placeAndDescribe(post, seriesId, input.episode);
       invalidateBlog();
-      return { ...post, status: "draft", links: adminLinks(post.id) };
+      return reply;
     }),
   );
 }

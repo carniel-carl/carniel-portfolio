@@ -5,6 +5,7 @@ import { CACHE_TAGS } from "@/lib/cache-tags";
 import routes from "@/lib/routes";
 import { SITE_URL } from "@/lib/site";
 import { getProjectSlugs } from "@/lib/data/portfolio";
+import { getSeriesList } from "@/lib/blog/series";
 
 // Rebuilt whenever a post is published or edited (the blog cache tag)
 async function getPublishedPosts() {
@@ -20,9 +21,10 @@ async function getPublishedPosts() {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [posts, projects] = await Promise.all([
+  const [posts, projects, series] = await Promise.all([
     getPublishedPosts(),
     getProjectSlugs(),
+    getSeriesList(),
   ]);
   const latestPost = posts[0]?.updatedAt;
 
@@ -45,6 +47,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    ...(series.length > 0
+      ? [
+          {
+            url: `${SITE_URL}${routes.public.blogSeries}`,
+            lastModified: series[0].latestEpisodeAt,
+            changeFrequency: "weekly" as const,
+            priority: 0.7,
+          },
+        ]
+      : []),
+    ...series.map((s) => ({
+      url: `${SITE_URL}${routes.public.series(s.slug)}`,
+      lastModified: s.latestEpisodeAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
     ...posts.map((post) => ({
       url: `${SITE_URL}${routes.public.blogPost(post.slug)}`,
       lastModified: post.updatedAt,
