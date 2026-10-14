@@ -44,7 +44,9 @@ export default function LoginForm() {
       setFormError(result.message);
       return;
     }
-    router.push(routes.admin.dashboard);
+    // Only same-site admin paths, so ?next= can't bounce anyone off-site
+    const next = new URLSearchParams(window.location.search).get("next");
+    router.push(next?.startsWith("/admin/") ? next : routes.admin.dashboard);
     router.refresh();
   };
 

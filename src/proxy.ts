@@ -29,7 +29,12 @@ export default async function middleware(request: NextRequest) {
   }
 
   if (isAdminRoute && !isAuthenticated) {
-    return NextResponse.redirect(new URL("/admin/login", nextUrl));
+    // Remember deep links (e.g. the OAuth consent screen) for after sign-in
+    const login = new URL("/admin/login", nextUrl);
+    if (nextUrl.pathname !== "/admin") {
+      login.searchParams.set("next", nextUrl.pathname + nextUrl.search);
+    }
+    return NextResponse.redirect(login);
   }
 
   return NextResponse.next();

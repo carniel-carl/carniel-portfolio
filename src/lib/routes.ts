@@ -23,6 +23,7 @@ const routes = {
     blogNew: "/admin/blog/new",
     projectEdit: (id: string) => `/admin/projects/${id}/edit`,
     projectNew: "/admin/projects/new",
+    oauthAuthorize: "/admin/oauth/authorize",
   },
 };
 
