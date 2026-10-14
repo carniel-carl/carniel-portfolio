@@ -137,46 +137,46 @@ export default function SeriesClient({
               />
             ) : (
               <ul className="divide-y">
-              {series.map((s) => {
-                const total = s.live + s.drafts;
-                return (
-                  <li key={s.id} className="group relative flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/50">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
-                      <Layers className="size-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        href={routes.admin.blogSeriesEdit(s.id)}
-                        className="block truncate text-sm font-medium after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
-                      >
-                        {s.title}
-                      </Link>
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                        <span className="tnum">
-                          {total} {total === 1 ? "episode" : "episodes"}
-                        </span>
-                        {total > 0 && (
+                {series.map((s) => {
+                  const total = s.live + s.drafts;
+                  return (
+                    <li key={s.id} className="group relative flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/50">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                        <Layers className="size-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={routes.admin.blogSeriesEdit(s.id)}
+                          className="block truncate text-sm font-medium after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                        >
+                          {s.title}
+                        </Link>
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
                           <span className="tnum">
-                            {" "}· {s.live} live, {s.drafts} {s.drafts === 1 ? "draft" : "drafts"}
+                            {total} {total === 1 ? "episode" : "episodes"}
                           </span>
-                        )}
-                        <span className="font-mono"> · /blog/series/{s.slug}</span>
-                      </p>
-                    </div>
-                    <span
-                      className={
-                        s.live === 0
-                          ? "hidden shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground sm:inline-flex"
-                          : "hidden shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-accent-ink sm:inline-flex"
-                      }
-                    >
-                      {s.live === 0 ? "Not public" : s.completed ? "Complete" : "Ongoing"}
-                    </span>
-                    <RelativeTime date={s.updatedAt} className="hidden shrink-0 text-xs text-muted-foreground md:block" />
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                  </li>
-                );
-              })}
+                          {total > 0 && (
+                            <span className="tnum">
+                              {" "}· {s.live} live, {s.drafts} {s.drafts === 1 ? "draft" : "drafts"}
+                            </span>
+                          )}
+                          <span className="font-mono"> · /blog/series/{s.slug}</span>
+                        </p>
+                      </div>
+                      <span
+                        className={
+                          s.live === 0
+                            ? "hidden shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground sm:inline-flex"
+                            : "hidden shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-accent-ink sm:inline-flex"
+                        }
+                      >
+                        {s.live === 0 ? "Not public" : s.completed ? "Complete" : "Ongoing"}
+                      </span>
+                      <RelativeTime date={s.updatedAt} className="hidden shrink-0 text-xs text-muted-foreground md:block" />
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
