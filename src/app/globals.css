@@ -700,6 +700,33 @@ html:active-view-transition:not([data-theme-switching]) .vt-chrome-player {
   color: var(--code-text);
 }
 
+/* HDR: PLACE MARKS (components/blog/PlaceMarker)
+   A highlighter stroke behind the words a reader marked: more ink where the
+   nib lands and lifts, chisel-cut ends, a hair off level like a real swipe.
+   The draft is the pencil version: a faint wash and an underline. */
+.place-stroke {
+  --ink: color-mix(in oklab, var(--clr) 40%, transparent);
+  --ink-heavy: color-mix(in oklab, var(--clr) 58%, transparent);
+  background: linear-gradient(
+    90deg,
+    var(--ink-heavy),
+    var(--ink) 0.55em,
+    var(--ink) calc(100% - 0.55em),
+    var(--ink-heavy)
+  );
+  border-radius: 0.2em 0.45em 0.25em 0.5em / 0.5em 0.25em 0.45em 0.2em;
+  transform: rotate(-0.4deg);
+}
+.dark .place-stroke {
+  --ink: color-mix(in oklab, var(--clr) 44%, transparent);
+  --ink-heavy: color-mix(in oklab, var(--clr) 62%, transparent);
+}
+.place-stroke-draft {
+  background: color-mix(in oklab, var(--clr) 14%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in oklab, var(--clr) 75%, transparent);
+  border-radius: 0.2em;
+}
+
 /* HDR: CODE SYNTAX HIGHLIGHTING (editor + rendered posts) */
 /* Light: GitHub Light · Dark: VS Code Dark+ */
 :root {
@@ -939,4 +966,33 @@ html[data-audience="kid"] [data-for-kids] {
   40%, 80% {
     transform: translateX(7px);
   }
+}
+
+/* HDR: SERIES SHELF (components/blog/series/SeriesShelf)
+   No scrollbar: the peeking card, the edge fades and the arrows carry it.
+   Each edge fades only while there's more to scroll on that side. */
+.shelf-row {
+  scrollbar-width: none;
+  --fade-start: 0px;
+  --fade-end: 0px;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+}
+.shelf-row::-webkit-scrollbar {
+  display: none;
+}
+.shelf-fade-start {
+  --fade-start: 2.5rem;
+}
+.shelf-fade-end {
+  --fade-end: 3.5rem;
+}
+/* Kids series first on the shelf too (the card is inside the shelf's <li>) */
+html[data-audience="kid"] .shelf-row > li:has(> [data-for-kids]) {
+  order: -1;
 }
