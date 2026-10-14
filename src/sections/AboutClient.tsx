@@ -55,7 +55,7 @@ const AboutClient = ({ about }: AboutClientProps) => {
           as="h1"
           text="About me"
           by="char"
-          className="font-display text-[clamp(4rem,13vw,11rem)] font-semibold leading-[0.85] tracking-[-0.045em] [font-stretch:75%]"
+          className="font-display text-[clamp(4rem,13vw,11rem)] font-semibold leading-[0.85] tracking-[-0.045em]"
         />
 
         <motion.div

@@ -137,7 +137,7 @@ const Capabilities = () => {
       <SplitText
         as="h2"
         text="What I build"
-        className="font-display text-[clamp(3rem,9vw,8.5rem)] font-semibold leading-[0.9] tracking-[-0.04em] [font-stretch:75%]"
+        className="font-display text-[clamp(3rem,9vw,8.5rem)] font-semibold leading-[0.9] tracking-[-0.04em]"
       />
       <p className="mt-6 max-w-[48ch] text-lg text-foreground/70 md:text-xl">
         One codebase mindset, two platforms. I ship for the browser and for the

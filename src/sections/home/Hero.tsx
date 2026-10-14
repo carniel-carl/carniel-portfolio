@@ -23,7 +23,7 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 const NAME = "Carniel";
 // Shared by the name and its masked copy so both set identically
 const NAME_TYPE =
-  "pb-[0.06em] pt-[0.12em] font-display text-[23vw] font-bold leading-[0.8] tracking-[-0.035em] md:text-[29vw] 2xl:text-[min(29vw,28rem)]";
+  "pb-[0.06em] pt-[0.12em] font-display text-[20vw] font-bold leading-[0.84] tracking-[-0.035em] md:text-[24.5vw] 2xl:text-[min(24.5vw,24rem)]";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -155,7 +155,7 @@ const Hero = ({ contact }: { contact: ContactInfo }) => {
 
               {/* Mobile: the part of the name that dips into the photo, redrawn
                   in a light ink and clipped to the photo's edges. top-[...]
-                  must mirror the name's -mt-[15vw]. */}
+                  must mirror the name's -mt-[13vw]. */}
               <motion.div
                 style={reduce ? undefined : { y: maskY }}
                 className="pointer-events-none absolute inset-0 md:hidden"
@@ -166,7 +166,7 @@ const Hero = ({ contact }: { contact: ContactInfo }) => {
                   style={{ y: nameY }}
                   pointer={namePointer}
                   decorative
-                  className={`${NAME_TYPE} absolute inset-x-0 top-[calc(100%-15vw)] text-[color:var(--name-ink)] [--name-ink:hsl(var(--background))] dark:[--name-ink:hsl(var(--foreground))]`}
+                  className={`${NAME_TYPE} absolute inset-x-0 top-[calc(100%-13vw)] text-[color:var(--name-ink)] [--name-ink:hsl(var(--background))] dark:[--name-ink:hsl(var(--foreground))]`}
                 />
               </motion.div>
 
@@ -194,7 +194,7 @@ const Hero = ({ contact }: { contact: ContactInfo }) => {
           state={state}
           style={{ y: nameY }}
           pointer={namePointer}
-          className={`${NAME_TYPE} relative z-[3] -mt-[15vw] md:-mt-[13.5vw]`}
+          className={`${NAME_TYPE} relative z-[3] -mt-[13vw] md:-mt-[11.4vw]`}
         />
       </div>
     </section>

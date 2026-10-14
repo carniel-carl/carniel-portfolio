@@ -23,7 +23,7 @@ const SkillsClient = ({ skills }: SkillsClientProps) => {
       <SplitText
         as="h2"
         text="Skills & tools"
-        className="font-display text-[clamp(3.25rem,10vw,9rem)] font-semibold leading-[0.88] tracking-[-0.045em] [font-stretch:75%]"
+        className="font-display text-[clamp(3.25rem,10vw,9rem)] font-semibold leading-[0.88] tracking-[-0.045em]"
       />
 
       {skills.length === 0 ? (

@@ -9,7 +9,8 @@ const { auth } = NextAuth(authConfig);
 async function checkAuth(request: NextRequest) {
   try {
     const session = await auth();
-    return { isAuthenticated: !!session, session };
+    // A signed-in non-admin is treated as signed out for /admin
+    return { isAuthenticated: !!session?.user?.isAdmin, session };
   } catch {
     return { isAuthenticated: false, session: null };
   }

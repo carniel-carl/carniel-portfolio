@@ -11,6 +11,8 @@ export const authConfig = {
   },
   session: {
     strategy: "jwt",
+    maxAge: 60 * 60 * 8, // 8 hours of inactivity signs you out
+    updateAge: 60 * 60, // re-issue the cookie at most once an hour while active
   },
   debug: process.env.NODE_ENV !== "production",
   trustHost: true,

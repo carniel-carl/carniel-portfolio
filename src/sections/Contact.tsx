@@ -48,7 +48,7 @@ const Contact = ({ githubUrl, contactInfo }: ContactProps) => {
         <SplitText
           as="h2"
           text="Let's work together"
-          className="max-w-[10ch] font-display text-[clamp(3.25rem,9vw,8rem)] font-semibold leading-[0.9] tracking-[-0.045em] [font-stretch:75%]"
+          className="max-w-[10ch] font-display text-[clamp(3.25rem,9vw,8rem)] font-semibold leading-[0.9] tracking-[-0.045em]"
         />
         <p className="max-w-[40ch] text-lg leading-relaxed text-foreground/70">
           Have a project, a role or a question? Send a message and I&apos;ll

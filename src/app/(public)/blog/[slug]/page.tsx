@@ -217,7 +217,7 @@ export default async function BlogPostPage({
 
         {relatedPosts.length > 0 && (
           <section className="mx-auto mt-8 w-[90%] max-w-[68rem] border-t border-foreground/10 py-16 md:py-24">
-            <h2 className="mb-10 font-display text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-[0.95] tracking-[-0.04em] [font-stretch:75%] md:mb-14">
+            <h2 className="mb-10 font-display text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-[0.95] tracking-[-0.04em] md:mb-14">
               Keep reading
             </h2>
             <div className="grid gap-x-6 gap-y-14 md:grid-cols-2">

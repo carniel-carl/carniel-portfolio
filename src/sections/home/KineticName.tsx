@@ -23,8 +23,9 @@ const rise: Variants = {
   }),
 };
 
-// One letter. Near the pointer it condenses along the variable font's width
-// axis and flushes to the accent color. Influence is computed from the
+// One letter. At rest it's brush-lettered (Recursive's Casual axis, slanted);
+// near the pointer it straightens into code (Mono axis on, upright) and flushes
+// to the accent color: the artist-to-engineer turn, one letter at a time. Influence is computed from the
 // letter's REST center (cached before any morph), so a letter changing width
 // can never feed back into its own hover state: no flicker between letters.
 const Letter = ({
@@ -52,10 +53,12 @@ const Letter = ({
   });
   const smooth = useSpring(influence, { stiffness: 170, damping: 24, mass: 0.6 });
 
-  const wdth = useTransform(smooth, [0, 1], [100, 75]);
-  const wght = useTransform(smooth, [0, 1], [700, 800]);
+  const casl = useTransform(smooth, [0, 1], [1, 0]);
+  const mono = useTransform(smooth, [0, 1], [0, 1]);
+  const slnt = useTransform(smooth, [0, 1], [-10, 0]);
+  const wght = useTransform(smooth, [0, 1], [900, 700]);
   const mix = useTransform(smooth, [0, 1], [0, 100]);
-  const fontVariationSettings = useMotionTemplate`"wdth" ${wdth}, "wght" ${wght}`;
+  const fontVariationSettings = useMotionTemplate`"CASL" ${casl}, "MONO" ${mono}, "slnt" ${slnt}, "wght" ${wght}, "CRSV" 1`;
   const color = useMotionTemplate`color-mix(in srgb, var(--clr) ${mix}%, var(--name-ink, hsl(var(--foreground))))`;
 
   return (

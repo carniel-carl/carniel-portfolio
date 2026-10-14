@@ -42,8 +42,8 @@ export const metadata: Metadata = {
 const POSTS_PER_PAGE = 6;
 
 async function getPosts(
-  page: number,
-  limit: number,
+  skip: number,
+  take: number,
   categorySlug?: string,
   tag?: string,
   search?: string,
@@ -81,8 +81,8 @@ async function getPosts(
     prisma.blogPost.findMany({
       where,
       orderBy: { publishedAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
+      skip,
+      take,
       select: {
         id: true,
         title: true,
@@ -201,17 +201,23 @@ export default async function BlogPage({
   const tag = params.tag || undefined;
   const search = params.search || undefined;
 
-  const unfiltered = page === 1 && !categorySlug && !tag && !search;
+  const withLead = !categorySlug && !tag && !search;
+  const unfiltered = page === 1 && withLead;
+  // The lead story sits above the grid, so its page takes one extra post to keep the grid rows full
+  const firstPageSize = withLead ? POSTS_PER_PAGE + 1 : POSTS_PER_PAGE;
+  const skip = page === 1 ? 0 : firstPageSize + (page - 2) * POSTS_PER_PAGE;
+  const take = page === 1 ? firstPageSize : POSTS_PER_PAGE;
   const [{ posts, total }, categories, totalPublished, mostRead] = await Promise.all([
-    getPosts(page, POSTS_PER_PAGE, categorySlug, tag, search),
+    getPosts(skip, take, categorySlug, tag, search),
     getCategories(),
     getTotalPublishedCount(),
     unfiltered ? getMostRead() : Promise.resolve([]),
   ]);
 
-  const totalPages = Math.ceil(total / POSTS_PER_PAGE);
+  const totalPages =
+    total <= firstPageSize ? 1 : 1 + Math.ceil((total - firstPageSize) / POSTS_PER_PAGE);
   // Lead story only on the unfiltered first page
-  const showLead = page === 1 && !categorySlug && !tag && !search && posts.length > 1;
+  const showLead = unfiltered && posts.length > 1;
   const [lead, ...rest] = showLead ? posts : [null, ...posts];
 
   return (
@@ -235,7 +241,7 @@ export default async function BlogPage({
               as="h1"
               text="Writing"
               by="char"
-              className="font-display text-[clamp(4rem,14vw,12rem)] font-semibold leading-[0.85] tracking-[-0.045em] [font-stretch:75%]"
+              className="font-display text-[clamp(4rem,14vw,12rem)] font-semibold leading-[0.85] tracking-[-0.045em]"
             />
             <p className="max-w-[46ch] text-lg text-foreground/70 md:text-xl">
               Notes on building for the web and mobile: React, React Native,
@@ -411,7 +417,7 @@ export default async function BlogPage({
           >
             <h2
               id="most-read"
-              className="font-display text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-[0.95] tracking-[-0.04em] [font-stretch:75%] md:col-span-4"
+              className="font-display text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-[0.95] tracking-[-0.04em] md:col-span-4"
             >
               Most read
             </h2>

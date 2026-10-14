@@ -6,7 +6,7 @@ import { Globe, Smartphone } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import SplitText from "@/components/motion/SplitText";
-import ProjectStack from "@/sections/projects/ProjectStack";
+import DeviceJourney from "@/sections/projects/DeviceJourney";
 import ProjectGrid from "@/sections/projects/ProjectGrid";
 import { ProjectDataType } from "@/types/project";
 
@@ -54,7 +54,7 @@ const ProjectsClient = ({ featured, other, tab }: ProjectsClientProps) => {
         <SplitText
           as="h2"
           text="Projects"
-          className="font-display text-[clamp(3.25rem,10vw,9rem)] font-semibold leading-[0.88] tracking-[-0.045em] [font-stretch:75%]"
+          className="font-display text-[clamp(3.25rem,10vw,9rem)] font-semibold leading-[0.88] tracking-[-0.045em]"
         />
 
         {/* SUB: Segmented control with a sliding highlight */}
@@ -153,7 +153,13 @@ const ProjectsClient = ({ featured, other, tab }: ProjectsClientProps) => {
                 </p>
               </div>
             ) : current === "featured" ? (
-              <ProjectStack projects={list} />
+              <DeviceJourney
+                projects={list}
+                title="Featured"
+                intro="Each one shipped. Keep scrolling: the screen becomes whatever the project runs on."
+                ctaHref="#contact"
+                full
+              />
             ) : (
               <ProjectGrid projects={list} />
             )}

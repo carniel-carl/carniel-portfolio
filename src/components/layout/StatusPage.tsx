@@ -42,7 +42,7 @@ const StatusPage = ({
     {/* Oversized outlined code + drifting monogram, purely decorative */}
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute -bottom-[0.12em] right-[-0.04em] -z-10 select-none font-display text-[clamp(12rem,42vw,34rem)] font-semibold leading-none tracking-[-0.06em] text-transparent [-webkit-text-stroke:1px_hsl(var(--foreground)/0.14)] [font-stretch:75%]"
+      className="pointer-events-none absolute -bottom-[0.12em] right-[-0.04em] -z-10 select-none font-display text-[clamp(12rem,42vw,34rem)] font-semibold leading-none tracking-[-0.06em] text-transparent [-webkit-text-stroke:1px_hsl(var(--foreground)/0.14)]"
     >
       {code}
     </div>
@@ -58,7 +58,7 @@ const StatusPage = ({
         <span className="size-2 rounded-full bg-accent" />
         {eyebrow}
       </p>
-      <h1 className="max-w-[14ch] text-balance font-display text-[clamp(3.25rem,9vw,8rem)] font-semibold leading-[0.9] tracking-[-0.045em] [font-stretch:75%]">
+      <h1 className="max-w-[14ch] text-balance font-display text-[clamp(3.25rem,9vw,8rem)] font-semibold leading-[0.9] tracking-[-0.045em]">
         {title}
       </h1>
       <p className="max-w-[44ch] text-pretty text-lg leading-relaxed text-foreground/70 md:text-xl">
