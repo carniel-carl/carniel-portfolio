@@ -1,5 +1,6 @@
 "use client";
 
+import { useActionToast } from "@/components/admin/useActionToast";
 import FileDrop from "@/components/admin/form/FileDrop";
 import FormSection from "@/components/admin/form/FormSection";
 import TagInput from "@/components/admin/form/TagInput";
@@ -35,7 +36,6 @@ import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -83,7 +83,7 @@ export default function BlogPostForm({
   series,
   defaultSeriesId,
 }: BlogPostFormProps) {
-  const router = useRouter();
+  const runAction = useActionToast();
   // Existing posts keep their URL unless the slug is edited on purpose
   const [slugTouched, setSlugTouched] = useState(!!isEdit);
 
@@ -115,30 +115,30 @@ export default function BlogPostForm({
   const joiningSeries = chosenSeries && chosenSeries.id !== (initialData?.seriesId ?? "");
 
   const onSubmit = async (values: BlogPostFormValues) => {
-    try {
-      if (isEdit && initialData?.id) {
-        await updateBlogPost(initialData.id, values);
-        form.reset(values);
-      } else {
-        await createBlogPost(values);
-        // Cache Components keeps this route mounted (hidden) after navigating
-        // away, so clear it or "New post" reopens with the saved post in it.
-        form.reset();
-        setSlugTouched(false);
-      }
-      toast.success(
-        values.published ? (isEdit ? "Post updated" : "Post published") : "Draft saved",
-      );
-      // Episodes started from a series page go back to that series
-      router.push(
-        !isEdit && defaultSeriesId && values.seriesId === defaultSeriesId
-          ? routes.admin.blogSeriesEdit(defaultSeriesId)
-          : routes.admin.blog,
-      );
-      router.refresh();
-    } catch {
-      toast.error("Could not save the post");
-    }
+    await runAction(
+      async () => {
+        if (isEdit && initialData?.id) {
+          await updateBlogPost(initialData.id, values);
+          form.reset(values);
+        } else {
+          await createBlogPost(values);
+          // Cache Components keeps this route mounted (hidden) after navigating
+          // away, so clear it or "New post" reopens with the saved post in it.
+          form.reset();
+          setSlugTouched(false);
+        }
+      },
+      {
+        loading: values.published ? (isEdit ? "Updating post…" : "Publishing post…") : "Saving draft…",
+        success: values.published ? (isEdit ? "Post updated" : "Post published") : "Draft saved",
+        error: "Could not save the post",
+        // Episodes started from a series page go back to that series
+        navigateTo:
+          !isEdit && defaultSeriesId && values.seriesId === defaultSeriesId
+            ? routes.admin.blogSeriesEdit(defaultSeriesId)
+            : routes.admin.blog,
+      },
+    );
   };
 
   const submit = form.handleSubmit(onSubmit, () => toast.error("Some fields need attention"));

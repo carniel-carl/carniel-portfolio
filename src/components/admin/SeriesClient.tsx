@@ -6,6 +6,7 @@ import Pagination from "@/components/admin/ui/Pagination";
 import RelativeTime from "@/components/admin/ui/RelativeTime";
 import SearchField from "@/components/admin/ui/SearchField";
 import { useUrlSearch } from "@/components/admin/ui/useUrlSearch";
+import { useActionToast } from "@/components/admin/useActionToast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,9 +24,7 @@ import routes from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { ChevronRight, Layers, Loader2, Plus, SearchX } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 
 export interface SeriesRow {
   id: string;
@@ -61,8 +60,8 @@ export default function SeriesClient({
   /** Series matching the search */
   total: number;
 }) {
-  const router = useRouter();
   const search = useUrlSearch(query, (q) => listUrl(q));
+  const runAction = useActionToast(series);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -78,16 +77,14 @@ export default function SeriesClient({
     e.preventDefault();
     if (!title.trim()) return;
     setSaving(true);
-    try {
-      const { id } = await createSeries({ title, slug: "", description });
-      toast.success("Series created");
-      setOpen(false);
-      router.push(routes.admin.blogSeriesEdit(id));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not create the series");
-    } finally {
-      setSaving(false);
-    }
+    const created = await runAction(() => createSeries({ title, slug: "", description }), {
+      loading: "Creating series…",
+      success: "Series created",
+      error: (error) => (error instanceof Error ? error.message : "Could not create the series"),
+      navigateTo: ({ id }) => routes.admin.blogSeriesEdit(id),
+    });
+    setSaving(false);
+    if (created) setOpen(false);
   };
 
   return (

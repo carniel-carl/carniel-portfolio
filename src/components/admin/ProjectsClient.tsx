@@ -1,5 +1,6 @@
 "use client";
 
+import { useActionToast } from "@/components/admin/useActionToast";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import EmptyState from "@/components/admin/ui/EmptyState";
@@ -84,6 +85,7 @@ export default function ProjectsClient({
   activeTab,
 }: ProjectsClientProps) {
   const router = useRouter();
+  const runAction = useActionToast(featured);
   const pathname = usePathname();
   const [tab, setTab] = useState<Tab>(activeTab);
   const [query, setQuery] = useState("");
@@ -168,13 +170,11 @@ export default function ProjectsClient({
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      await deleteProject(deleteTarget.id);
-      toast.success(`Deleted ${deleteTarget.name}`);
-      router.refresh();
-    } catch {
-      toast.error("Could not delete project");
-    }
+    await runAction(() => deleteProject(deleteTarget.id), {
+      loading: `Deleting ${deleteTarget.name}…`,
+      success: `Deleted ${deleteTarget.name}`,
+      error: "Could not delete project",
+    });
   };
 
   const searching = query.trim().length > 0;

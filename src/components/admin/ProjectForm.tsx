@@ -1,5 +1,6 @@
 "use client";
 
+import { useActionToast } from "@/components/admin/useActionToast";
 import FileDrop from "@/components/admin/form/FileDrop";
 import FormSection, { ToggleRow } from "@/components/admin/form/FormSection";
 import TagInput from "@/components/admin/form/TagInput";
@@ -34,7 +35,6 @@ import { toSlug } from "@/lib/projects/slug";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -86,7 +86,7 @@ interface ProjectFormProps {
 }
 
 export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
-  const router = useRouter();
+  const runAction = useActionToast();
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
@@ -130,19 +130,22 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
   const coverOptional = hasOwnMedia({ platform, videoUrl, posterUrl, screenshots });
 
   const onSubmit = async (values: ProjectFormValues) => {
-    try {
-      if (isEdit && initialData?.id) {
-        await updateProject(initialData.id, values);
-      } else {
-        await createProject(values);
-      }
-      form.reset(values);
-      toast.success(isEdit ? "Project saved" : "Project created");
-      router.push(routes.admin.projects);
-      router.refresh();
-    } catch {
-      toast.error("Could not save the project");
-    }
+    await runAction(
+      async () => {
+        if (isEdit && initialData?.id) {
+          await updateProject(initialData.id, values);
+        } else {
+          await createProject(values);
+        }
+        form.reset(values);
+      },
+      {
+        loading: isEdit ? "Saving project…" : "Creating project…",
+        success: isEdit ? "Project saved" : "Project created",
+        error: "Could not save the project",
+        navigateTo: routes.admin.projects,
+      },
+    );
   };
 
   const submit = form.handleSubmit(onSubmit, () =>

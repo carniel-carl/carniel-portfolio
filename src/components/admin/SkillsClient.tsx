@@ -1,5 +1,6 @@
 "use client";
 
+import { useActionToast } from "@/components/admin/useActionToast";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import EmptyState from "@/components/admin/ui/EmptyState";
@@ -72,6 +73,7 @@ function IconifyGlyph({ id, className }: { id: string; className?: string }) {
 
 export default function SkillsClient({ skills }: { skills: Skill[] }) {
   const router = useRouter();
+  const runAction = useActionToast(skills);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
@@ -146,32 +148,25 @@ export default function SkillsClient({ skills }: { skills: Skill[] }) {
     }
 
     setSaving(true);
-    try {
-      if (editingSkill) {
-        await updateSkill(editingSkill.id, form);
-        toast.success("Skill updated");
-      } else {
-        await createSkill(form);
-        toast.success("Skill added");
-      }
-      setDialogOpen(false);
-      router.refresh();
-    } catch {
-      toast.error("Could not save the skill");
-    } finally {
-      setSaving(false);
-    }
+    const saved = await runAction(
+      () => (editingSkill ? updateSkill(editingSkill.id, form) : createSkill(form)),
+      {
+        loading: editingSkill ? "Saving skill…" : "Adding skill…",
+        success: editingSkill ? "Skill updated" : "Skill added",
+        error: "Could not save the skill",
+      },
+    );
+    setSaving(false);
+    if (saved) setDialogOpen(false);
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      await deleteSkill(deleteTarget.id);
-      toast.success("Skill deleted");
-      router.refresh();
-    } catch {
-      toast.error("Could not delete the skill");
-    }
+    await runAction(() => deleteSkill(deleteTarget.id), {
+      loading: "Deleting skill…",
+      success: "Skill deleted",
+      error: "Could not delete the skill",
+    });
   };
 
   const iconQuery = iconSearch.toLowerCase().trim();
