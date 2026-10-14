@@ -86,6 +86,7 @@ type SeriesDetails = {
   description: string | null;
   coverImage: string | null;
   completed: boolean;
+  forKids: boolean;
 };
 
 export type EpisodeRow = {
@@ -120,6 +121,7 @@ export default function SeriesEditor({
     description: series.description ?? "",
     coverImage: series.coverImage ?? "",
     completed: series.completed,
+    forKids: series.forKids,
   };
   const [form, setForm] = useState(initialForm);
   const [saved, setSaved] = useState(initialForm);
@@ -373,6 +375,21 @@ export default function SeriesEditor({
                 checked={form.completed}
                 onCheckedChange={(v) => set("completed", v)}
                 aria-label="Series complete"
+              />
+            }
+          />
+          <ToggleRow
+            title="Made for kids"
+            description={
+              form.forKids
+                ? "Readers pick kid or grown-up first. Kids can't open the portfolio, contact, resume or author links, and no ads show."
+                : "A regular series for all readers."
+            }
+            control={
+              <Switch
+                checked={form.forKids}
+                onCheckedChange={(v) => set("forKids", v)}
+                aria-label="Made for kids"
               />
             }
           />

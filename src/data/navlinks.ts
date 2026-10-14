@@ -18,10 +18,13 @@ const NavLinks = [
   {
     name: "Blog",
     link: routes.public.blog,
+    adultOnly: false,
   },
   {
     name: "Portfolio",
     link: routes.public.portfolio,
+    // Hidden in kids mode (lib/audience.ts)
+    adultOnly: true,
   },
 ];
 

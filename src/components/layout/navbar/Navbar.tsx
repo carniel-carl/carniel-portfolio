@@ -154,7 +154,7 @@ const Navbar = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
                             exit="initial"
                             className="flex flex-col gap-y-4"
                           >
-                            <li className="overflow-hidden">
+                            <li data-adult-only className="overflow-hidden">
                               <MenuLink
                                 name="Home"
                                 link="/"
@@ -162,9 +162,13 @@ const Navbar = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
                                 pathName={pathName}
                               />
                             </li>
-                            {NavLinks.map(({ name, link }) => {
+                            {NavLinks.map(({ name, link, adultOnly }) => {
                               return (
-                                <li key={name} className="overflow-hidden">
+                                <li
+                                  key={name}
+                                  data-adult-only={adultOnly || undefined}
+                                  className="overflow-hidden"
+                                >
                                   <MenuLink
                                     name={name}
                                     link={link}
@@ -191,7 +195,7 @@ const Navbar = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
                             exit="initial"
                             className="mt-auto flex items-end justify-between gap-10"
                           >
-                            <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
+                            <ul data-adult-only className="grid grid-cols-2 gap-x-6 gap-y-1">
                               {socialLinks.map((item) => (
                                 <li key={item.name}>
                                   <a

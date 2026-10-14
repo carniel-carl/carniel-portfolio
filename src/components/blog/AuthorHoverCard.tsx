@@ -68,7 +68,15 @@ export default function AuthorHoverCard({
 
   return (
     <>
+      {/* Kids mode: the name alone, with no way through to the portfolio */}
+      <span data-kid-only className="inline-flex items-center gap-2 py-1 pl-1 pr-3 font-medium text-foreground/85">
+        <span className="relative size-7 overflow-hidden rounded-full bg-surface">
+          <Image src={photo} alt="" fill sizes="28px" className="object-cover" />
+        </span>
+        {name}
+      </span>
       <button
+        data-adult-only
         ref={refs.setReference}
         type="button"
         {...getReferenceProps()}

@@ -4,6 +4,7 @@ import SmoothScroll from "@/components/motion/SmoothScroll";
 import SoundPlayerLazy from "@/components/general/SoundPlayerLazy";
 import { Suspense } from "react";
 import SkipLink from "@/components/layout/SkipLink";
+import KidsMode from "@/components/kids/KidsMode";
 
 export default function PublicLayout({
   children,
@@ -16,6 +17,7 @@ export default function PublicLayout({
       <div aria-hidden="true" className="grain" />
       <SocialLinks />
       <SoundPlayerLazy />
+      <KidsMode />
       {/* Spacer for the fixed header */}
       <div className="h-14" />
       <main

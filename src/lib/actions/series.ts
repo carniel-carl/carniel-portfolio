@@ -26,6 +26,7 @@ type SeriesInput = {
   description?: string;
   coverImage?: string;
   completed?: boolean;
+  forKids?: boolean;
 };
 
 async function freeSlug(base: string, ignoreId?: string) {
@@ -46,6 +47,7 @@ export async function createSeries(data: SeriesInput) {
       description: data.description?.trim() || null,
       coverImage: data.coverImage || null,
       completed: data.completed ?? false,
+      forKids: data.forKids ?? false,
     },
     select: { id: true },
   });
@@ -66,6 +68,7 @@ export async function updateSeries(id: string, data: SeriesInput) {
       description: data.description?.trim() || null,
       coverImage: data.coverImage || null,
       completed: data.completed ?? false,
+      forKids: data.forKids ?? false,
     },
   });
 

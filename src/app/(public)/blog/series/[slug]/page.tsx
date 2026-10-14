@@ -5,6 +5,8 @@ import type { Metadata } from "next";
 import { ViewTransition } from "react";
 import { ArrowLeft } from "lucide-react";
 import PageTracker from "@/components/analytics/PageTracker";
+import AudiencePrompt from "@/components/kids/AudiencePrompt";
+import KidsBadge from "@/components/kids/KidsBadge";
 import SeriesEpisodeList from "@/components/blog/series/SeriesEpisodeList";
 import SeriesProgressCta from "@/components/blog/series/SeriesProgressCta";
 import { JsonLdScript } from "@/components/seo/JsonLd";
@@ -82,6 +84,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
       <div className="mx-auto w-[90%] max-w-[68rem] pb-24 pt-8 md:pb-32 md:pt-10">
         <JsonLdScript data={jsonLd} />
         <PageTracker event="Blog Series Viewed" properties={{ series: series.slug }} />
+        {series.forKids && <AudiencePrompt />}
 
         <Link
           href={routes.public.blogSeries}
@@ -97,6 +100,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold uppercase tracking-[0.14em] text-foreground/55">
               <span className="text-accent-ink dark:text-accent">Series</span>
               <span>{series.completed ? "Complete" : "Ongoing, more episodes coming"}</span>
+              {series.forKids && <KidsBadge />}
             </p>
             <h1 className="text-balance font-display text-[clamp(2.6rem,7vw,5.5rem)] font-semibold leading-[0.98] tracking-[-0.04em]">
               {series.title}

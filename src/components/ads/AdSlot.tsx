@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { ADSENSE_CLIENT } from "@/lib/adsense";
+import { getAudience } from "@/lib/audience-client";
 
 declare global {
   interface Window {
@@ -22,6 +23,8 @@ export default function AdSlot({ slot, className }: AdSlotProps) {
     const ins = insRef.current;
     // Skip if AdSense already filled this <ins> (e.g. Strict Mode re-run)
     if (!ins || ins.dataset.adsbygoogleStatus) return;
+    // Never request an ad for a child (kids mode, lib/audience.ts)
+    if (getAudience() === "kid") return;
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (error) {
@@ -34,6 +37,7 @@ export default function AdSlot({ slot, className }: AdSlotProps) {
 
   return (
     <ins
+      data-adult-only
       ref={insRef}
       className={cn("adsbygoogle block h-[600px] w-full", className)}
       data-ad-client={ADSENSE_CLIENT}

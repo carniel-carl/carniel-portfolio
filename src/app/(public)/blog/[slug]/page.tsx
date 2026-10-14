@@ -18,6 +18,7 @@ import { notFound } from "next/navigation";
 import routes from "@/lib/routes";
 import PageTracker from "@/components/analytics/PageTracker";
 import AdSlot from "@/components/ads/AdSlot";
+import AudiencePrompt from "@/components/kids/AudiencePrompt";
 import { ADSENSE_BLOG_SIDEBAR_SLOT, ADSENSE_CLIENT } from "@/lib/adsense";
 import { ViewTransition } from "react";
 import { BLOG_BACK, blogPageTransition } from "@/lib/blog/view-transitions";
@@ -130,7 +131,8 @@ export default async function BlogPostPage({
     getEpisodeParts(post),
   ]);
 
-  const showAds = Boolean(ADSENSE_CLIENT && ADSENSE_BLOG_SIDEBAR_SLOT);
+  // Kids series never carry ads, whoever is reading
+  const showAds = Boolean(ADSENSE_CLIENT && ADSENSE_BLOG_SIDEBAR_SLOT) && !episode?.forKids;
   const estimatedReadTime = `${Math.max(1, Math.ceil(post.content.split(/\s+/).length / 200))} min`;
 
   const postUrl = `${SITE_URL}/blog/${post.slug}`;
@@ -163,7 +165,8 @@ export default async function BlogPostPage({
   const articleFooter = (
     <>
       {episode?.pager}
-      <div className="mt-10">
+      {/* Sharing opens X, LinkedIn and WhatsApp, so kids mode drops it */}
+      <div data-adult-only className="mt-10">
         <ShareBar url={postUrl} title={post.title} />
       </div>
       <AuthorCard />
@@ -178,6 +181,7 @@ export default async function BlogPostPage({
     >
       <div>
         <ScrollToTopOnEnter />
+        {episode?.forKids && <AudiencePrompt />}
         <ReadingProgress targetId="post-article" />
         <JsonLdScript data={jsonLd} />
         <PageTracker

@@ -112,6 +112,9 @@ model Series {
   description String?
   coverImage  String?
   completed   Boolean    @default(false) // false shows "More episodes coming"
+  // Written for children: readers are asked kid or grown-up, and kids mode
+  // closes the portfolio, contact and author links. Missing on older series; read as false
+  forKids     Boolean?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   posts       BlogPost[]
