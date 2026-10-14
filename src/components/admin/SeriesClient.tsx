@@ -2,7 +2,10 @@
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import EmptyState from "@/components/admin/ui/EmptyState";
+import Pagination from "@/components/admin/ui/Pagination";
 import RelativeTime from "@/components/admin/ui/RelativeTime";
+import SearchField from "@/components/admin/ui/SearchField";
+import { useUrlSearch } from "@/components/admin/ui/useUrlSearch";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,7 +20,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createSeries } from "@/lib/actions/series";
 import routes from "@/lib/routes";
-import { ChevronRight, Layers, Loader2, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ChevronRight, Layers, Loader2, Plus, SearchX } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -34,8 +38,31 @@ export interface SeriesRow {
   drafts: number;
 }
 
-export default function SeriesClient({ series }: { series: SeriesRow[] }) {
+const listUrl = (query: string, page = 1) => {
+  const params = new URLSearchParams();
+  if (query) params.set("q", query);
+  if (page > 1) params.set("page", String(page));
+  const qs = params.toString();
+  return qs ? `${routes.admin.blogSeries}?${qs}` : routes.admin.blogSeries;
+};
+
+/** One page of series; search and paging happen on the server via the URL. */
+export default function SeriesClient({
+  series,
+  query,
+  page,
+  pageSize,
+  total,
+}: {
+  series: SeriesRow[];
+  query: string;
+  page: number;
+  pageSize: number;
+  /** Series matching the search */
+  total: number;
+}) {
   const router = useRouter();
+  const search = useUrlSearch(query, (q) => listUrl(q));
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -78,7 +105,22 @@ export default function SeriesClient({ series }: { series: SeriesRow[] }) {
         }
       />
 
-      {series.length === 0 ? (
+      {(total > 0 || query) && (
+        <SearchField
+          value={search.input}
+          onChange={search.setInput}
+          placeholder="Search series"
+          className="mb-4 sm:w-72"
+        />
+      )}
+
+      {series.length === 0 && query ? (
+        <EmptyState
+          icon={SearchX}
+          title={`No series match "${query}"`}
+          description="Check the spelling, or search part of the title."
+        />
+      ) : series.length === 0 ? (
         <EmptyState
           icon={Layers}
           title="No series yet"
@@ -90,7 +132,10 @@ export default function SeriesClient({ series }: { series: SeriesRow[] }) {
           }
         />
       ) : (
-        <ul className="surface divide-y overflow-hidden">
+        <ul
+          className={cn("surface divide-y overflow-hidden transition-opacity", search.pending && "opacity-60")}
+          aria-busy={search.pending}
+        >
           {series.map((s) => {
             const total = s.live + s.drafts;
             return (
@@ -133,6 +178,15 @@ export default function SeriesClient({ series }: { series: SeriesRow[] }) {
           })}
         </ul>
       )}
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        href={(p) => listUrl(query, p)}
+        noun="series"
+        className="mt-4"
+      />
 
       <Dialog open={open} onOpenChange={(o) => !saving && setOpen(o)}>
         <DialogContent className="max-w-md rounded-xl">

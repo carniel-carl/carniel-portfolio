@@ -12,7 +12,7 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
   const { id } = await params;
   if (!/^[0-9a-f]{24}$/i.test(id)) notFound();
 
-  const [series, available] = await Promise.all([
+  const [series, standalone] = await Promise.all([
     prisma.series.findUnique({
       where: { id },
       select: {
@@ -28,11 +28,8 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
         },
       },
     }),
-    prisma.blogPost.findMany({
-      where: STANDALONE_POST,
-      orderBy: { createdAt: "desc" },
-      select: { id: true, title: true, published: true },
-    }),
+    // The picker searches on demand; this only decides whether to offer it
+    prisma.blogPost.findFirst({ where: STANDALONE_POST, select: { id: true } }),
   ]);
 
   if (!series) notFound();
@@ -47,7 +44,7 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
         backLabel="Series"
         className="pb-4"
       />
-      <SeriesEditor series={details} episodes={posts} available={available} />
+      <SeriesEditor series={details} episodes={posts} hasStandalonePosts={!!standalone} />
     </>
   );
 }

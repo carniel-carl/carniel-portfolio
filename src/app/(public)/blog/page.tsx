@@ -13,6 +13,7 @@ import { BASE_OPEN_GRAPH, ogImage, SITE_NAME } from "@/lib/site";
 import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import PageTracker from "@/components/analytics/PageTracker";
 import routes from "@/lib/routes";
+import { pageList } from "@/lib/pagination";
 import SplitText from "@/components/motion/SplitText";
 import { ViewTransition } from "react";
 import { blogPageTransition } from "@/lib/blog/view-transitions";
@@ -189,13 +190,6 @@ async function getStandaloneCount() {
 
 // Series cards shown at the top of the first browse page
 const SERIES_ON_FEED = 3;
-
-// 1 ... 4 5 6 ... 12: current page, its neighbours and both ends
-const pageList = (page: number, total: number): (number | "gap")[] => {
-  const pages = new Set([1, total, page - 1, page, page + 1]);
-  const sorted = [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
-  return sorted.flatMap((p, i) => (i > 0 && p - sorted[i - 1] > 1 ? ["gap" as const, p] : [p]));
-};
 
 const buildUrl = (p: number, cat?: string, t?: string, s?: string) => {
   const params = new URLSearchParams();

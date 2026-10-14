@@ -19,6 +19,8 @@ type ConfirmDialogProps = {
   title: string;
   description: React.ReactNode;
   confirmLabel?: string;
+  /** "default" for confirmations that are not destructive, like publishing */
+  confirmVariant?: "destructive" | "default";
   /** The dialog stays open (and shows progress) until this resolves */
   onConfirm: () => Promise<void> | void;
 };
@@ -34,6 +36,7 @@ export default function ConfirmDialog({
   title,
   description,
   confirmLabel = "Delete",
+  confirmVariant = "destructive",
   onConfirm,
 }: ConfirmDialogProps) {
   const [pending, startTransition] = useTransition();
@@ -55,7 +58,7 @@ export default function ConfirmDialog({
             Cancel
           </AlertDialogCancel>
           <Button
-            variant="destructive"
+            variant={confirmVariant}
             disabled={pending}
             onClick={() =>
               startTransition(async () => {

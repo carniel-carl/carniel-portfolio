@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { isLevel } from "@/lib/blog/levels";
-import { placeInSeries, reorderEpisodes } from "@/lib/blog/series";
+import { placeInSeries, reorderEpisodes, STANDALONE_POST } from "@/lib/blog/series";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import { toSlug } from "@/lib/projects/slug";
@@ -91,6 +91,21 @@ export async function reorderSeriesEpisodes(seriesId: string, postIds: string[])
   invalidateSeriesCaches();
 }
 
+/** Posts not in any series whose title matches, newest first, for the "Add existing post" picker. */
+export async function searchStandalonePosts(query: string) {
+  await requireSession();
+  const q = query.trim().slice(0, 100);
+
+  return prisma.blogPost.findMany({
+    where: {
+      AND: [STANDALONE_POST, ...(q ? [{ title: { contains: q, mode: "insensitive" as const } }] : [])],
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: { id: true, title: true, published: true },
+  });
+}
+
 /** Adds an existing post as the last episode. */
 export async function addPostToSeries(seriesId: string, postId: string) {
   await requireSession();
@@ -102,6 +117,32 @@ export async function removePostFromSeries(postId: string) {
   await requireSession();
   await placeInSeries(postId, null);
   invalidateSeriesCaches();
+}
+
+/** Publishes several draft episodes at once. Returns how many went live. */
+export async function publishEpisodes(seriesId: string, postIds: string[]) {
+  await requireSession();
+
+  const drafts = await prisma.blogPost.findMany({
+    where: { id: { in: postIds }, seriesId, published: false },
+    orderBy: [{ seriesOrder: "asc" }, { createdAt: "asc" }],
+    select: { id: true, publishedAt: true },
+  });
+  if (!drafts.length) return 0;
+
+  // A millisecond apart in reading order, so "latest first" lists stay in episode order
+  const now = Date.now();
+  await prisma.$transaction(
+    drafts.map((post, i) =>
+      prisma.blogPost.update({
+        where: { id: post.id },
+        data: { published: true, publishedAt: post.publishedAt ?? new Date(now + i) },
+      }),
+    ),
+  );
+
+  invalidateSeriesCaches();
+  return drafts.length;
 }
 
 export async function setEpisodeLevel(postId: string, level: string | null) {
