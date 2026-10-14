@@ -18,7 +18,7 @@ import { Suspense } from "react";
 import Intro from "@/components/layout/Intro";
 import type { Metadata } from "next";
 import { PersonJsonLd } from "@/components/seo/JsonLd";
-import { BASE_OPEN_GRAPH, SITE_NAME } from "@/lib/site";
+import { BASE_OPEN_GRAPH, ogImage, SITE_NAME } from "@/lib/site";
 
 const PORTFOLIO_DESCRIPTION =
   "Selected web and mobile projects by Chimezie (Carniel): what I built, the stack behind it, and how I work.";
@@ -32,6 +32,7 @@ export const metadata: Metadata = {
     url: "/portfolio",
     title: `Portfolio · ${SITE_NAME}`,
     description: PORTFOLIO_DESCRIPTION,
+    images: [ogImage("/images/og/portfolio.png", `Portfolio · ${SITE_NAME}`)],
   },
 };
 

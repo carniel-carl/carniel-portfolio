@@ -51,28 +51,6 @@ const Footer = ({
   });
   const scale = useTransform(scrollYProgress, [0, 1], [0.92, 1]);
 
-  // The layout (and so this footer) survives client-side navigation, while
-  // pages re-render with fresh data. Re-check availability when the footer
-  // comes into view on a page other than the one it was rendered for, so it
-  // matches the hero and contact section after an edit.
-  const [availability, setAvailability] = useState(contact);
-  useEffect(() => setAvailability(contact), [contact]);
-  const inView = useInView(windowRef, { amount: 0.1 });
-  const checkedPath = useRef(pathname);
-  useEffect(() => {
-    if (!inView || checkedPath.current === pathname) return;
-    // Marked only once it succeeds, so a failed check retries next time
-    const path = pathname;
-    fetch("/api/availability")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((fresh: ContactInfo | null) => {
-        if (!fresh) return;
-        checkedPath.current = path;
-        setAvailability(fresh);
-      })
-      .catch(() => {});
-  }, [inView, pathname]);
-
   useEffect(() => {
     setYear(new Date().getFullYear().toString());
   }, []);
@@ -169,8 +147,8 @@ const Footer = ({
             )}
 
             <div className="col-span-2 flex flex-col gap-1 self-end text-sm text-accent-on/75 md:col-span-6 md:items-end">
-              {availability.availability && (
-                <AvailabilityBadge info={availability} surface="accent" className="mb-5" />
+              {contact.availability && (
+                <AvailabilityBadge info={contact} surface="accent" className="mb-5" />
               )}
               <div className="flex gap-4">
                 <Link href={routes.public.privacy} className="hover:underline underline-offset-4">

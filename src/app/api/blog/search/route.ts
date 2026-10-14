@@ -65,16 +65,21 @@ async function getSuggestions() {
   return { posts: recent.slice(0, 4), tags };
 }
 
+// Responses are also cached by the browser and Vercel's CDN, so repeat
+// queries never start a function at all. New posts show up in search within
+// the CDN window (s-maxage), then refresh in the background.
+const headers = { "Cache-Control": "public, max-age=300, s-maxage=600, stale-while-revalidate=3600" };
+
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim().toLowerCase().replace(/\s+/g, " ");
 
   if (request.nextUrl.searchParams.has("suggest")) {
-    return NextResponse.json(await getSuggestions());
+    return NextResponse.json(await getSuggestions(), { headers });
   }
 
   if (!q || q.length < 2) {
-    return NextResponse.json({ results: [] });
+    return NextResponse.json({ results: [] }, { headers });
   }
 
-  return NextResponse.json({ results: await searchPosts(q.slice(0, 80)) });
+  return NextResponse.json({ results: await searchPosts(q.slice(0, 80)) }, { headers });
 }

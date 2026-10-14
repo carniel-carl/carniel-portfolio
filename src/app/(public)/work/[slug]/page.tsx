@@ -51,6 +51,9 @@ export async function generateMetadata({
 
   const { project } = found;
   const url = routes.public.work(project.slug);
+  // The project's own artwork; videos fall back to their poster frame
+  const cover =
+    project.posterUrl || (project.mediaType !== "video" && project.img) || project.screenshots[0];
   return {
     title: `${project.name} · Case study`,
     description: project.description,
@@ -61,6 +64,7 @@ export async function generateMetadata({
       url,
       title: `${project.name} · ${SITE_NAME}`,
       description: project.description,
+      ...(cover && { images: [{ url: cover, alt: project.name }] }),
     },
   };
 }

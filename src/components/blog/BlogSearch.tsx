@@ -177,7 +177,9 @@ export default function BlogSearch() {
       const controller = new AbortController();
       inflight.current = controller;
       try {
-        const res = await fetch(`/api/blog/search?q=${encodeURIComponent(value.trim())}`, {
+        // Normalised like the server does, so "React " and "react" share a CDN entry
+        const q = value.trim().toLowerCase().replace(/\s+/g, " ");
+        const res = await fetch(`/api/blog/search?q=${encodeURIComponent(q)}`, {
           signal: controller.signal,
         });
         const data = await res.json();

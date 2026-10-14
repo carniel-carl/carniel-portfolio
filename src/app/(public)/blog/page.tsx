@@ -7,7 +7,7 @@ import BlogCard from "@/components/blog/BlogCard";
 import BlogSearch from "@/components/blog/BlogSearch";
 import CategoryPills, { type CategoryPill } from "@/components/blog/CategoryPills";
 import { readingMinutes } from "@/lib/blog/article";
-import { BASE_OPEN_GRAPH, SITE_NAME } from "@/lib/site";
+import { BASE_OPEN_GRAPH, ogImage, SITE_NAME } from "@/lib/site";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import PageTracker from "@/components/analytics/PageTracker";
 import routes from "@/lib/routes";
@@ -30,6 +30,7 @@ export const metadata: Metadata = {
     url: "/blog",
     title: `Writing · ${SITE_NAME}`,
     description: BLOG_DESCRIPTION,
+    images: [ogImage("/images/og/blog.png", "Writing by Carniel")],
   },
   twitter: {
     card: "summary_large_image",
