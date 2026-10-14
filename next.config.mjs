@@ -16,6 +16,18 @@ const nextConfig = {
       "./public/images/favicon/web-app-manifest-192x192.png",
     ],
   },
+  // The OAuth consent screen must never render inside another site's frame
+  async headers() {
+    return [
+      {
+        source: "/admin/oauth/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
