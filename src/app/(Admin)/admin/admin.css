@@ -223,27 +223,22 @@ html:has(.admin-root) body {
 
 /* ---------------------------------------------------------------------------
   SIGN-IN
-  Screenshot columns drift slowly behind the headline; each column holds its
-  list twice, so a -50% translate loops without a seam. Still under reduced
-  motion.
+  Lines rise in on load; still under reduced motion. Autofill keeps the pill's
+  own surface instead of the browser's yellow or blue fill.
 --------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: no-preference) {
-  .auth-drift {
-    animation: auth-drift linear infinite;
-    will-change: transform;
-  }
-  .auth-drift[data-reverse] {
-    animation-direction: reverse;
-  }
   .auth-rise {
     animation: auth-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 }
-@keyframes auth-drift {
-  from { transform: translateY(0); }
-  to { transform: translateY(-50%); }
-}
 @keyframes auth-rise {
   from { opacity: 0; transform: translateY(0.35em); }
   to { opacity: 1; transform: translateY(0); }
+}
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: hsl(var(--foreground));
+  caret-color: hsl(var(--accent));
+  transition: background-color 9999s ease-out 0s;
 }

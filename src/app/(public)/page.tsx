@@ -1,5 +1,5 @@
 import HomeExperience from "@/sections/home/HomeExperience";
-import { getContactInfo, getLatestPosts, getProjects } from "@/lib/data/portfolio";
+import { getContactInfo, getLatestPosts } from "@/lib/data/portfolio";
 import { ViewTransition } from "react";
 import { blogPageTransition } from "@/lib/blog/view-transitions";
 import type { Metadata } from "next";
@@ -17,8 +17,7 @@ export const metadata: Metadata = {
 };
 
 const HomePage = async () => {
-  const [{ featured }, posts, contact] = await Promise.all([
-    getProjects(),
+  const [posts, contact] = await Promise.all([
     getLatestPosts(3),
     getContactInfo(),
   ]);
@@ -31,7 +30,7 @@ const HomePage = async () => {
     >
       <>
         <PersonJsonLd />
-        <HomeExperience projects={featured.slice(0, 5)} posts={posts} contact={contact} />
+        <HomeExperience posts={posts} contact={contact} />
       </>
     </ViewTransition>
   );

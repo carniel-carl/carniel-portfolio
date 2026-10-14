@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
+import { Recursive } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import ThemeWrapper from "@/context/theme-provider";
 import {
@@ -12,21 +12,13 @@ import {
 } from "@/lib/site";
 import { ADSENSE_CLIENT } from "@/lib/adsense";
 
-// Display: variable width + optical size axes drive the kinetic headlines
-const display = Bricolage_Grotesque({
+// One family for every role. Recursive's own axes carry the hierarchy:
+// Casual (a loaded brush) for display, linear for reading, Mono for labels,
+// numbers and code. Roles are mapped to axis settings in globals.css.
+const recursive = Recursive({
   subsets: ["latin"],
-  axes: ["opsz", "wdth"],
-  variable: "--font-display",
-  display: "swap",
-});
-const sans = Geist({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
-const mono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
+  axes: ["CASL", "CRSV", "MONO", "slnt"],
+  variable: "--font-recursive",
   display: "swap",
 });
 
@@ -76,7 +68,7 @@ export default function RootLayout({
         </head>
       )}
       <body
-        className={`${display.variable} ${sans.variable} ${mono.variable} font-sans antialiased overscroll-none relative min-h-screen`}
+        className={`${recursive.variable} font-sans antialiased overscroll-none relative min-h-screen`}
       >
         <ThemeWrapper>
           {children}

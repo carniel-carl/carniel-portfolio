@@ -66,7 +66,7 @@ const Process = () => {
           className="flex flex-col gap-4 px-4 md:w-max md:flex-row md:items-stretch md:gap-0 md:px-8 max-md:!transform-none"
         >
           <div className="flex flex-col justify-end pb-6 md:w-[38vw] md:pb-0 md:pr-12">
-            <h2 className="font-display text-[clamp(3.25rem,10vw,9rem)] font-semibold leading-[0.88] tracking-[-0.045em] [font-stretch:75%]">
+            <h2 className="font-display text-[clamp(3.25rem,10vw,9rem)] font-semibold leading-[0.88] tracking-[-0.045em]">
               How I work
             </h2>
             <p className="mt-6 max-w-[34ch] text-lg text-foreground/70">

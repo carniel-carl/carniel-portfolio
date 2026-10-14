@@ -5,20 +5,17 @@ import Intro from "@/components/layout/Intro";
 import Hero from "@/sections/home/Hero";
 import VelocityMarquee from "@/sections/home/VelocityMarquee";
 import Statement from "@/sections/home/Statement";
-import SelectedWork from "@/sections/home/SelectedWork";
+import TwoDoors from "@/sections/home/TwoDoors";
 import Capabilities from "@/sections/home/Capabilities";
 import LatestWriting from "@/sections/home/LatestWriting";
 import { trackEvent } from "@/lib/mixpanel";
-import type { ProjectDataType } from "@/types/project";
 import type { LatestPost } from "@/lib/data/portfolio";
 import type { ContactInfo } from "@/lib/availability";
 
 const HomeExperience = ({
-  projects,
   posts,
   contact,
 }: {
-  projects: ProjectDataType[];
   posts: LatestPost[];
   contact: ContactInfo;
 }) => {
@@ -32,9 +29,9 @@ const HomeExperience = ({
     <Intro>
       <Hero contact={contact} />
       <VelocityMarquee />
+      <TwoDoors contact={contact} />
       <Statement />
       <Capabilities />
-      <SelectedWork projects={projects} />
       <LatestWriting posts={posts} />
     </Intro>
   );

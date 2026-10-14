@@ -76,7 +76,7 @@ const Footer = ({
               as="h2"
               text={onPortfolio ? "Thanks for stopping by" : "Have an idea? Let's build it"}
               play={revealed}
-              className="max-w-[12ch] font-display text-[clamp(3rem,8.5vw,8rem)] font-semibold leading-[0.9] tracking-[-0.04em] [font-stretch:75%]"
+              className="max-w-[12ch] font-display text-[clamp(3rem,8.5vw,8rem)] font-semibold leading-[0.9] tracking-[-0.04em]"
             />
 
             <Magnetic strength={0.4}>

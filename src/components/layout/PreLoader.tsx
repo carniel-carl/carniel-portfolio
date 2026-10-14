@@ -3,36 +3,162 @@ import {
   AnimatePresence,
   animate,
   motion,
+  useAnimationFrame,
   useMotionValue,
   useTransform,
+  type MotionValue,
 } from "framer-motion";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLenis } from "lenis/react";
 import SVGIcon from "@/components/general/SVGIcon";
-import { cn } from "@/lib/utils";
 
 const CURTAIN = [0.76, 0, 0.24, 1] as const;
 const EXPO = [0.16, 1, 0.3, 1] as const;
 const NAME = "Carniel";
+const PORTRAIT = "/images/profile-pic.jpg";
+const PORTRAIT_RATIO = 2048 / 1638; // height / width
 
-type Phase = "phone" | "web" | "full" | "exit";
+const LABELS = ["Designing for mobile", "and for the web", "Web & mobile developer"];
 
-const PHASE_LABEL: Record<Phase, string> = {
-  phone: "Designing for mobile",
-  web: "and for the web",
-  full: "Web & mobile developer",
-  exit: "Web & mobile developer",
+// Wave-topped fill used as a mask. The image is twice the element's height:
+// transparent above the wave, opaque below. Sliding it up raises the level,
+// sliding it sideways makes the surface move.
+const WAVE = `url("data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 1000" preserveAspectRatio="none"><path d="M0 500 Q30 478 60 500 T120 500 T180 500 T240 500 V1000 H0 Z" fill="#000"/></svg>',
+)}")`;
+
+// The name, one masked span per letter so the letters rise in turn. With
+// `portrait`, every letter is a window onto ONE shared portrait: each gets the
+// slice of the image that sits behind it, measured from its rest position.
+const Word = ({ portrait = false }: { portrait?: boolean }) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [slices, setSlices] = useState<{ size: string; pos: string }[]>([]);
+
+  useLayoutEffect(() => {
+    if (!portrait) return;
+    const measure = () => {
+      const word = ref.current;
+      if (!word) return;
+      const W = word.offsetWidth;
+      const H = word.offsetHeight;
+      const imgH = W * PORTRAIT_RATIO;
+      // Face sits about a third of the way down the photo
+      const top = imgH * 0.34 - H / 2;
+      setSlices(
+        Array.from(word.querySelectorAll<HTMLElement>("[data-cell]")).map((cell) => ({
+          size: `${W}px ${imgH}px`,
+          pos: `${-cell.offsetLeft}px ${-top}px`,
+        })),
+      );
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [portrait]);
+
+  return (
+    <span ref={ref} className="relative flex">
+      {NAME.split("").map((ch, i) => (
+        <span key={ch + i} data-cell className="inline-block overflow-hidden pb-[0.04em]">
+          <motion.span
+            className={portrait ? "inline-block bg-no-repeat bg-clip-text text-transparent" : "inline-block"}
+            style={
+              portrait
+                ? {
+                    backgroundImage: `url(${PORTRAIT})`,
+                    backgroundSize: slices[i]?.size ?? "cover",
+                    backgroundPosition: slices[i]?.pos ?? "center",
+                  }
+                : undefined
+            }
+            initial={{ y: "105%" }}
+            animate={{ y: "0%" }}
+            transition={{ duration: 1.1, ease: EXPO, delay: 0.15 + i * 0.06 }}
+          >
+            {ch}
+          </motion.span>
+        </span>
+      ))}
+    </span>
+  );
 };
 
-// Rounded-rect window expressed as a clip-path inset, sized from the viewport
-const inset = (W: number, H: number, w: number, h: number, r: number) =>
-  `inset(${(H - h) / 2}px ${(W - w) / 2}px ${(H - h) / 2}px ${(W - w) / 2}px round ${r}px)`;
+// One full copy of the loader. Two are stacked and clipped to the top and
+// bottom halves, so on exit the screen can tear open along the waterline.
+const Sheet = ({
+  label,
+  display,
+  progress,
+  liquidRef,
+}: {
+  label: string;
+  display: MotionValue<string>;
+  progress: MotionValue<number>;
+  liquidRef: (el: HTMLSpanElement | null) => void;
+}) => (
+  <div className="relative mx-auto flex h-full max-w-[1400px] flex-col justify-between px-4 py-6 md:px-8 md:py-8">
+    <div className="flex items-center justify-between text-sm opacity-70">
+      <SVGIcon width="1.75rem" height="1.75rem" />
+      <span>Portfolio</span>
+    </div>
 
-// Intro as a device morph that tells the "web & mobile" story:
-//  phone  - an accent phone-shaped window holds the monogram
-//  web    - it stretches into a wide browser window and the name appears
-//  full   - the window floods the screen
-//  exit   - the whole panel lifts with a curved trailing edge
+    {/* The name: cut out of the portrait, filling with the accent */}
+    <h2
+      aria-label={NAME}
+      className="relative self-center font-display text-[min(22vw,19rem)] font-black leading-[0.86] tracking-[-0.04em]"
+    >
+      <Word portrait />
+      <span
+        ref={liquidRef}
+        aria-hidden="true"
+        className="absolute inset-0 text-accent"
+        style={{
+          maskImage: WAVE,
+          WebkitMaskImage: WAVE,
+          maskSize: "min(16vw, 15rem) 200%",
+          WebkitMaskSize: "min(16vw, 15rem) 200%",
+          maskRepeat: "repeat-x",
+          WebkitMaskRepeat: "repeat-x",
+          maskPosition: "0px 0%",
+          WebkitMaskPosition: "0px 0%",
+        }}
+      >
+        <Word />
+      </span>
+    </h2>
+
+    <div>
+      <div className="flex items-end justify-between gap-6">
+        <div className="h-6 overflow-hidden md:h-7">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={label}
+              initial={{ y: "100%" }}
+              animate={{ y: "0%" }}
+              exit={{ y: "-100%" }}
+              transition={{ duration: 0.5, ease: EXPO }}
+              className="text-base opacity-75 md:text-lg"
+            >
+              {label}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+        <motion.span className="font-mono text-5xl tabular-nums tracking-tight md:text-7xl">
+          {display}
+        </motion.span>
+      </div>
+      <div className="mt-5 h-px w-full bg-current/15 opacity-30">
+        <motion.div className="h-full origin-left bg-current" style={{ scaleX: progress }} />
+      </div>
+    </div>
+  </div>
+);
+
+// Intro: the name in the portrait, filling with colour as it loads.
+//  - letters rise, each a window onto the black-and-white portrait
+//  - the accent rises inside them like liquid, its surface moving, as the
+//    counter climbs to 100
+//  - the screen tears open along the middle and the page is underneath
 const PreLoader = ({
   onReveal,
   onComplete,
@@ -44,23 +170,11 @@ const PreLoader = ({
   const count = useMotionValue(0);
   const display = useTransform(count, (v) => String(Math.round(v)).padStart(3, "0"));
   const progress = useTransform(count, [0, 100], [0, 1]);
-  const [phase, setPhase] = useState<Phase>("phone");
-  const [shapes, setShapes] = useState<Record<"phone" | "web" | "full", string> | null>(null);
+  const [phase, setPhase] = useState(0);
+  const [exit, setExit] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  useLayoutEffect(() => {
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-    const pw = Math.min(250, W * 0.5);
-    const ph = Math.min(pw * 2.05, H * 0.62);
-    const ww = Math.min(W * 0.78, 1040);
-    const wh = Math.min(ww * 0.6, H * 0.58);
-    setShapes({
-      phone: inset(W, H, pw, ph, 38),
-      web: inset(W, H, ww, wh, 18),
-      full: inset(W, H, W, H, 0),
-    });
-  }, []);
+  const liquids = useRef<HTMLSpanElement[]>([]);
+  const drift = useRef(0);
 
   useEffect(() => {
     lenis?.stop();
@@ -73,15 +187,16 @@ const PreLoader = ({
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const controls = animate(count, 100, { duration: 3, ease: [0.45, 0, 0.2, 1] });
+    // Starts a beat late so the letters are up before they begin to fill
+    const controls = animate(count, 100, { duration: 3, delay: 0.6, ease: [0.65, 0, 0.35, 1] });
     const t = timers.current;
-    t.push(setTimeout(() => setPhase("web"), 1500));
-    t.push(setTimeout(() => setPhase("full"), 3100));
+    t.push(setTimeout(() => setPhase(1), 1700));
+    t.push(setTimeout(() => setPhase(2), 3000));
     t.push(
       setTimeout(() => {
-        setPhase("exit");
+        setExit(true);
         onReveal();
-      }, 4300),
+      }, 4000),
     );
     return () => {
       controls.stop();
@@ -90,117 +205,50 @@ const PreLoader = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const clip = shapes ? (phase === "phone" ? shapes.phone : phase === "web" ? shapes.web : shapes.full) : undefined;
+  // Liquid level follows the counter; the surface drifts sideways
+  useAnimationFrame((_, delta) => {
+    drift.current = (drift.current + delta * 0.08) % 10000;
+    // 0% shows the empty top half of the mask, 100% the full bottom half.
+    // The fill waits for the first stretch of the count so the portrait in
+    // the letters is seen first, and overshoots so the crest clears the tops.
+    const level = Math.min(100, Math.max(0, (count.get() - 22) / 78) * 106);
+    const pos = `${drift.current}px ${level}%`;
+    for (const el of liquids.current) {
+      if (!el) continue;
+      el.style.maskPosition = pos;
+      el.style.setProperty("-webkit-mask-position", pos);
+    }
+  });
+
+  const halves = [
+    { clip: "inset(0% 0% 50% 0%)", to: "-100%" },
+    { clip: "inset(50% 0% 0% 0%)", to: "100%" },
+  ];
 
   return (
-    <motion.div
-      role="status"
-      aria-label="Loading"
-      className="fixed inset-0 z-[110] bg-foreground text-background"
-      initial={{ y: 0 }}
-      animate={phase === "exit" ? { y: "-100%" } : { y: 0 }}
-      transition={{ duration: 1.2, ease: CURTAIN, delay: 0.2 }}
-      onAnimationComplete={() => phase === "exit" && onComplete()}
-    >
-      {/* Curved trailing edge that follows the panel up */}
-      <div
-        aria-hidden="true"
-        className="absolute left-[-10%] top-[calc(100%-1px)] h-[16vh] w-[120%] rounded-b-[50%] bg-accent"
-      />
-
-      {/* SUB: The morphing device window */}
-      {shapes && (
+    <div role="status" aria-label="Loading" className="fixed inset-0 z-[110]">
+      {halves.map((h, i) => (
         <motion.div
-          aria-hidden="true"
-          className="absolute inset-0 grid place-items-center bg-accent text-accent-on"
-          initial={{ clipPath: shapes.phone, opacity: 0, scale: 0.9 }}
-          animate={{ clipPath: clip, opacity: 1, scale: 1 }}
-          transition={{
-            clipPath: { duration: 1.1, ease: CURTAIN },
-            opacity: { duration: 0.6 },
-            scale: { duration: 0.9, ease: EXPO },
-          }}
+          key={h.to}
+          aria-hidden={i === 1 ? "true" : undefined}
+          className="absolute inset-0 bg-foreground text-background"
+          style={{ clipPath: h.clip }}
+          initial={{ y: "0%" }}
+          animate={{ y: exit ? h.to : "0%" }}
+          transition={{ duration: 1.15, ease: CURTAIN, delay: 0.1 }}
+          onAnimationComplete={() => exit && i === 0 && onComplete()}
         >
-          <AnimatePresence mode="wait">
-            {phase === "phone" ? (
-              <motion.div
-                key="mark"
-                initial={{ opacity: 0, scale: 0.6, rotate: -30 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                exit={{ opacity: 0, scale: 0.6, transition: { duration: 0.3 } }}
-                transition={{ duration: 0.9, ease: EXPO, delay: 0.3 }}
-              >
-                <SVGIcon width="4.5rem" height="4.5rem" />
-              </motion.div>
-            ) : (
-              <motion.h2
-                key="name"
-                className="flex overflow-hidden pb-[0.08em] font-display font-bold leading-[0.85] tracking-[-0.04em]"
-                animate={{ fontSize: phase === "web" ? "min(12vw, 9.5rem)" : "min(20vw, 17rem)" }}
-                initial={{ fontSize: "min(12vw, 9.5rem)" }}
-                transition={{ duration: 1.1, ease: CURTAIN }}
-              >
-                {NAME.split("").map((ch, i) => (
-                  <motion.span
-                    key={ch + i}
-                    className="inline-block"
-                    initial={{ y: "110%" }}
-                    animate={{ y: phase === "exit" ? "-110%" : "0%" }}
-                    transition={{
-                      duration: phase === "exit" ? 0.6 : 0.9,
-                      ease: phase === "exit" ? CURTAIN : EXPO,
-                      delay: i * (phase === "exit" ? 0.03 : 0.05),
-                    }}
-                  >
-                    {ch}
-                  </motion.span>
-                ))}
-              </motion.h2>
-            )}
-          </AnimatePresence>
+          <Sheet
+            label={LABELS[phase]}
+            display={display}
+            progress={progress}
+            liquidRef={(el) => {
+              if (el) liquids.current[i] = el;
+            }}
+          />
         </motion.div>
-      )}
-
-      <div
-        className={cn(
-          "pointer-events-none relative mx-auto flex h-full max-w-[1400px] flex-col justify-between px-4 py-6 transition-colors duration-700 md:px-8 md:py-8",
-          phase === "full" || phase === "exit" ? "text-accent-on" : "text-background",
-        )}
-      >
-        <div className="flex items-center justify-between text-sm opacity-70">
-          <SVGIcon width="1.75rem" height="1.75rem" />
-          <span>Portfolio</span>
-        </div>
-
-        <div>
-          <div className="flex items-end justify-between gap-6">
-            <div className="h-6 overflow-hidden md:h-7">
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={PHASE_LABEL[phase]}
-                  initial={{ y: "100%" }}
-                  animate={{ y: "0%" }}
-                  exit={{ y: "-100%" }}
-                  transition={{ duration: 0.5, ease: EXPO }}
-                  className="text-base opacity-75 md:text-lg"
-                >
-                  {PHASE_LABEL[phase]}
-                </motion.p>
-              </AnimatePresence>
-            </div>
-            <motion.span className="font-mono text-5xl tabular-nums tracking-tight md:text-7xl">
-              {display}
-            </motion.span>
-          </div>
-          <div className="mt-5 h-px w-full bg-current/15 opacity-30">
-            <motion.div
-              className="h-full origin-left bg-current"
-              style={{ scaleX: progress }}
-            />
-          </div>
-        </div>
-      </div>
-    </motion.div>
+      ))}
+    </div>
   );
 };
 

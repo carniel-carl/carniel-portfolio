@@ -251,7 +251,7 @@ const MenuLink = ({ link, name, pathName, closeMenu }: MenuLinkType) => {
         href={link}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "group flex items-center gap-3 font-display text-5xl font-semibold tracking-[-0.03em] [font-stretch:75%] md:text-6xl",
+          "group flex items-center gap-3 font-display text-5xl font-semibold tracking-[-0.03em] md:text-6xl",
           active ? "opacity-100" : "opacity-60 hover:opacity-100",
         )}
         onClick={closeMenu}

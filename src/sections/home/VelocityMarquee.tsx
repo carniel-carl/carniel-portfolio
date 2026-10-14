@@ -60,7 +60,7 @@ const Row = ({
           <span key={i} className="flex items-center" aria-hidden={i > 0}>
             <span
               className={cn(
-                "px-[3vw] font-display text-[18vw] font-bold leading-[0.95] tracking-[-0.04em] [font-stretch:75%] md:text-[13vw]",
+                "px-[3vw] font-display text-[18vw] font-bold leading-[0.95] tracking-[-0.04em] md:text-[13vw]",
                 muted ? "text-foreground" : "text-accent",
               )}
             >

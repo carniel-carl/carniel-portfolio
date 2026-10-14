@@ -138,7 +138,7 @@ export default async function WorkPage({
               )}
               <ProjectBadges project={project} />
             </div>
-            <h1 className="text-balance font-display text-[clamp(3.25rem,9vw,8.5rem)] font-semibold leading-[0.88] tracking-[-0.045em] [font-stretch:75%]">
+            <h1 className="text-balance font-display text-[clamp(3.25rem,9vw,8.5rem)] font-semibold leading-[0.88] tracking-[-0.045em]">
               {project.name}
             </h1>
             <p className="max-w-[52ch] text-pretty text-lg leading-relaxed text-foreground/70 md:text-xl">
@@ -198,7 +198,7 @@ export default async function WorkPage({
         {/* SUB: What I built */}
         {highlights.length > 0 && (
           <section className="mt-24 grid gap-8 md:mt-36 md:grid-cols-12">
-            <h2 className="font-display text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[0.95] tracking-[-0.04em] [font-stretch:75%] md:col-span-4">
+            <h2 className="font-display text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[0.95] tracking-[-0.04em] md:col-span-4">
               What I built
             </h2>
             <ol className="md:col-span-8">
@@ -222,7 +222,7 @@ export default async function WorkPage({
           <section className="mt-24 grid gap-10 md:mt-36 md:grid-cols-12 md:gap-8">
             <aside className="md:col-span-4">
               <div className="md:sticky md:top-28">
-                <h2 className="font-display text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[0.95] tracking-[-0.04em] [font-stretch:75%]">
+                <h2 className="font-display text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[0.95] tracking-[-0.04em]">
                   The story
                 </h2>
                 {showToc && (
@@ -241,7 +241,7 @@ export default async function WorkPage({
         {/* SUB: Stack */}
         {project.stack && project.stack.length > 0 && (
           <section className="mt-24 grid gap-8 md:mt-36 md:grid-cols-12">
-            <h2 className="font-display text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[0.95] tracking-[-0.04em] [font-stretch:75%] md:col-span-4">
+            <h2 className="font-display text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[0.95] tracking-[-0.04em] md:col-span-4">
               Built with
             </h2>
             <ul className="flex flex-wrap content-start gap-2.5 md:col-span-8">
@@ -260,7 +260,7 @@ export default async function WorkPage({
         {/* SUB: Screens (mobile apps; the hero only cycles through them) */}
         {phone && screenshots.length > 1 && (
           <section className="mt-24 grid gap-8 md:mt-36 md:grid-cols-12">
-            <h2 className="font-display text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[0.95] tracking-[-0.04em] [font-stretch:75%] md:col-span-4">
+            <h2 className="font-display text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[0.95] tracking-[-0.04em] md:col-span-4">
               Screens
             </h2>
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:col-span-8 lg:grid-cols-4">
@@ -293,7 +293,7 @@ export default async function WorkPage({
               <span className="font-mono text-sm uppercase tracking-[0.14em] text-foreground/55">
                 Next project
               </span>
-              <span className="font-display text-[clamp(3rem,8vw,7.5rem)] font-semibold leading-[0.9] tracking-[-0.045em] transition-transform duration-700 ease-expo [font-stretch:75%] group-hover:translate-x-3">
+              <span className="font-display text-[clamp(3rem,8vw,7.5rem)] font-semibold leading-[0.9] tracking-[-0.045em] transition-transform duration-700 ease-expo group-hover:translate-x-3">
                 {next.name}
               </span>
             </div>

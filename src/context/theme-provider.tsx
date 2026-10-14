@@ -3,6 +3,8 @@
 import { ThemeProvider } from "next-themes";
 import { ReactNode } from "react";
 import ThemeColorSync from "@/components/general/ThemeColorSync";
+// Skips view transitions in background tabs (see the file for why)
+import "@/lib/view-transition-guard";
 
 const ThemeWrapper = ({ children }: { children: ReactNode }) => {
   return (

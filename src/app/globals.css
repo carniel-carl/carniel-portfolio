@@ -128,6 +128,40 @@
   }
 }
 
+/* HDR: TYPE ROLES
+   One family, Recursive, mapped onto the three roles the components already
+   use. Its axes do the work a second and third family used to:
+   display  - Casual (brush-lettered), slanted, cursive forms
+   sans     - Linear, upright: comfortable reading text
+   mono     - Mono axis on: labels, numbers, code */
+body {
+  --font-display: var(--font-recursive);
+  --font-sans: var(--font-recursive);
+  --font-mono: var(--font-recursive);
+  font-variation-settings: "CASL" 0, "MONO" 0, "slnt" 0, "CRSV" 0.5;
+}
+@layer utilities {
+  .font-display {
+    font-variation-settings: "CASL" 0.55, "MONO" 0, "slnt" -5, "CRSV" 1;
+  }
+  /* Half-casual reads as brush only with enough body behind it */
+  .font-display.font-semibold {
+    font-weight: 760;
+  }
+  .font-sans {
+    font-variation-settings: "CASL" 0, "MONO" 0, "slnt" 0, "CRSV" 0.5;
+  }
+  .font-mono {
+    font-variation-settings: "CASL" 0, "MONO" 1, "slnt" 0, "CRSV" 0;
+  }
+}
+code,
+kbd,
+samp,
+pre {
+  font-variation-settings: "CASL" 0, "MONO" 1, "slnt" 0, "CRSV" 0;
+}
+
 /* HDR: BASE */
 @layer base {
   * {
@@ -314,7 +348,7 @@ html:active-view-transition:not([data-theme-switching]) .vt-chrome-player {
 }
 .route-loader__name > span {
   display: inline-block;
-  font-variation-settings: "wght" 800, "wdth" 75;
+  font-variation-settings: "wght" 900, "CASL" 1, "MONO" 0, "slnt" -10;
   animation: route-loader-breathe 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
 }
 .route-loader__name > .route-loader__dot {
@@ -381,7 +415,7 @@ html:active-view-transition:not([data-theme-switching]) .vt-chrome-player {
 }
 @keyframes route-loader-breathe {
   to {
-    font-variation-settings: "wght" 250, "wdth" 100;
+    font-variation-settings: "wght" 500, "CASL" 0, "MONO" 1, "slnt" 0;
     transform: translateY(-0.06em);
   }
 }
