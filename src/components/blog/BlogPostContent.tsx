@@ -7,6 +7,7 @@ import { ViewTransition, type ReactNode } from "react";
 import { renderRichText, sanitizeRichText } from "@/components/content/RichText";
 import TableOfContents from "@/components/blog/TableOfContents";
 import AuthorHoverCard from "@/components/blog/AuthorHoverCard";
+import LevelBadge from "@/components/blog/series/LevelBadge";
 import { getAbout } from "@/lib/data/portfolio";
 import { blogCoverName, blogTitleName } from "@/lib/blog/view-transitions";
 import { readingMinutes, withHeadingAnchors } from "@/lib/blog/article";
@@ -25,6 +26,7 @@ interface BlogPostContentProps {
     coverImage: string | null;
     publishedAt: Date | string | null;
     tags: string[];
+    level?: string | null;
     category: { name: string; slug: string; color: string } | null;
     author: { name: string | null } | null;
   };
@@ -36,6 +38,10 @@ interface BlogPostContentProps {
   footer?: ReactNode;
   // Extra items for the date / read-time line (e.g. the view counter)
   meta?: ReactNode;
+  // Line above the title (e.g. "Next.js from zero · Episode 3")
+  kicker?: ReactNode;
+  // Rendered above the table of contents (e.g. the series navigator)
+  beforeBody?: ReactNode;
 }
 
 export default async function BlogPostContent({
@@ -44,6 +50,8 @@ export default async function BlogPostContent({
   layout = "inline",
   footer,
   meta,
+  kicker,
+  beforeBody,
 }: BlogPostContentProps) {
   const clean = sanitizeRichText(post.content);
   const { html, toc } = withHeadingAnchors(clean);
@@ -94,8 +102,11 @@ export default async function BlogPostContent({
           )}
           {date && <time dateTime={new Date(post.publishedAt!).toISOString()}>{date}</time>}
           <span>{minutes} min read</span>
+          <LevelBadge level={post.level} />
           {meta}
         </div>
+
+        {kicker}
 
         {/* Morphs from the matching BlogCard (see lib/blog/view-transitions) */}
         <ViewTransition name={blogTitleName(post.slug)} share="vt-morph-text">
@@ -133,6 +144,8 @@ export default async function BlogPostContent({
 
       <div className={cn(rail && "xl:grid xl:grid-cols-[minmax(0,48rem)_14rem] xl:justify-between xl:gap-16")}>
         <div className="min-w-0">
+          {beforeBody}
+
           {showToc && (
             <div className={cn(rail && "xl:hidden")}>
               <TableOfContents items={toc} variant="inline" />

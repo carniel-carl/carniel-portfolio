@@ -1,6 +1,7 @@
 import BlogPostForm from "@/components/admin/BlogPostForm";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import StatusPill from "@/components/admin/ui/StatusPill";
+import { getSeriesOptions } from "@/lib/blog/series-options";
 import prisma from "@/lib/prisma";
 import routes from "@/lib/routes";
 import type { Metadata } from "next";
@@ -15,7 +16,7 @@ export default async function EditBlogPostPage({
 }) {
   const { id } = await params;
 
-  const [post, categories] = await Promise.all([
+  const [post, categories, series] = await Promise.all([
     prisma.blogPost.findUnique({
       where: { id },
       include: {
@@ -27,6 +28,7 @@ export default async function EditBlogPostPage({
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    getSeriesOptions(),
   ]);
 
   if (!post) notFound();
@@ -37,13 +39,14 @@ export default async function EditBlogPostPage({
         title="Edit post"
         backHref={routes.admin.blog}
         backLabel="Blog"
-        className="pb-4"
+        className="mx-auto w-full max-w-4xl pb-4"
         actions={<StatusPill published={post.published} />}
       />
       <BlogPostForm
         initialData={JSON.parse(JSON.stringify(post))}
         isEdit
         categories={JSON.parse(JSON.stringify(categories))}
+        series={series}
       />
     </>
   );

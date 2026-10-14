@@ -34,7 +34,9 @@ const cardSelect = {
   publishedAt: true,
   tags: true,
   categoryId: true,
+  seriesId: true,
   category: { select: { name: true, slug: true, color: true } },
+  series: { select: { title: true, slug: true } },
   author: { select: { name: true } },
 } as const;
 
@@ -67,7 +69,13 @@ export async function getRecommendedPosts(
   const targetTags = normalizeTags(target.tags);
 
   return posts
-    .filter((p) => p.id !== target.id && p.publishedAt)
+    // Episodes of the same series have their own previous / next navigation
+    .filter(
+      (p) =>
+        p.id !== target.id &&
+        p.publishedAt &&
+        !(target.seriesId && p.seriesId === target.seriesId),
+    )
     .map((post) => {
       const text = cosine(targetVector, vectors.get(post.id)!);
       const tags = jaccard(targetTags, normalizeTags(post.tags));
@@ -80,7 +88,7 @@ export async function getRecommendedPosts(
     // Posts arrive newest first and the sort is stable, so ties stay by date
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
-    .map(({ post: { categoryId: _categoryId, ...post } }) => post);
+    .map(({ post: { categoryId: _categoryId, seriesId: _seriesId, ...post } }) => post);
 }
 
 type Doc = { id: string; title: string; excerpt: string | null };

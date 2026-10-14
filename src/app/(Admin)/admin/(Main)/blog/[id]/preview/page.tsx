@@ -1,4 +1,5 @@
 import BlogPostContent from "@/components/blog/BlogPostContent";
+import { getEpisodeParts } from "@/components/blog/series/episodeParts";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import StatusPill from "@/components/admin/ui/StatusPill";
 import PublishPostButton from "@/components/admin/PublishPostButton";
@@ -33,6 +34,7 @@ export default async function BlogPreviewPage({
   });
 
   if (!post) notFound();
+  const episode = await getEpisodeParts(post, { preview: true });
 
   return (
     <>
@@ -68,7 +70,13 @@ export default async function BlogPreviewPage({
       />
 
       <div className="surface overflow-hidden">
-        <BlogPostContent post={post} preview />
+        <BlogPostContent
+          post={post}
+          preview
+          kicker={episode?.kicker}
+          beforeBody={episode?.navigator}
+          footer={episode?.pager}
+        />
       </div>
     </>
   );

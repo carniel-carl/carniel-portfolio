@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import {
   ExternalLink,
   Eye,
+  Layers,
   MoreHorizontal,
   PenSquare,
   Pencil,
@@ -50,6 +51,8 @@ interface BlogPost {
   updatedAt: string;
   category: { id: string; name: string; color: string } | null;
   author: { name: string | null } | null;
+  series?: { id: string; title: string } | null;
+  seriesOrder?: number | null;
 }
 
 type Filter = "all" | "live" | "drafts";
@@ -79,6 +82,7 @@ export default function BlogClient({
       return (
         p.title.toLowerCase().includes(q) ||
         p.category?.name.toLowerCase().includes(q) ||
+        p.series?.title.toLowerCase().includes(q) ||
         p.excerpt?.toLowerCase().includes(q)
       );
     });
@@ -104,6 +108,13 @@ export default function BlogClient({
         description={`${liveCount} live, ${posts.length - liveCount} in draft.`}
         actions={
           <>
+            <Link
+              href={routes.admin.blogSeries}
+              className={cn(buttonVariants({ variant: "outline" }), "hover:bg-muted")}
+            >
+              <Layers />
+              Series
+            </Link>
             <Link
               href={routes.admin.blogCategories}
               className={cn(buttonVariants({ variant: "outline" }), "hover:bg-muted")}
@@ -140,7 +151,7 @@ export default function BlogClient({
               setQuery(q);
               setVisibleCount(PAGE_SIZE);
             }}
-            placeholder="Search title, category or excerpt"
+            placeholder="Search title, category or series"
             className="sm:w-72"
           />
         </div>
@@ -190,6 +201,19 @@ export default function BlogClient({
                     {post.title}
                   </Link>
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    {post.series && (
+                      <span className="relative z-10">
+                        <Link
+                          href={routes.admin.blogSeriesEdit(post.series.id)}
+                          className="inline-flex items-center gap-1 font-medium text-foreground/80 hover:text-foreground hover:underline"
+                        >
+                          <Layers className="size-3" aria-hidden="true" />
+                          {post.series.title}
+                          {post.seriesOrder ? <span className="tnum"> #{post.seriesOrder}</span> : null}
+                        </Link>
+                        {" · "}
+                      </span>
+                    )}
                     {post.category?.name ?? "Others"}
                     <span className="hidden sm:inline">
                       {" "}· {post.author?.name ?? "Unknown author"}

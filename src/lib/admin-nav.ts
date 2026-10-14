@@ -3,6 +3,7 @@ import {
   BarChart3,
   FolderKanban,
   LayoutDashboard,
+  Layers,
   PenSquare,
   Share2,
   Tags,
@@ -56,12 +57,20 @@ const segmentLabels: Record<string, string> = {
   edit: "Edit",
   preview: "Preview",
   categories: "Categories",
+  series: "Series",
 };
 
 export const categoriesNavItem: AdminNavItem = {
   href: routes.admin.blogCategories,
   label: "Blog categories",
   icon: Tags,
+};
+
+export const seriesNavItem: AdminNavItem = {
+  href: routes.admin.blogSeries,
+  label: "Blog series",
+  icon: Layers,
+  keywords: ["course", "tutorial", "episodes", "lessons"],
 };
 
 export function isActivePath(pathname: string, href: string) {

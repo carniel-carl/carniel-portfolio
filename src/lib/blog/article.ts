@@ -51,3 +51,11 @@ export function withHeadingAnchors(html: string): { html: string; toc: TocItem[]
 
   return { html: out, toc };
 }
+
+/** 45 → "45 min", 80 → "1 h 20 min" */
+export function formatMinutes(total: number) {
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  if (!hours) return `${minutes} min`;
+  return minutes ? `${hours} h ${minutes} min` : `${hours} h`;
+}

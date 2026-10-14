@@ -9,6 +9,9 @@ export const blogPostFormSchema = z.object({
   published: z.boolean(),
   categoryId: z.string().min(1, "Category is required"),
   tags: z.array(z.string()),
+  // "" means standalone / no level
+  seriesId: z.string(),
+  level: z.string(),
 });
 
 export type BlogPostFormValues = z.infer<typeof blogPostFormSchema>;

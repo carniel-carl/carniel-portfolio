@@ -16,6 +16,7 @@ async function getPosts() {
     include: {
       category: { select: { id: true, name: true, color: true } },
       author: { select: { name: true } },
+      series: { select: { id: true, title: true } },
     },
   });
 
