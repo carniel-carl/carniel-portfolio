@@ -33,6 +33,7 @@ export async function getEpisodeParts(
 
   return {
     series: info,
+    forKids: series.forKids,
     episodeNumber: current.number,
     episodeCount: episodes.length,
     kicker: (

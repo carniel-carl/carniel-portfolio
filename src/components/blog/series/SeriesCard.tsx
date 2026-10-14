@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Layers } from "lucide-react";
 import SeriesProgressChip from "@/components/blog/series/SeriesProgressChip";
+import KidsBadge from "@/components/kids/KidsBadge";
 import { formatMinutes } from "@/lib/blog/article";
 import type { SeriesSummary } from "@/lib/blog/series";
 import routes from "@/lib/routes";
@@ -16,6 +17,8 @@ export default function SeriesCard({
 }) {
   return (
     <article
+      // Kids mode lists kids series first (globals.css)
+      data-for-kids={series.forKids || undefined}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-[1.25rem] border border-foreground/10 bg-surface transition-colors hover:border-foreground/30",
         className,
@@ -54,6 +57,7 @@ export default function SeriesCard({
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium uppercase tracking-[0.12em] text-foreground/55">
           <span className="text-accent-ink dark:text-accent">Series</span>
           <span>{series.completed ? "Complete" : "Ongoing"}</span>
+          {series.forKids && <KidsBadge />}
         </p>
         <h3 className="text-balance font-display text-2xl font-semibold leading-[1.1] tracking-[-0.025em]">
           <Link

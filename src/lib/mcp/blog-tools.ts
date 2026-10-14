@@ -18,6 +18,7 @@ import { SITE_URL } from "@/lib/site";
 export const MCP_INSTRUCTIONS = `Tools for drafting posts on Chimezie Carniel's portfolio blog.
 Workflow: call list_categories (and list_posts to avoid repeating a topic), upload any images with upload_image, then create_draft. Revise with update_draft.
 Series: a multi-part tutorial or course is a series of episodes read in order, ideally from beginner to advanced. Call list_series first and continue an existing series rather than starting a parallel one. To start one, create_series, then create_draft once per episode with the series and a level. Episodes are appended in order unless you pass an episode position. Each episode should stand on its own page but build on the previous one: open by recapping what the reader already knows and end by setting up the next episode. Use get_series to see the current outline before adding to it.
+Kids series: a series written for children (coding for kids, stories for kids) is created with forKids: true. Readers are then asked whether they're a kid or a grown-up, and kids mode closes the portfolio, contact, resume and author links. Write its episodes for young readers: short sentences, plain words, no links to outside sites, and nothing that asks for personal details. A series already listed with forKids: true keeps it; list_series and get_series show the flag.
 Posts are always saved as drafts. You cannot publish; the owner reviews and publishes each draft in the admin, so share the preview link you get back.`;
 
 const CONTENT_FORMAT = `Post body as HTML. The title renders separately, so don't repeat it or use <h1>.
@@ -111,6 +112,7 @@ async function seriesOutline(id: string) {
       description: true,
       coverImage: true,
       completed: true,
+      forKids: true,
       posts: {
         orderBy: [{ seriesOrder: "asc" }, { createdAt: "asc" }],
         select: { id: true, title: true, slug: true, excerpt: true, level: true, published: true },
@@ -120,9 +122,10 @@ async function seriesOutline(id: string) {
   if (!series) throw new Error(`No series with id ${id}`);
 
   let publicNumber = 0;
-  const { posts, ...rest } = series;
+  const { posts, forKids, ...rest } = series;
   return {
     ...rest,
+    forKids: forKids ?? false,
     public: posts.some((p) => p.published),
     links: { site: seriesLink(series.slug), admin: seriesAdminLink(series.id) },
     episodes: posts.map((p, i) => ({
@@ -287,11 +290,13 @@ export function registerBlogTools(server: McpServer) {
           slug: true,
           description: true,
           completed: true,
+          forKids: true,
           posts: { select: { published: true } },
         },
       });
-      return rows.map(({ posts, ...s }) => ({
+      return rows.map(({ posts, forKids, ...s }) => ({
         ...s,
+        forKids: forKids ?? false,
         episodes: posts.length,
         published: posts.filter((p) => p.published).length,
         drafts: posts.filter((p) => !p.published).length,
@@ -324,6 +329,12 @@ export function registerBlogTools(server: McpServer) {
       .optional()
       .describe("Cover image: an https URL or base64 data URI, re-hosted automatically. 1200x630 fits best"),
     slug: z.string().optional().describe("URL slug under /blog/series/; derived from the title when omitted"),
+    forKids: z
+      .boolean()
+      .optional()
+      .describe(
+        "true for a series written for children. Readers are asked kid or grown-up, and kids can't reach the portfolio, contact or author links",
+      ),
   };
 
   server.registerTool(
@@ -335,7 +346,7 @@ export function registerBlogTools(server: McpServer) {
       inputSchema: seriesFields,
     },
     guard(
-      async (input: { title: string; description?: string; coverImage?: string; slug?: string }) => {
+      async (input: { title: string; description?: string; coverImage?: string; slug?: string; forKids?: boolean }) => {
         const slug = toSlug(input.slug || input.title);
         const taken = await prisma.series.findUnique({ where: { slug }, select: { id: true } });
         if (taken) throw new Error(`A series already uses the slug "${slug}". Use it, or pass another slug.`);
@@ -346,6 +357,7 @@ export function registerBlogTools(server: McpServer) {
             slug,
             description: input.description || null,
             coverImage: input.coverImage ? await storeImage(input.coverImage, slug) : null,
+            forKids: input.forKids ?? false,
           },
           select: { id: true },
         });
@@ -370,7 +382,14 @@ export function registerBlogTools(server: McpServer) {
       async ({
         series: ref,
         ...input
-      }: { series: string; title?: string; description?: string; coverImage?: string; slug?: string }) => {
+      }: {
+        series: string;
+        title?: string;
+        description?: string;
+        coverImage?: string;
+        slug?: string;
+        forKids?: boolean;
+      }) => {
         const id = await resolveSeriesId(ref);
         const live = await prisma.blogPost.count({ where: { seriesId: id, published: true } });
         if (live) throw new Error("This series is live. Edit it in the admin.");
@@ -389,6 +408,7 @@ export function registerBlogTools(server: McpServer) {
             ...(slug && { slug }),
             ...(input.description !== undefined && { description: input.description || null }),
             ...(input.coverImage && { coverImage: await storeImage(input.coverImage, slug ?? id) }),
+            ...(input.forKids !== undefined && { forKids: input.forKids }),
           },
         });
         invalidateBlog();

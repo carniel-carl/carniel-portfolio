@@ -868,3 +868,75 @@ html:active-view-transition:not([data-theme-switching]) .vt-chrome-player {
     right: -100px;
   }
 }
+
+/* HDR: KIDS MODE
+   <html data-audience> is set before first paint (lib/audience.ts), so these
+   hide adult-only links with no flash, before React hydrates. The proxy turns
+   kids away from the portfolio pages themselves. */
+html[data-audience="kid"] [data-adult-only],
+html:not([data-audience="kid"]) [data-kid-only],
+html[data-audience] [data-audience-prompt] {
+  display: none !important;
+}
+/* Kids series first in the series list */
+html[data-audience="kid"] [data-for-kids] {
+  order: -1;
+}
+
+/* A small playground palette, only for the kids prompt and badges. Fills sit
+   under foreground-colored strokes and text, so contrast rides on the
+   foreground, not on these */
+@layer base {
+  :root {
+    --kid-sun: 42 95% 56%;
+    --kid-sky: 199 88% 62%;
+    --kid-coral: 8 88% 68%;
+    --kid-leaf: 145 55% 50%;
+    --kid-grape: 262 72% 72%;
+  }
+  .dark {
+    --kid-sun: 42 88% 54%;
+    --kid-sky: 199 78% 56%;
+    --kid-coral: 8 78% 64%;
+    --kid-leaf: 145 48% 46%;
+    --kid-grape: 262 60% 68%;
+  }
+}
+
+@layer utilities {
+  /* Recursive at full Casual: the brush-lettered end of the site's own face */
+  .font-playful {
+    font-variation-settings: "CASL" 1, "MONO" 0, "slnt" -6, "CRSV" 1;
+    font-weight: 800;
+  }
+}
+
+@keyframes kid-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+}
+@keyframes kid-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes kid-float {
+  50% {
+    transform: translateY(-9px) rotate(var(--kid-tilt, 8deg));
+  }
+}
+@keyframes kid-bob {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes kid-shake {
+  20%, 60% {
+    transform: translateX(-7px);
+  }
+  40%, 80% {
+    transform: translateX(7px);
+  }
+}

@@ -29,6 +29,7 @@ export default async function AuthorCard() {
         </p>
       </div>
       <PillLink
+        data-adult-only
         href={routes.public.portfolio}
         variant="ghost"
         icon={<ArrowUpRight />}

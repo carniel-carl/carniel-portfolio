@@ -115,6 +115,8 @@ export type SeriesWithEpisodes = {
   description: string | null;
   coverImage: string | null;
   completed: boolean;
+  /** Kids series: readers are asked kid or grown-up (lib/audience.ts) */
+  forKids: boolean;
   updatedAt: Date;
   episodes: SeriesEpisode[];
 };
@@ -133,6 +135,7 @@ export async function loadSeries(
       description: true,
       coverImage: true,
       completed: true,
+      forKids: true,
       updatedAt: true,
       posts: {
         where: includeDrafts ? {} : { published: true },
@@ -152,9 +155,10 @@ export async function loadSeries(
   });
   if (!series) return null;
 
-  const { posts, ...rest } = series;
+  const { posts, forKids, ...rest } = series;
   return {
     ...rest,
+    forKids: forKids ?? false,
     episodes: posts.map(({ content, ...post }, i) => ({
       ...post,
       readingMinutes: readingMinutes(content),
@@ -190,6 +194,7 @@ export async function getSeriesList() {
       description: true,
       coverImage: true,
       completed: true,
+      forKids: true,
       updatedAt: true,
       posts: {
         where: { published: true },
@@ -206,13 +211,14 @@ export async function getSeriesList() {
   });
 
   return rows
-    .map(({ posts, ...series }) => {
+    .map(({ posts, forKids, ...series }) => {
       const latest = posts.reduce<Date | null>(
         (max, p) => (p.publishedAt && (!max || p.publishedAt > max) ? p.publishedAt : max),
         null,
       );
       return {
         ...series,
+        forKids: forKids ?? false,
         episodeCount: posts.length,
         totalMinutes: posts.reduce((sum, p) => sum + readingMinutes(p.content), 0),
         levels: levelRange(posts.map((p) => p.level)),

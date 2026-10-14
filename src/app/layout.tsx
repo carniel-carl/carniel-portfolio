@@ -11,6 +11,7 @@ import {
   SITE_URL,
 } from "@/lib/site";
 import { ADSENSE_CLIENT } from "@/lib/adsense";
+import { AUDIENCE_SCRIPT } from "@/lib/audience";
 
 // One family for every role. Recursive's own axes carry the hierarchy:
 // Casual (a loaded brush) for display, linear for reading, Mono for labels,
@@ -70,6 +71,10 @@ export default function RootLayout({
       <body
         className={`${recursive.variable} font-sans antialiased overscroll-none relative min-h-screen`}
       >
+        {/* Kids mode, before anything paints: hides adult-only links
+            (lib/audience.ts). In <body>, not <head>: AdSense injects scripts
+            into <head> before hydration, which React would mistake for this one */}
+        <script dangerouslySetInnerHTML={{ __html: AUDIENCE_SCRIPT }} />
         <ThemeWrapper>
           {children}
           <Toaster richColors position="top-center" />

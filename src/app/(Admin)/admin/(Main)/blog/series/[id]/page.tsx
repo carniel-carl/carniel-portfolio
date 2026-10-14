@@ -22,6 +22,7 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
         description: true,
         coverImage: true,
         completed: true,
+        forKids: true,
         posts: {
           orderBy: [{ seriesOrder: "asc" }, { createdAt: "asc" }],
           select: { id: true, title: true, slug: true, published: true, level: true },
@@ -33,7 +34,7 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
   ]);
 
   if (!series) notFound();
-  const { posts, ...details } = series;
+  const { posts, forKids, ...details } = series;
 
   return (
     <>
@@ -44,7 +45,7 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
         backLabel="Series"
         className="pb-4"
       />
-      <SeriesEditor series={details} episodes={posts} hasStandalonePosts={!!standalone} />
+      <SeriesEditor series={{ ...details, forKids: forKids ?? false }} episodes={posts} hasStandalonePosts={!!standalone} />
     </>
   );
 }

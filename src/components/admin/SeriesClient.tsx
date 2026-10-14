@@ -1,5 +1,6 @@
 "use client";
 
+import { ToggleRow } from "@/components/admin/form/FormSection";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import EmptyState from "@/components/admin/ui/EmptyState";
 import Pagination from "@/components/admin/ui/Pagination";
@@ -18,11 +19,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { createSeries } from "@/lib/actions/series";
 import routes from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Layers, Loader2, Plus, SearchX } from "lucide-react";
+import { ChevronRight, Layers, Loader2, Plus, Rocket, SearchX } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -32,6 +34,7 @@ export interface SeriesRow {
   slug: string;
   description: string | null;
   completed: boolean;
+  forKids: boolean;
   updatedAt: string;
   live: number;
   drafts: number;
@@ -65,11 +68,13 @@ export default function SeriesClient({
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [forKids, setForKids] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const openCreate = () => {
     setTitle("");
     setDescription("");
+    setForKids(false);
     setOpen(true);
   };
 
@@ -77,7 +82,7 @@ export default function SeriesClient({
     e.preventDefault();
     if (!title.trim()) return;
     setSaving(true);
-    const created = await runAction(() => createSeries({ title, slug: "", description }), {
+    const created = await runAction(() => createSeries({ title, slug: "", description, forKids }), {
       loading: "Creating series…",
       success: "Series created",
       error: (error) => (error instanceof Error ? error.message : "Could not create the series"),
@@ -160,6 +165,12 @@ export default function SeriesClient({
                           <span className="font-mono"> · /blog/series/{s.slug}</span>
                         </p>
                       </div>
+                      {s.forKids && (
+                        <span className="hidden shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground sm:inline-flex">
+                          <Rocket className="size-3" aria-hidden="true" />
+                          For kids
+                        </span>
+                      )}
                       <span
                         className={
                           s.live === 0
@@ -220,6 +231,11 @@ export default function SeriesClient({
                 placeholder="What a reader will be able to do by the last episode."
               />
             </div>
+            <ToggleRow
+              title="Made for kids"
+              description="Readers pick kid or grown-up first, and kids mode closes the portfolio and author links."
+              control={<Switch checked={forKids} onCheckedChange={setForKids} aria-label="Made for kids" />}
+            />
             <DialogFooter className="gap-2">
               <Button
                 type="button"

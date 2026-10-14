@@ -29,6 +29,7 @@ async function getSeriesPage(query: string, requestedPage: number) {
       slug: true,
       description: true,
       completed: true,
+      forKids: true,
       updatedAt: true,
     },
   });
@@ -43,8 +44,9 @@ async function getSeriesPage(query: string, requestedPage: number) {
     groups.find((g) => g.seriesId === id && g.published === published)?._count._all ?? 0;
 
   return {
-    series: rows.map(({ updatedAt, ...s }) => ({
+    series: rows.map(({ updatedAt, forKids, ...s }) => ({
       ...s,
+      forKids: forKids ?? false,
       updatedAt: updatedAt.toISOString(),
       live: countOf(s.id, true),
       drafts: countOf(s.id, false),

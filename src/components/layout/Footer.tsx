@@ -79,41 +79,44 @@ const Footer = ({
               className="max-w-[12ch] font-display text-[clamp(3rem,8.5vw,8rem)] font-semibold leading-[0.9] tracking-[-0.04em]"
             />
 
-            <Magnetic strength={0.4}>
-              {onPortfolio ? (
-                <button type="button" onClick={toTop} className={circle}>
-                  <span className="flex flex-col items-center gap-2">
-                    <ArrowUp className="size-5" />
-                    Back to top
-                  </span>
-                </button>
-              ) : (
-                <Link
-                  href={`${routes.public.portfolio}#contact`}
-                  className={circle}
-                  onClick={() =>
-                    trackEvent("Footer CTA Clicked", { cta: "get_in_touch", source_page: pathname })
-                  }
-                >
-                  <span className="flex flex-col items-center gap-2">
-                    <ArrowUpRight className="size-5" />
-                    Get in touch
-                  </span>
-                </Link>
-              )}
-            </Magnetic>
+            {/* Leads to contact on the portfolio page: closed in kids mode */}
+            <div data-adult-only>
+              <Magnetic strength={0.4}>
+                {onPortfolio ? (
+                  <button type="button" onClick={toTop} className={circle}>
+                    <span className="flex flex-col items-center gap-2">
+                      <ArrowUp className="size-5" />
+                      Back to top
+                    </span>
+                  </button>
+                ) : (
+                  <Link
+                    href={`${routes.public.portfolio}#contact`}
+                    className={circle}
+                    onClick={() =>
+                      trackEvent("Footer CTA Clicked", { cta: "get_in_touch", source_page: pathname })
+                    }
+                  >
+                    <span className="flex flex-col items-center gap-2">
+                      <ArrowUpRight className="size-5" />
+                      Get in touch
+                    </span>
+                  </Link>
+                )}
+              </Magnetic>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-y-8 border-t border-accent-on/20 pt-8 md:grid-cols-12">
             <nav aria-label="Footer" className="md:col-span-3">
               <ul className="flex flex-col gap-1.5">
-                <li>
+                <li data-adult-only>
                   <Link href={routes.public.home} className="hover:underline underline-offset-4">
                     Home
                   </Link>
                 </li>
                 {NavLinks.map((item) => (
-                  <li key={item.name}>
+                  <li key={item.name} data-adult-only={item.adultOnly || undefined}>
                     <Link href={item.link} className="hover:underline underline-offset-4">
                       {item.name}
                     </Link>
@@ -123,7 +126,7 @@ const Footer = ({
             </nav>
 
             {socialLinks.length > 0 && (
-              <ul className="flex flex-col gap-1.5 md:col-span-3">
+              <ul data-adult-only className="flex flex-col gap-1.5 md:col-span-3">
                 {socialLinks.map((item) => (
                   <li key={item.name}>
                     <a
@@ -148,7 +151,9 @@ const Footer = ({
 
             <div className="col-span-2 flex flex-col gap-1 self-end text-sm text-accent-on/75 md:col-span-6 md:items-end">
               {contact.availability && (
-                <AvailabilityBadge info={contact} surface="accent" className="mb-5" />
+                <div data-adult-only>
+                  <AvailabilityBadge info={contact} surface="accent" className="mb-5" />
+                </div>
               )}
               <div className="flex gap-4">
                 <Link href={routes.public.privacy} className="hover:underline underline-offset-4">
