@@ -27,15 +27,21 @@ import { ArrowDown, BookmarkPlus, Check, X } from "lucide-react";
 import { useIntroDone } from "@/components/layout/Intro";
 import { trackEvent } from "@/lib/mixpanel";
 import { cn } from "@/lib/utils";
+import PlaceRibbon from "@/components/blog/PlaceRibbon";
 import {
   clearMark,
+  clip,
   describeRange,
   getMark,
   hintSeen,
   lineBoxes,
+  listMarks,
+  PLACE_PARAM,
   resolveMark,
   saveMark,
   setHintSeen,
+  snippetBefore,
+  timeAgo,
   wordRangeAtPoint,
   wordRangeAtReadingLine,
   type Line,
@@ -47,8 +53,17 @@ const INTERACTIVE = "a, button, input, textarea, select, label, summary, pre, im
 // Below the fixed header: where "the line you're reading" sits for the M key
 const READING_LINE = 96;
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
+// How long a reader stays well past their mark before it offers to follow
+const CATCH_UP_DELAY = 30_000;
+// How long "Undo" stays up after finishing a post clears the mark
+const UNDO_FOR = 10_000;
 
 type Draft = { id: number; mark: PlaceMark; kind: "word" | "passage"; keyboard: boolean };
+type Episode = { slug: string; number: number };
+// A mark in another post: an earlier episode of this series
+type Elsewhere = { slug: string; number: number; mark: PlaceMark };
+// Marks cleared by finishing, held while Undo is offered
+type Cleared = { slug: string; mark: PlaceMark; number?: number };
 
 /**
  * "You stopped here" for blog posts. Tap a word (or select a passage) and
@@ -56,7 +71,17 @@ type Draft = { id: number; mark: PlaceMark; kind: "word" | "passage"; keyboard: 
  * browser. Next visit the mark is already there, and a pill offers to jump
  * back to it. M marks the line being read, so it works from the keyboard too.
  */
-export default function PlaceMarker({ slug, children }: { slug: string; children: ReactNode }) {
+export default function PlaceMarker({
+  slug,
+  episodes,
+  children,
+}: {
+  slug: string;
+  // The series' episodes when this post is one: marks left in earlier
+  // episodes are behind the reader, the same as a mark further up the page
+  episodes?: Episode[];
+  children: ReactNode;
+}) {
   const reduce = useReducedMotion();
   const introDone = useIntroDone();
   const lenis = useLenis();
@@ -64,6 +89,7 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
 
   const wrap = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
+  const end = useRef<HTMLDivElement>(null);
   const ribbon = useRef<HTMLButtonElement>(null);
   const primary = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -95,6 +121,8 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
   const [hover, setHover] = useState(false);
   const [hint, setHint] = useState(false);
   const [announce, setAnnounce] = useState("");
+  const [finished, setFinished] = useState<Cleared[] | null>(null);
+  const [catchUp, setCatchUp] = useState(false);
 
   // HDR: GEOMETRY
   const measure = useCallback(() => {
@@ -133,6 +161,28 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
     setExact(found.exact);
     setRestored(true);
   }, [slug]);
+
+  // HDR: SERIES (marks in earlier episodes, latest episode first)
+  const [earlier, setEarlier] = useState<Elsewhere[]>([]);
+  useEffect(() => {
+    const here = episodes?.find((e) => e.slug === slug);
+    if (!episodes || !here) return;
+    const numbers = new Map(episodes.map((e) => [e.slug, e.number]));
+    setEarlier(
+      listMarks()
+        .flatMap(({ slug: other, ...saved }) => {
+          const number = numbers.get(other);
+          return number !== undefined && number < here.number ? [{ slug: other, number, mark: saved }] : [];
+        })
+        .sort((a, b) => b.number - a.number),
+    );
+  }, [slug, episodes]);
+
+  // One place per story: a mark here replaces the ones behind it
+  const clearEarlier = () => {
+    earlier.forEach((e) => clearMark(e.slug));
+    setEarlier([]);
+  };
 
   const hasMark = lines.length > 0;
 
@@ -192,6 +242,7 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
     if (!draft || !draftRange.current) return;
     const fresh = { ...draft.mark, savedAt: Date.now() };
     saveMark(slug, fresh);
+    clearEarlier();
     trackEvent("Blog Place Marked", { slug, kind: draft.kind, moved: Boolean(mark) });
     markRange.current = draftRange.current;
     setMark(fresh);
@@ -380,11 +431,17 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
     if (!el) return;
     setResumeDismissed(true);
     trackEvent("Blog Place Resumed", { slug });
+    const offsetY = -Math.round(window.innerHeight * 0.38);
     const done = () => {
+      // Something above reflowed during the scroll (a late image): snap the rest
+      const top = el.getBoundingClientRect().top;
+      if (top < 72 || top > window.innerHeight * 0.8) {
+        lenis?.scrollTo(el, { offset: offsetY, immediate: true, force: true });
+        if (!lenis) window.scrollTo({ top: top + window.scrollY + offsetY });
+      }
       setStroke((s) => s + 1);
       el.focus({ preventScroll: true });
     };
-    const offsetY = -Math.round(window.innerHeight * 0.38);
     if (lenis && !reduce) {
       lenis.scrollTo(el, { offset: offsetY, duration: 1.3, onComplete: done });
     } else {
@@ -393,9 +450,164 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
     }
   };
 
+  // Opened from "Continue reading" (?place): travel straight to the mark
+  const arrived = useRef(false);
+  useEffect(() => {
+    if (arrived.current || !introDone || !hasMark) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(PLACE_PARAM)) return;
+    arrived.current = true;
+    url.searchParams.delete(PLACE_PARAM);
+    window.history.replaceState(window.history.state, "", url);
+    // Lazy images above the mark have no size until they load, so they'd
+    // push it down mid-scroll: load them first (briefly), then go
+    const el = ribbon.current;
+    const above = Array.from(root.current?.querySelectorAll("img") ?? []).filter(
+      (img) => el && img.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    above.forEach((img) => (img.loading = "eager"));
+    const loaded = Promise.all(above.map((img) => img.decode().catch(() => {})));
+    const settle = new Promise((r) => window.setTimeout(r, 350));
+    const cap = new Promise((r) => window.setTimeout(r, 2000));
+    // jump bails if the post unmounted meanwhile
+    Promise.race([Promise.all([loaded, settle]), cap]).then(() => jump());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [introDone, hasMark]);
+
+  // HDR: FINISHED (reaching the end clears the marks behind you, with Undo)
+  useEffect(() => {
+    const el = end.current;
+    if (!el || (!mark && !earlier.length)) return;
+    // Only scrolling down to the end counts, not an end that was already on
+    // screen when the mark was made, restored or brought back by Undo
+    let armed = false;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) {
+        armed = true;
+        return;
+      }
+      if (!armed) return;
+      // A mark in the last lines, still on screen with the end, isn't behind you
+      const own =
+        mark && (ribbon.current?.getBoundingClientRect().bottom ?? Infinity) < READING_LINE
+          ? [{ slug, mark }]
+          : [];
+      const cleared: Cleared[] = [...own, ...earlier];
+      if (!cleared.length) return;
+      observer.disconnect();
+      cleared.forEach((c) => clearMark(c.slug));
+      trackEvent("Blog Place Finished", { slug, cleared: cleared.length });
+      if (own.length) {
+        markRange.current = null;
+        setMark(null);
+        setMenu(false);
+        setLabel(false);
+      }
+      setEarlier([]);
+      setCatchUp(false);
+      setFinished(cleared);
+      setAnnounce(`You finished this post, so ${clearedText(cleared, slug).toLowerCase()}.`);
+    }, {
+      // The end counts once it's risen past the lower third of the screen,
+      // so the last lines are read and the notice is where the eyes are
+      rootMargin: "0px 0px -35% 0px",
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [mark, earlier, slug]);
+
+  useEffect(() => {
+    if (!finished) return;
+    const t = window.setTimeout(() => setFinished(null), UNDO_FOR);
+    return () => window.clearTimeout(t);
+  }, [finished]);
+
+  const undoFinished = () => {
+    if (!finished) return;
+    finished.forEach((c) => saveMark(c.slug, c.mark));
+    trackEvent("Blog Place Finish Undone", { slug });
+    setFinished(null);
+    setEarlier(finished.flatMap((c) => (c.number !== undefined ? [{ ...c, number: c.number }] : [])));
+    setAnnounce("Place mark restored.");
+    const own = finished.find((c) => c.slug === slug);
+    const r = root.current;
+    const found = own && r ? resolveMark(r, own.mark) : null;
+    if (!own || !found) return;
+    markRange.current = found.range;
+    setMark(own.mark);
+    setExact(found.exact);
+  };
+
+  // HDR: CATCH-UP (past your mark for a while: offer to move it, once a visit)
+  // Behind means this post's mark about two screens up, or, with no mark
+  // here, one left in an earlier episode once you're into this one
+  const lagging = earlier[0];
+  const askedCatchUp = useRef(false);
+  useEffect(() => {
+    if (!hasMark && !lagging) return;
+    let timer: number | undefined;
+    let frame = 0;
+    const check = () => {
+      frame = 0;
+      const body = root.current?.getBoundingClientRect();
+      if (!body) return;
+      const pin = ribbon.current?.getBoundingClientRect();
+      const reading = body.bottom > window.innerHeight;
+      const behind = pin ? pin.bottom < -window.innerHeight * 1.5 : body.top < READING_LINE;
+      if (!reading || !behind) {
+        window.clearTimeout(timer);
+        timer = undefined;
+        setCatchUp(false);
+        return;
+      }
+      if (timer !== undefined || askedCatchUp.current) return;
+      timer = window.setTimeout(() => {
+        askedCatchUp.current = true;
+        setCatchUp(true);
+      }, CATCH_UP_DELAY);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(check);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    check();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [hasMark, lagging]);
+
+  // The tap is the confirmation, so this saves straight away
+  const moveHere = () => {
+    setCatchUp(false);
+    const r = root.current;
+    if (!r) return;
+    const range = wordRangeAtReadingLine(r, Math.max(READING_LINE, r.getBoundingClientRect().top));
+    const described = range && describeRange(r, range);
+    if (!range || !described) return;
+    saveMark(slug, described);
+    trackEvent("Blog Place Marked", {
+      slug,
+      kind: "catch-up",
+      moved: true,
+      fromEpisode: hasMark ? undefined : lagging?.number,
+    });
+    clearEarlier();
+    markRange.current = resolveMark(r, described)?.range ?? range;
+    setMark(described);
+    setExact(true);
+    setRestored(false);
+    setResumeDismissed(true);
+    setStroke((s) => s + 1);
+    setAnnounce("Mark moved to the line you're reading.");
+  };
+
   const first = lines[0];
-  const showResume = introDone && restored && hasMark && below && !reached && !resumeDismissed && !hint;
-  const showHint = introDone && hint && !mark;
+  const showResume =
+    introDone && restored && hasMark && below && !reached && !resumeDismissed && !hint && !finished;
+  const showHint = introDone && hint && !mark && !finished;
+  const showCatchUp = introDone && catchUp && (hasMark || Boolean(lagging)) && !popOpen && !finished;
   const showLabel = hasMark && (label || hover) && !menu;
   const markName = exact ? "You stopped here" : "Around where you stopped";
 
@@ -404,6 +616,8 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
       <div ref={root} onPointerDown={onPointerDown} onClick={onClick} onMouseUp={onMouseUp}>
         {children}
       </div>
+      {/* The end of the post: reaching it with the mark behind clears the mark */}
+      <div ref={end} aria-hidden="true" className="h-px" />
 
       {/* SUB: Highlighter strokes, painted behind the text */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
@@ -461,7 +675,7 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
             animate={{ y: 0, opacity: 1, rotate: 0 }}
             transition={{ type: "spring", stiffness: 520, damping: 22, delay: 0.15 }}
           >
-            <Ribbon className="h-7 w-[0.95rem] transition-transform duration-300 ease-expo group-hover:-translate-y-0.5 md:h-8 md:w-4" />
+            <PlaceRibbon className="h-7 w-[0.95rem] transition-transform duration-300 ease-expo group-hover:-translate-y-0.5 md:h-8 md:w-4" />
           </motion.button>
 
           <AnimatePresence>
@@ -551,7 +765,7 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
       </AnimatePresence>
       </FloatingPortal>
 
-      {/* SUB: Bottom-left slot: the resume pill, or the one-time hint */}
+      {/* SUB: Bottom-left slot: resume, catch-up, the finished notice, or the one-time hint */}
       <FloatingPortal>
       <AnimatePresence>
         {showResume && mark && (
@@ -570,7 +784,7 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
                 className="group flex min-w-0 items-center gap-3 rounded-full py-1 pl-1 pr-3 text-left transition-colors hover:bg-foreground/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent/15 dark:bg-accent/20">
-                  <Ribbon className="h-5 w-3" />
+                  <PlaceRibbon className="h-5 w-3" />
                 </span>
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold leading-tight">Pick up where you left off</span>
@@ -582,6 +796,74 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
                 <ArrowDown className="size-4 shrink-0 text-foreground/50 transition-transform duration-300 ease-expo group-hover:translate-y-0.5 group-hover:text-foreground" />
               </button>
               <IconButton label="Dismiss" onClick={() => setResumeDismissed(true)} />
+            </div>
+          </motion.div>
+        )}
+
+        {showCatchUp && (
+          <motion.div
+            key="catch-up"
+            data-place-skip
+            className="fixed bottom-5 left-4 right-[5.5rem] z-[490] flex md:bottom-6 md:left-6 md:right-auto"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE_OUT } }}
+            exit={{ opacity: 0, y: 16, transition: { duration: 0.25 } }}
+          >
+            <div className="flex min-w-0 items-center gap-0.5 rounded-full border border-foreground/10 bg-popover p-1 text-popover-foreground shadow-[0_18px_40px_-18px_rgb(0_0_0/0.5)]">
+              <button
+                type="button"
+                onClick={moveHere}
+                className="group flex min-w-0 items-center gap-3 rounded-full py-1 pl-1 pr-3 text-left transition-colors hover:bg-foreground/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent/15 dark:bg-accent/20">
+                  <PlaceRibbon className="h-5 w-3" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold leading-tight">
+                    {hasMark || !lagging ? "You’re past your mark" : `Your mark is back in Episode ${lagging.number}`}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs leading-tight text-foreground/65">
+                    Move it to the line you&rsquo;re on
+                  </span>
+                </span>
+                <BookmarkPlus className="size-4 shrink-0 text-foreground/50 transition-colors group-hover:text-foreground" />
+              </button>
+              <IconButton label="Keep the mark where it is" onClick={() => setCatchUp(false)} />
+            </div>
+          </motion.div>
+        )}
+
+        {finished && (
+          <motion.div
+            key="finished"
+            data-place-skip
+            className="fixed bottom-5 left-4 right-[5.5rem] z-[490] flex md:bottom-6 md:left-6 md:right-auto"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_OUT } }}
+            exit={{ opacity: 0, y: 16, transition: { duration: 0.25 } }}
+          >
+            <div className="flex min-w-0 items-center gap-3 rounded-full border border-foreground/10 bg-popover p-1 pl-1.5 text-popover-foreground shadow-[0_18px_40px_-18px_rgb(0_0_0/0.5)]">
+              <motion.span
+                initial={reduce ? false : { scale: 0, rotate: -30 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 600, damping: 18, delay: 0.15 }}
+                className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-accent-on"
+              >
+                <Check className="size-4" strokeWidth={3} />
+              </motion.span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold leading-tight">Finished</span>
+                <span className="mt-0.5 block truncate text-xs leading-tight text-foreground/65">
+                  {clearedText(finished, slug)}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={undoFinished}
+                className="h-9 shrink-0 rounded-full px-3.5 text-sm font-semibold text-foreground/80 transition-colors hover:bg-foreground/[0.07] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                Undo
+              </button>
             </div>
           </motion.div>
         )}
@@ -637,17 +919,6 @@ export default function PlaceMarker({ slug, children }: { slug: string; children
 
 // HDR: PIECES
 
-// The bookmark ribbon: accent tape tucked under the page edge, notched tail
-function Ribbon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 32" aria-hidden="true" className={cn("overflow-visible drop-shadow-[0_3px_3px_rgb(0_0_0/0.28)]", className)}>
-      <path d="M1 0h14a1 1 0 0 1 1 1v30l-8-6.2L0 31V1a1 1 0 0 1 1-1Z" className="fill-accent" />
-      <path d="M0 0h16v4H0z" className="fill-foreground/20" />
-      <path d="M4 4v20.6" className="stroke-background/40" strokeWidth="1" />
-    </svg>
-  );
-}
-
 // The hint shows the feature instead of describing it: a line of text gets
 // the stroke, then the ribbon, then both fade and it starts again
 const DEMO = { duration: 4.2, repeat: Infinity, repeatDelay: 0.6, ease: "easeInOut" } as const;
@@ -661,7 +932,7 @@ function HintDemo({ reduce }: { reduce: boolean }) {
         animate={reduce ? undefined : { y: [-10, -10, 0, 0, 0], opacity: [0, 0, 1, 1, 0] }}
         transition={{ ...DEMO, times: [0, 0.34, 0.44, 0.88, 1] }}
       >
-        <Ribbon className="h-6 w-3" />
+        <PlaceRibbon className="h-6 w-3" />
       </motion.span>
       <span className="text-[0.95rem] leading-none text-foreground/80">
         &hellip;and we pick it up{" "}
@@ -703,6 +974,14 @@ function IconButton({ label, onClick, className }: { label: string; onClick: () 
 }
 
 // HDR: HELPERS
+function clearedText(cleared: Cleared[], slug: string) {
+  if (cleared.length > 1) return "Your place marks are cleared";
+  const [only] = cleared;
+  return only?.slug === slug || only?.number === undefined
+    ? "Your place mark is cleared"
+    : `Your old mark in Episode ${only.number} is cleared`;
+}
+
 function overlaps(range: Range, saved: Range | null) {
   if (!saved) return false;
   // range starts before saved ends, and ends after saved starts
@@ -714,28 +993,6 @@ function overlaps(range: Range, saved: Range | null) {
 
 function strokeTime(width: number) {
   return Math.min(0.6, Math.max(0.22, width / 900));
-}
-
-function clip(text: string, max: number) {
-  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
-}
-
-// A few words leading into the mark, so a one-word mark has context
-function snippetBefore(mark: PlaceMark) {
-  const words = mark.prefix.trim().split(/\s+/).filter(Boolean).slice(-4);
-  return words.length ? `…${words.join(" ")} ` : "";
-}
-
-const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-
-function timeAgo(at: number) {
-  const seconds = Math.round((at - Date.now()) / 1000);
-  const abs = Math.abs(seconds);
-  if (abs < 60) return "just now";
-  if (abs < 3600) return relative.format(Math.round(seconds / 60), "minute");
-  if (abs < 86_400) return relative.format(Math.round(seconds / 3600), "hour");
-  if (abs < 86_400 * 30) return relative.format(Math.round(seconds / 86_400), "day");
-  return new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 const coarseQuery = "(pointer: coarse)";

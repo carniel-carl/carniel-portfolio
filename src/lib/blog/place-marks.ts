@@ -20,7 +20,12 @@ export type PlaceMark = {
   suffix: string;
   offset: number;
   savedAt: number;
+  // How far into the post the mark sits, 0 to 1 (marks saved before this was added have none)
+  progress?: number;
 };
+
+// `/blog/<slug>?place` opens a post and scrolls to the reader's mark
+export const PLACE_PARAM = "place";
 
 type Store = Record<string, PlaceMark>;
 
@@ -70,6 +75,14 @@ export function saveMark(slug: string, mark: PlaceMark) {
   const slugs = Object.keys(next).sort((a, b) => (next[a]?.savedAt ?? 0) - (next[b]?.savedAt ?? 0));
   for (const old of slugs.slice(0, Math.max(0, slugs.length - MAX_MARKS))) delete next[old];
   writeAll(next);
+}
+
+/** Every saved mark, newest first */
+export function listMarks(): (PlaceMark & { slug: string })[] {
+  return Object.entries(readAll())
+    .filter((entry): entry is [string, PlaceMark] => isMark(entry[1]))
+    .map(([slug, mark]) => ({ ...mark, slug }))
+    .sort((a, b) => b.savedAt - a.savedAt);
 }
 
 export function clearMark(slug: string) {
@@ -294,6 +307,7 @@ export function describeRange(root: HTMLElement, range: Range): PlaceMark | null
     suffix: idx.text.slice(end, end + CONTEXT),
     offset: start,
     savedAt: Date.now(),
+    progress: idx.text.length ? start / idx.text.length : 0,
   };
 }
 
@@ -382,4 +396,27 @@ export function lineBoxes(root: HTMLElement, range: Range, origin: DOMRect): Lin
     }
   }
   return lines.sort((a, b) => a.top - b.top || a.left - b.left);
+}
+
+// HDR: LABELS
+export function clip(text: string, max: number) {
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+}
+
+// A few words leading into the mark, so a one-word mark has context
+export function snippetBefore(mark: PlaceMark) {
+  const words = mark.prefix.trim().split(/\s+/).filter(Boolean).slice(-4);
+  return words.length ? `…${words.join(" ")} ` : "";
+}
+
+const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+
+export function timeAgo(at: number) {
+  const seconds = Math.round((at - Date.now()) / 1000);
+  const abs = Math.abs(seconds);
+  if (abs < 60) return "just now";
+  if (abs < 3600) return relative.format(Math.round(seconds / 60), "minute");
+  if (abs < 86_400) return relative.format(Math.round(seconds / 3600), "hour");
+  if (abs < 86_400 * 30) return relative.format(Math.round(seconds / 86_400), "day");
+  return new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }

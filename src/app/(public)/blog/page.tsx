@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import BlogCard from "@/components/blog/BlogCard";
 import BlogSearch from "@/components/blog/BlogSearch";
+import ContinueReading from "@/components/blog/ContinueReading";
 import CategoryPills, { type CategoryPill } from "@/components/blog/CategoryPills";
 import { readingMinutes } from "@/lib/blog/article";
 import { getSeriesList, STANDALONE_POST } from "@/lib/blog/series";
@@ -234,6 +235,9 @@ export default async function BlogPage({
       unfiltered ? getMostRead() : Promise.resolve([]),
     ]);
 
+  // Just what "Continue reading" needs to place episodes in their series
+  const shelfSeries = allSeries.map(({ slug, title, episodeSlugs }) => ({ slug, title, episodeSlugs }));
+
   // Series sit on the first page when browsing (all posts or one category)
   const browsing = page === 1 && !tag && !search;
   const feedSeries = browsing
@@ -339,6 +343,11 @@ export default async function BlogPage({
               </>
             )}
           </>
+        )}
+
+        {/* Where this reader left off: place marks and unfinished series (this browser only) */}
+        {unfiltered && totalPublished > 0 && (
+          <ContinueReading series={shelfSeries} />
         )}
 
         {posts.length === 0 && feedSeries.length === 0 ? (

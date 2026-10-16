@@ -76,6 +76,34 @@ async function getViewCounts(ids: string[]) {
   return Object.fromEntries(rows.map((r) => [r.id, r.views ?? 0]));
 }
 
+// Same short life as the view counts; independent of the filter and search
+async function getMostRead() {
+  "use cache";
+  cacheTag(CACHE_TAGS.blog);
+  cacheLife("minutes");
+
+  const [top, sum] = await Promise.all([
+    prisma.blogPost.findMany({
+      // gt 0 also skips older posts with no views field
+      where: { published: true, views: { gt: 0 } },
+      orderBy: { views: "desc" },
+      take: 3,
+      select: {
+        id: true,
+        title: true,
+        views: true,
+        category: { select: { name: true, color: true } },
+      },
+    }),
+    prisma.blogPost.aggregate({ where: { published: true }, _sum: { views: true } }),
+  ]);
+
+  return {
+    posts: top.map((p) => ({ ...p, views: p.views ?? 0 })),
+    totalViews: sum._sum.views ?? 0,
+  };
+}
+
 export default async function BlogAdminPage({
   searchParams,
 }: {
@@ -86,12 +114,16 @@ export default async function BlogAdminPage({
   const query = params.q?.trim().slice(0, 100) ?? "";
 
   const { posts, page, total, counts } = await getPostsPage(filter, query, parsePage(params.page));
-  const views = await getViewCounts(posts.map((p) => p.id));
+  const [views, mostRead] = await Promise.all([
+    getViewCounts(posts.map((p) => p.id)),
+    getMostRead(),
+  ]);
 
   return (
     <BlogClient
       posts={posts}
       views={views}
+      mostRead={mostRead}
       counts={counts}
       filter={filter}
       query={query}

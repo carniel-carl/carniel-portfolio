@@ -15,9 +15,12 @@ export default function SeriesShelf({
   label,
   header,
   actions,
+  noun = "series",
   children,
 }: {
   label: string;
+  // What the arrow buttons page through ("More series")
+  noun?: string;
   header: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
@@ -65,10 +68,10 @@ export default function SeriesShelf({
         <div className="flex shrink-0 items-center gap-2">
           {scrollable && (
             <div className="hidden gap-2 md:flex">
-              <ShelfButton label="Previous series" controls={id} disabled={!edges.start} onClick={() => step(-1)}>
+              <ShelfButton label={`Previous ${noun}`} controls={id} disabled={!edges.start} onClick={() => step(-1)}>
                 <ChevronLeft className="size-4" />
               </ShelfButton>
-              <ShelfButton label="More series" controls={id} disabled={!edges.end} onClick={() => step(1)}>
+              <ShelfButton label={`More ${noun}`} controls={id} disabled={!edges.end} onClick={() => step(1)}>
                 <ChevronRight className="size-4" />
               </ShelfButton>
             </div>
