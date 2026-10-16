@@ -36,6 +36,8 @@ export async function getEpisodeParts(
     forKids: series.forKids,
     episodeNumber: current.number,
     episodeCount: episodes.length,
+    // For the place marker: marks in earlier episodes are behind the reader
+    episodes: episodes.map(({ slug, number }) => ({ slug, number })),
     kicker: (
       <Link
         href={routes.public.series(series.slug)}

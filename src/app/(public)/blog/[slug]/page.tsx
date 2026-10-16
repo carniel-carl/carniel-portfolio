@@ -228,6 +228,7 @@ export default async function BlogPostPage({
                 meta={<PostViews slug={post.slug} />}
                 kicker={episode?.kicker}
                 beforeBody={episode?.navigator}
+                episodes={episode?.episodes}
               />
 
               <aside aria-label="Advertisement" className="hidden xl:block">
@@ -245,6 +246,7 @@ export default async function BlogPostPage({
             meta={<PostViews slug={post.slug} />}
             kicker={episode?.kicker}
             beforeBody={episode?.navigator}
+            episodes={episode?.episodes}
           />
         )}
 

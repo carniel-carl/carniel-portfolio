@@ -1,5 +1,6 @@
 "use client";
 
+import BlogMostRead, { type MostReadPost } from "@/components/admin/BlogMostRead";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import EmptyState from "@/components/admin/ui/EmptyState";
@@ -66,6 +67,7 @@ const listUrl = (filter: BlogFilter, query: string, page = 1) => {
 export default function BlogClient({
   posts,
   views,
+  mostRead,
   counts,
   filter,
   query,
@@ -76,6 +78,8 @@ export default function BlogClient({
   posts: BlogPost[];
   /** View counts keyed by post id */
   views: Record<string, number>;
+  /** Top live posts by views, across every post */
+  mostRead: { posts: MostReadPost[]; totalViews: number };
   /** Totals across every post, ignoring the search */
   counts: { all: number; live: number };
   filter: BlogFilter;
@@ -129,7 +133,12 @@ export default function BlogClient({
         }
       />
 
-      {/* One panel: the first block after the header overlaps the band */}
+      {/* The first block after the header overlaps the band: the most read
+          strip when anything has been read, otherwise the list panel */}
+      {mostRead.posts.length > 0 && (
+        <BlogMostRead posts={mostRead.posts} totalViews={mostRead.totalViews} className="mb-4" />
+      )}
+
       <div className="surface overflow-hidden">
         <div className="flex flex-col gap-3 border-b p-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
           <SegmentedTabs

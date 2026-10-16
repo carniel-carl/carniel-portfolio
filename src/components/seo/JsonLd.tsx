@@ -42,6 +42,8 @@ export const PersonJsonLd = async () => {
             "@type": "WebSite",
             "@id": `${SITE_URL}/#website`,
             name: SITE_NAME,
+            // Backups Google can show as the site name in search results
+            alternateName: ["Carniel Studio", "carnielstudio.com"],
             url: SITE_URL,
             publisher: { "@id": `${SITE_URL}/#person` },
           },

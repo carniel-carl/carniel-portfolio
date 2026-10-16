@@ -44,6 +44,8 @@ interface BlogPostContentProps {
   kicker?: ReactNode;
   // Rendered above the table of contents (e.g. the series navigator)
   beforeBody?: ReactNode;
+  // The series' episodes when this post is one, in order
+  episodes?: { slug: string; number: number }[];
 }
 
 export default async function BlogPostContent({
@@ -54,6 +56,7 @@ export default async function BlogPostContent({
   meta,
   kicker,
   beforeBody,
+  episodes,
 }: BlogPostContentProps) {
   const clean = sanitizeRichText(post.content);
   const { html, toc } = withHeadingAnchors(clean);
@@ -157,7 +160,7 @@ export default async function BlogPostContent({
           {preview ? (
             <div className="tiptap-content">{renderRichText(html)}</div>
           ) : (
-            <PlaceMarker slug={post.slug}>
+            <PlaceMarker slug={post.slug} episodes={episodes}>
               <div className="tiptap-content">{renderRichText(html)}</div>
             </PlaceMarker>
           )}
