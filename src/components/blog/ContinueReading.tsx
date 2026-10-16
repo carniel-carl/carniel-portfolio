@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { X } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 import PlaceRibbon from "@/components/blog/PlaceRibbon";
 import SeriesShelf from "@/components/blog/series/SeriesShelf";
 import { trackEvent } from "@/lib/mixpanel";
@@ -28,7 +28,16 @@ type MarkedPost = {
 
 export type ShelfSeries = { slug: string; title: string; episodeSlugs: string[] };
 
-type InSeries = { slug: string; title: string; number: number; total: number; readCount: number };
+type InSeries = {
+  slug: string;
+  title: string;
+  number: number;
+  total: number;
+  readCount: number;
+  // Where series progress says to go next, which can differ from a mark
+  // (e.g. re-reading episode 1 after finishing episode 6)
+  resume: { slug: string; number: number } | null;
+};
 
 // A place mark (an exact spot), or the episode a started series continues with
 type Item =
@@ -57,22 +66,23 @@ export default function ContinueReading({ series = [] }: { series?: ShelfSeries[
     );
     const inSeries = (s: ShelfSeries, number: number): InSeries => {
       const p = progressFor(store[s.slug], s.episodeSlugs);
-      return { slug: s.slug, title: s.title, number, total: s.episodeSlugs.length, readCount: p.readCount };
+      const resume = p.resume ? { slug: p.resume, number: s.episodeSlugs.indexOf(p.resume) + 1 } : null;
+      return { slug: s.slug, title: s.title, number, total: s.episodeSlugs.length, readCount: p.readCount, resume };
     };
 
     const list: Item[] = [];
-    // Marks, newest first; in a series only the furthest one counts
-    const placed = new Map<string, number>();
+    // Marks, newest first; in a series the newest one is where the reader is
+    // (re-reading episode 1 after marking episode 7 means "I'm in episode 1
+    // now"). Older marks stay saved and come back once the newer one clears.
+    const placed = new Set<string>();
     for (const m of marks) {
       const ep = episodeOf.get(m.slug);
       if (!ep) {
         list.push({ kind: "mark", slug: m.slug, at: m.savedAt, mark: m });
         continue;
       }
-      if ((placed.get(ep.s.slug) ?? 0) >= ep.number) continue;
-      const i = list.findIndex((it) => it.series?.slug === ep.s.slug);
-      if (i !== -1) list.splice(i, 1);
-      placed.set(ep.s.slug, ep.number);
+      if (placed.has(ep.s.slug)) continue;
+      placed.add(ep.s.slug);
       list.push({ kind: "mark", slug: m.slug, at: m.savedAt, mark: m, series: inSeries(ep.s, ep.number) });
     }
     // Started series without a mark: the episode they continue with
@@ -164,6 +174,8 @@ function ShelfCard({ item, post, onRemove }: { item: Item; post: MarkedPost; onR
   const placeProgress = typeof mark?.progress === "number" ? Math.min(1, Math.max(0, mark.progress)) : null;
   const bar = mark ? placeProgress : series ? series.readCount / series.total : null;
   const left = placeProgress === null ? null : Math.max(1, Math.round(post.readingMinutes * (1 - placeProgress)));
+  // A mark behind where the reader has got to in the series: offer both
+  const ahead = mark && series?.resume && series.resume.number > series.number ? series.resume : null;
 
   return (
     <article className="group relative flex flex-col gap-3 rounded-[1.25rem] border border-foreground/10 bg-surface p-5 transition-colors hover:border-foreground/30 md:p-6">
@@ -247,6 +259,16 @@ function ShelfCard({ item, post, onRemove }: { item: Item; post: MarkedPost; onR
             )
           )}
         </p>
+        {ahead && (
+          <Link
+            href={routes.public.blogPost(ahead.slug)}
+            onClick={() => trackEvent("Blog Continue Reading Clicked", { slug: ahead.slug, kind: "next-unread" })}
+            className="group/next relative z-10 inline-flex items-center gap-1.5 self-start rounded-full text-sm font-medium text-foreground/75 underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            Next unread: Episode {ahead.number}
+            <ArrowRight className="size-3.5 transition-transform duration-300 group-hover/next:translate-x-0.5" />
+          </Link>
+        )}
       </div>
     </article>
   );
