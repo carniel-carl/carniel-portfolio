@@ -57,6 +57,11 @@ const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 const CATCH_UP_DELAY = 30_000;
 // How long "Undo" stays up after finishing a post clears the mark
 const UNDO_FOR = 10_000;
+// How long "Clear your mark?" waits after a quick trip to the end
+const ASK_FOR = 15_000;
+// Faster than this from the mark to the end is scrolling, not reading
+// (about twice a quick reading pace)
+const MAX_WPM = 600;
 
 type Draft = { id: number; mark: PlaceMark; kind: "word" | "passage"; keyboard: boolean };
 type Episode = { slug: string; number: number };
@@ -97,6 +102,8 @@ export default function PlaceMarker({
   const pending = useRef<number | undefined>(undefined);
   const closing = useRef<number | undefined>(undefined);
   const keyboardOpen = useRef(false);
+  // When reading time is counted from: opening the post, or marking it since
+  const readSince = useRef(0);
 
   // The saved mark
   const [mark, setMark] = useState<PlaceMark | null>(null);
@@ -122,7 +129,13 @@ export default function PlaceMarker({
   const [hint, setHint] = useState(false);
   const [announce, setAnnounce] = useState("");
   const [finished, setFinished] = useState<Cleared[] | null>(null);
+  // Marks behind a reader who got to the end too fast to have read it: asked, not cleared
+  const [askClear, setAskClear] = useState<Cleared[] | null>(null);
   const [catchUp, setCatchUp] = useState(false);
+
+  useEffect(() => {
+    readSince.current = Date.now();
+  }, [slug]);
 
   // HDR: GEOMETRY
   const measure = useCallback(() => {
@@ -242,6 +255,7 @@ export default function PlaceMarker({
     if (!draft || !draftRange.current) return;
     const fresh = { ...draft.mark, savedAt: Date.now() };
     saveMark(slug, fresh);
+    readSince.current = Date.now();
     clearEarlier();
     trackEvent("Blog Place Marked", { slug, kind: draft.kind, moved: Boolean(mark) });
     markRange.current = draftRange.current;
@@ -474,7 +488,23 @@ export default function PlaceMarker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [introDone, hasMark]);
 
-  // HDR: FINISHED (reaching the end clears the marks behind you, with Undo)
+  // HDR: FINISHED (reading to the end clears the marks behind you, with Undo)
+  const finish = (cleared: Cleared[], how: "read" | "asked") => {
+    cleared.forEach((c) => clearMark(c.slug));
+    trackEvent("Blog Place Finished", { slug, cleared: cleared.length, how });
+    if (cleared.some((c) => c.slug === slug)) {
+      markRange.current = null;
+      setMark(null);
+      setMenu(false);
+      setLabel(false);
+    }
+    setEarlier([]);
+    setCatchUp(false);
+    setAskClear(null);
+    setFinished(cleared);
+    setAnnounce(`${clearedText(cleared, slug)}.`);
+  };
+
   useEffect(() => {
     const el = end.current;
     if (!el || (!mark && !earlier.length)) return;
@@ -495,18 +525,24 @@ export default function PlaceMarker({
       const cleared: Cleared[] = [...own, ...earlier];
       if (!cleared.length) return;
       observer.disconnect();
-      cleared.forEach((c) => clearMark(c.slug));
-      trackEvent("Blog Place Finished", { slug, cleared: cleared.length });
-      if (own.length) {
-        markRange.current = null;
-        setMark(null);
-        setMenu(false);
-        setLabel(false);
+      // Reaching the end isn't proof of reading it: scrolling past a fresh
+      // mark to leave the page looks the same. With time to have read what's
+      // left it clears; faster than that, it asks instead.
+      const r = root.current;
+      if (!r) return;
+      const rest = document.createRange();
+      rest.selectNodeContents(r);
+      if (own.length && markRange.current) {
+        rest.setStart(markRange.current.endContainer, markRange.current.endOffset);
       }
-      setEarlier([]);
-      setCatchUp(false);
-      setFinished(cleared);
-      setAnnounce(`You finished this post, so ${clearedText(cleared, slug).toLowerCase()}.`);
+      const words = rest.toString().split(/\s+/).filter(Boolean).length;
+      if (Date.now() - readSince.current < (words / MAX_WPM) * 60_000) {
+        trackEvent("Blog Place Finish Asked", { slug, words });
+        setCatchUp(false);
+        setAskClear(cleared);
+        return;
+      }
+      finish(cleared, "read");
     }, {
       // The end counts once it's risen past the lower third of the screen,
       // so the last lines are read and the notice is where the eyes are
@@ -521,6 +557,12 @@ export default function PlaceMarker({
     const t = window.setTimeout(() => setFinished(null), UNDO_FOR);
     return () => window.clearTimeout(t);
   }, [finished]);
+
+  useEffect(() => {
+    if (!askClear) return;
+    const t = window.setTimeout(() => setAskClear(null), ASK_FOR);
+    return () => window.clearTimeout(t);
+  }, [askClear]);
 
   const undoFinished = () => {
     if (!finished) return;
@@ -587,6 +629,7 @@ export default function PlaceMarker({
     const described = range && describeRange(r, range);
     if (!range || !described) return;
     saveMark(slug, described);
+    readSince.current = Date.now();
     trackEvent("Blog Place Marked", {
       slug,
       kind: "catch-up",
@@ -605,9 +648,10 @@ export default function PlaceMarker({
 
   const first = lines[0];
   const showResume =
-    introDone && restored && hasMark && below && !reached && !resumeDismissed && !hint && !finished;
-  const showHint = introDone && hint && !mark && !finished;
-  const showCatchUp = introDone && catchUp && (hasMark || Boolean(lagging)) && !popOpen && !finished;
+    introDone && restored && hasMark && below && !reached && !resumeDismissed && !hint && !finished && !askClear;
+  const showHint = introDone && hint && !mark && !finished && !askClear;
+  const showCatchUp =
+    introDone && catchUp && (hasMark || Boolean(lagging)) && !popOpen && !finished && !askClear;
   const showLabel = hasMark && (label || hover) && !menu;
   const markName = exact ? "You stopped here" : "Around where you stopped";
 
@@ -833,6 +877,39 @@ export default function PlaceMarker({
           </motion.div>
         )}
 
+        {askClear && !finished && (
+          <motion.div
+            key="ask-clear"
+            data-place-skip
+            role="dialog"
+            aria-label="Clear your place mark?"
+            className="fixed bottom-5 left-4 right-[5.5rem] z-[490] flex md:bottom-6 md:left-6 md:right-auto"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_OUT } }}
+            exit={{ opacity: 0, y: 16, transition: { duration: 0.25 } }}
+          >
+            <div className="flex min-w-0 items-center gap-3 rounded-full border border-foreground/10 bg-popover p-1 pl-1.5 text-popover-foreground shadow-[0_18px_40px_-18px_rgb(0_0_0/0.5)]">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent/15 dark:bg-accent/20">
+                <PlaceRibbon className="h-5 w-3" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold leading-tight">You reached the end</span>
+                <span className="mt-0.5 block truncate text-xs leading-tight text-foreground/65">
+                  {clearQuestion(askClear, slug)}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => finish(askClear, "asked")}
+                className="h-9 shrink-0 rounded-full bg-accent px-3.5 text-sm font-semibold text-accent-on transition-[filter,transform] duration-200 hover:brightness-105 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-popover"
+              >
+                Clear
+              </button>
+              <IconButton label="Keep my mark" onClick={() => setAskClear(null)} />
+            </div>
+          </motion.div>
+        )}
+
         {finished && (
           <motion.div
             key="finished"
@@ -974,6 +1051,14 @@ function IconButton({ label, onClick, className }: { label: string; onClick: () 
 }
 
 // HDR: HELPERS
+function clearQuestion(marks: Cleared[], slug: string) {
+  if (marks.length > 1) return "Clear your place marks?";
+  const [only] = marks;
+  return only?.slug === slug || only?.number === undefined
+    ? "Clear your place mark?"
+    : `Clear your old mark in Episode ${only.number}?`;
+}
+
 function clearedText(cleared: Cleared[], slug: string) {
   if (cleared.length > 1) return "Your place marks are cleared";
   const [only] = cleared;
