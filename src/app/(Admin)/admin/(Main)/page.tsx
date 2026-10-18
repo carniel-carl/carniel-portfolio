@@ -11,11 +11,11 @@ import prisma from "@/lib/prisma";
 import routes from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import {
-  ArrowRight,
   EyeOff,
   FolderKanban,
   ListVideo,
   PenSquare,
+  Pencil,
   Plus,
   type LucideIcon,
 } from "lucide-react";
@@ -305,10 +305,13 @@ export default async function AdminDashboard() {
               {data.queue.map((post) => {
                 const next = post.id === nextDraft?.id;
                 return (
-                  <li key={post.id}>
+                  <li
+                    key={post.id}
+                    className="flex items-center gap-2 rounded-xl pr-3 transition-colors has-[a:hover]:bg-muted/60 md:pr-4"
+                  >
                     <Link
-                      href={routes.admin.blogEdit(post.id)}
-                      className="group flex items-center gap-3.5 rounded-xl px-3 py-3 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:px-4"
+                      href={routes.admin.blogPreview(post.id)}
+                      className="flex min-w-0 flex-1 items-center gap-3.5 rounded-xl py-3 pl-3 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:pl-4"
                     >
                       <span
                         aria-hidden
@@ -332,16 +335,20 @@ export default async function AdminDashboard() {
                       <span className="hidden sm:contents">
                         <StatusPill published={post.published} />
                       </span>
-                      <span
-                        className={cn(
-                          "grid size-9 shrink-0 place-items-center rounded-full transition-[transform,background-color,color] duration-300 ease-expo group-hover:translate-x-0.5",
-                          next
-                            ? "bg-accent text-accent-on"
-                            : "border text-muted-foreground group-hover:border-foreground/25 group-hover:text-foreground",
-                        )}
-                      >
-                        <ArrowRight className="size-4" />
-                        <span className="sr-only">{next ? "Continue writing" : "Edit"}</span>
+                    </Link>
+                    <Link
+                      href={routes.admin.blogEdit(post.id)}
+                      title={next ? "Continue writing" : "Edit"}
+                      className={cn(
+                        "grid size-9 shrink-0 place-items-center rounded-full transition-[transform,background-color,color,border-color] duration-300 ease-expo hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        next
+                          ? "bg-accent text-accent-on"
+                          : "border text-muted-foreground hover:border-foreground/25 hover:text-foreground",
+                      )}
+                    >
+                      <Pencil className="size-4" />
+                      <span className="sr-only">
+                        {next ? "Continue writing" : "Edit"} {post.title}
                       </span>
                     </Link>
                   </li>
@@ -368,7 +375,7 @@ export default async function AdminDashboard() {
               {data.mostRead.map((post, i) => (
                 <li key={post.id}>
                   <Link
-                    href={routes.admin.blogEdit(post.id)}
+                    href={routes.admin.blogPreview(post.id)}
                     className="flex gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:px-4"
                   >
                     <span className="tnum w-3 pt-px text-[13px] text-muted-foreground">{i + 1}</span>

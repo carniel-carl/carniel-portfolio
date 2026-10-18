@@ -553,7 +553,7 @@ function SortableEpisode({
 
       <div className="min-w-0 flex-1">
         <Link
-          href={routes.admin.blogEdit(episode.id)}
+          href={routes.admin.blogPreview(episode.id)}
           className="block truncate text-sm font-medium hover:underline"
         >
           {episode.title}
