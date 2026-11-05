@@ -58,6 +58,18 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Keep in step with isClosedToKids in lib/audience.ts
-  matcher: ["/admin/:path*", "/", "/portfolio", "/resume", "/work", "/work/:path*"],
+  matcher: [
+    "/admin/:path*",
+    // The proxy is a function invocation (billed as Fluid Active CPU) on every
+    // match, <Link> prefetches included. Only kids need turning away, so the
+    // pages kids mode closes match only when the audience cookie says "kid";
+    // everyone else gets the cached page from the CDN without a function.
+    // Must stay literal (read statically at build time): the cookie name is
+    // AUDIENCE_COOKIE and the paths mirror isClosedToKids in lib/audience.ts.
+    { source: "/", has: [{ type: "cookie", key: "audience", value: "kid" }] },
+    { source: "/portfolio", has: [{ type: "cookie", key: "audience", value: "kid" }] },
+    { source: "/resume", has: [{ type: "cookie", key: "audience", value: "kid" }] },
+    { source: "/work", has: [{ type: "cookie", key: "audience", value: "kid" }] },
+    { source: "/work/:path*", has: [{ type: "cookie", key: "audience", value: "kid" }] },
+  ],
 };
