@@ -2,6 +2,7 @@ import { cacheTag, cacheLife } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import ProjectsClient from "@/sections/ProjectsClient";
+import { projectSlug } from "@/lib/projects/slug";
 
 const Projects = async () => {
   "use cache: remote";
@@ -18,6 +19,7 @@ const Projects = async () => {
 
   // Map Prisma models to the ProjectDataType shape the client expects
   const mapProject = (p: (typeof featured)[number]) => ({
+    slug: projectSlug(p),
     name: p.name,
     tag: p.tag || undefined,
     description: p.description,

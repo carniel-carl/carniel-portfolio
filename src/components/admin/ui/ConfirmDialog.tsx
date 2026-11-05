@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { useTransition } from "react";
+import { useState } from "react";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -19,6 +19,8 @@ type ConfirmDialogProps = {
   title: string;
   description: React.ReactNode;
   confirmLabel?: string;
+  /** "default" for confirmations that are not destructive, like publishing */
+  confirmVariant?: "destructive" | "default";
   /** The dialog stays open (and shows progress) until this resolves */
   onConfirm: () => Promise<void> | void;
 };
@@ -34,9 +36,13 @@ export default function ConfirmDialog({
   title,
   description,
   confirmLabel = "Delete",
+  confirmVariant = "destructive",
   onConfirm,
 }: ConfirmDialogProps) {
-  const [pending, startTransition] = useTransition();
+  // Plain state, not a transition: inside an async transition React holds
+  // back router.refresh() until onConfirm returns, and onConfirm may be
+  // waiting on that refresh (see useActionToast)
+  const [pending, setPending] = useState(false);
 
   return (
     <AlertDialog
@@ -55,14 +61,17 @@ export default function ConfirmDialog({
             Cancel
           </AlertDialogCancel>
           <Button
-            variant="destructive"
+            variant={confirmVariant}
             disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
+            onClick={async () => {
+              setPending(true);
+              try {
                 await onConfirm();
                 onOpenChange(false);
-              })
-            }
+              } finally {
+                setPending(false);
+              }
+            }}
           >
             {pending && <Loader2 className="animate-spin" />}
             {confirmLabel}

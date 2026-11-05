@@ -1,6 +1,6 @@
 import { ProjectDataType } from "@/types/project";
 
-const featuredProjectData: ProjectDataType[] = [
+const featuredProjectData: Omit<ProjectDataType, "slug">[] = [
   {
     tag: "Blog",
     name: "Creator Economy IQ",

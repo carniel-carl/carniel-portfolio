@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "framer-motion";
+import {
+  motion,
+  useInView,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useLenis } from "lenis/react";
@@ -11,19 +17,39 @@ import SplitText from "@/components/motion/SplitText";
 import { NavLinks } from "@/data/navlinks";
 import routes from "@/lib/routes";
 import { trackEvent } from "@/lib/mixpanel";
+import { AvailabilityBadge } from "@/components/general/Availability";
+import type { ContactInfo } from "@/lib/availability";
 
 type SocialLink = { name: string; link: string };
 
-// Curtain footer: the fixed panel sits behind the page and is uncovered by a
-// clip-path window as the last section scrolls away.
-const Footer = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
+// Inset card footer: a teal card with a page-background margin all round,
+// growing to full size as it scrolls in. It stays in normal flow (never
+// position: fixed) and ends on the page background, so iOS 26 Safari, which
+// tints the area behind its bottom bar from fixed elements at that edge or
+// else the page background, keeps that area in the theme colour.
+const Footer = ({
+  socialLinks,
+  contact,
+}: {
+  socialLinks: SocialLink[];
+  contact: ContactInfo;
+}) => {
   const [year, setYear] = useState("");
   const pathname = usePathname();
   const lenis = useLenis();
   const onPortfolio = pathname === routes.public.portfolio;
-  // The fixed panel is always "in view" to an observer, so watch the window
   const windowRef = useRef<HTMLDivElement>(null);
   const revealed = useInView(windowRef, { once: true, amount: 0.5 });
+  const reduce = useReducedMotion();
+
+  // Grows from slightly inset to full size over its last stretch of scroll,
+  // anchored at the bottom: the arrival the old curtain reveal gave, without
+  // pinning anything to the viewport edge
+  const { scrollYProgress } = useScroll({
+    target: windowRef,
+    offset: ["start end", "end end"],
+  });
+  const scale = useTransform(scrollYProgress, [0, 1], [0.92, 1]);
 
   useEffect(() => {
     setYear(new Date().getFullYear().toString());
@@ -38,56 +64,59 @@ const Footer = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
     "grid size-36 place-items-center rounded-full bg-accent-on text-center text-base font-medium text-accent transition-transform duration-500 ease-expo hover:scale-105 active:scale-95 md:size-44 md:text-lg";
 
   return (
-    <div
-      ref={windowRef}
-      className="relative h-[min(92dvh,44rem)]"
-      style={{ clipPath: "polygon(0% 0, 100% 0%, 100% 100%, 0 100%)" }}
-    >
-      <footer className="fixed bottom-0 left-0 h-[min(92dvh,44rem)] w-full bg-accent text-accent-on">
-        <div className="mx-auto flex h-full max-w-[1400px] flex-col justify-between px-4 pb-6 pt-16 md:px-8 md:pt-20">
+    // The page-background margin: this is what sits at the bottom edge
+    <div ref={windowRef} className="bg-background p-3 md:p-4">
+      <motion.footer
+        style={reduce ? undefined : { scale }}
+        className="min-h-[min(88dvh,42rem)] origin-bottom overflow-hidden rounded-[1.25rem] bg-accent text-accent-on"
+      >
+        <div className="mx-auto flex min-h-[min(88dvh,42rem)] max-w-[1400px] flex-col justify-between gap-16 px-5 pb-6 pt-14 md:px-8 md:pt-20">
           <div className="flex flex-col items-start justify-between gap-10 md:flex-row md:items-end">
             <SplitText
               as="h2"
               text={onPortfolio ? "Thanks for stopping by" : "Have an idea? Let's build it"}
               play={revealed}
-              className="max-w-[12ch] font-display text-[clamp(3rem,8.5vw,8rem)] font-semibold leading-[0.9] tracking-[-0.04em] [font-stretch:75%]"
+              className="max-w-[12ch] font-display text-[clamp(3rem,8.5vw,8rem)] font-semibold leading-[0.9] tracking-[-0.04em]"
             />
 
-            <Magnetic strength={0.4}>
-              {onPortfolio ? (
-                <button type="button" onClick={toTop} className={circle}>
-                  <span className="flex flex-col items-center gap-2">
-                    <ArrowUp className="size-5" />
-                    Back to top
-                  </span>
-                </button>
-              ) : (
-                <Link
-                  href={`${routes.public.portfolio}#contact`}
-                  className={circle}
-                  onClick={() =>
-                    trackEvent("Footer CTA Clicked", { cta: "get_in_touch", source_page: pathname })
-                  }
-                >
-                  <span className="flex flex-col items-center gap-2">
-                    <ArrowUpRight className="size-5" />
-                    Get in touch
-                  </span>
-                </Link>
-              )}
-            </Magnetic>
+            {/* Leads to contact on the portfolio page: closed in kids mode */}
+            <div data-adult-only>
+              <Magnetic strength={0.4}>
+                {onPortfolio ? (
+                  <button type="button" onClick={toTop} className={circle}>
+                    <span className="flex flex-col items-center gap-2">
+                      <ArrowUp className="size-5" />
+                      Back to top
+                    </span>
+                  </button>
+                ) : (
+                  <Link
+                    href={`${routes.public.portfolio}#contact`}
+                    className={circle}
+                    onClick={() =>
+                      trackEvent("Footer CTA Clicked", { cta: "get_in_touch", source_page: pathname })
+                    }
+                  >
+                    <span className="flex flex-col items-center gap-2">
+                      <ArrowUpRight className="size-5" />
+                      Get in touch
+                    </span>
+                  </Link>
+                )}
+              </Magnetic>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-y-8 border-t border-accent-on/20 pt-8 md:grid-cols-12">
             <nav aria-label="Footer" className="md:col-span-3">
               <ul className="flex flex-col gap-1.5">
-                <li>
+                <li data-adult-only>
                   <Link href={routes.public.home} className="hover:underline underline-offset-4">
                     Home
                   </Link>
                 </li>
                 {NavLinks.map((item) => (
-                  <li key={item.name}>
+                  <li key={item.name} data-adult-only={item.adultOnly || undefined}>
                     <Link href={item.link} className="hover:underline underline-offset-4">
                       {item.name}
                     </Link>
@@ -97,7 +126,7 @@ const Footer = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
             </nav>
 
             {socialLinks.length > 0 && (
-              <ul className="flex flex-col gap-1.5 md:col-span-3">
+              <ul data-adult-only className="flex flex-col gap-1.5 md:col-span-3">
                 {socialLinks.map((item) => (
                   <li key={item.name}>
                     <a
@@ -120,12 +149,26 @@ const Footer = ({ socialLinks }: { socialLinks: SocialLink[] }) => {
               </ul>
             )}
 
-            <p className="col-span-2 self-end text-sm text-accent-on/75 md:col-span-6 md:text-right">
-              &copy; {year} Nmugha Chimezie (Carniel). All rights reserved.
-            </p>
+            <div className="col-span-2 flex flex-col gap-1 self-end text-sm text-accent-on/75 md:col-span-6 md:items-end">
+              {contact.availability && (
+                <div data-adult-only>
+                  <AvailabilityBadge info={contact} surface="accent" className="mb-5" />
+                </div>
+              )}
+              <div className="flex gap-4">
+                <Link href={routes.public.privacy} className="hover:underline underline-offset-4">
+                  Privacy Policy
+                </Link>
+                {/* Plain <a>: the feed is XML, not a page to navigate to */}
+                <a href="/feed.xml" className="hover:underline underline-offset-4">
+                  RSS
+                </a>
+              </div>
+              <p>&copy; {year} Nmugha Chimezie (Carniel). All rights reserved.</p>
+            </div>
           </div>
         </div>
-      </footer>
+      </motion.footer>
     </div>
   );
 };

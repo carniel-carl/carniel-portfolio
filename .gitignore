@@ -40,4 +40,7 @@ next-env.d.ts
 
 .claude
 .mcp.json
+/blog-drafts
+.impeccable
 
+.env*

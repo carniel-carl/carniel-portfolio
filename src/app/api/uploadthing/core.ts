@@ -17,6 +17,21 @@ export const ourFileRouter = {
       return { url: file.ufsUrl };
     }),
 
+  // Screenshots arrive already downscaled to WebP by the admin (lib/media/compress)
+  screenshotUploader: f({
+    image: { maxFileSize: "2MB", maxFileCount: 6 },
+  })
+    .middleware(async () => {
+      const session = await auth();
+      if (!session) throw new UploadThingError("Unauthorized");
+      return { userId: session.user?.id };
+    })
+    .onUploadComplete(async ({ file }) => {
+      return { url: file.ufsUrl };
+    }),
+
+  // Videos are re-encoded in the browser first (~720-1280px H.264, no audio),
+  // so a minute of screen recording lands well under this ceiling
   videoUploader: f({
     video: { maxFileSize: "16MB", maxFileCount: 1 },
   })

@@ -23,8 +23,9 @@ const rise: Variants = {
   }),
 };
 
-// One letter. Near the pointer it condenses along the variable font's width
-// axis and flushes to the accent color. Influence is computed from the
+// One letter. At rest it's brush-lettered (Recursive's Casual axis, slanted);
+// near the pointer it straightens into code (Mono axis on, upright) and flushes
+// to the accent color: the artist-to-engineer turn, one letter at a time. Influence is computed from the
 // letter's REST center (cached before any morph), so a letter changing width
 // can never feed back into its own hover state: no flicker between letters.
 const Letter = ({
@@ -52,11 +53,13 @@ const Letter = ({
   });
   const smooth = useSpring(influence, { stiffness: 170, damping: 24, mass: 0.6 });
 
-  const wdth = useTransform(smooth, [0, 1], [100, 75]);
-  const wght = useTransform(smooth, [0, 1], [700, 800]);
+  const casl = useTransform(smooth, [0, 1], [1, 0]);
+  const mono = useTransform(smooth, [0, 1], [0, 1]);
+  const slnt = useTransform(smooth, [0, 1], [-10, 0]);
+  const wght = useTransform(smooth, [0, 1], [900, 700]);
   const mix = useTransform(smooth, [0, 1], [0, 100]);
-  const fontVariationSettings = useMotionTemplate`"wdth" ${wdth}, "wght" ${wght}`;
-  const color = useMotionTemplate`color-mix(in srgb, var(--clr) ${mix}%, hsl(var(--foreground)))`;
+  const fontVariationSettings = useMotionTemplate`"CASL" ${casl}, "MONO" ${mono}, "slnt" ${slnt}, "wght" ${wght}, "CRSV" 1`;
+  const color = useMotionTemplate`color-mix(in srgb, var(--clr) ${mix}%, var(--name-ink, hsl(var(--foreground))))`;
 
   return (
     <motion.span
@@ -74,22 +77,41 @@ const Letter = ({
   );
 };
 
+export type NamePointer = {
+  x: MotionValue<number>;
+  presence: MotionValue<number>;
+  centers: React.RefObject<{ x: number; w: number }[]>;
+};
+
+// Pointer state behind the hover morph. Hand one instance to several
+// KineticNames (e.g. a masked copy) to keep them morphing in lockstep.
+export const useNamePointer = (): NamePointer => {
+  const x = useMotionValue(-9999);
+  const presence = useSpring(0, { stiffness: 120, damping: 20 });
+  const centers = useRef<{ x: number; w: number }[]>([]);
+  return { x, presence, centers };
+};
+
 const KineticName = ({
   name,
   state,
   style,
   className,
+  pointer,
+  decorative = false,
 }: {
   name: string;
   state: "hidden" | "visible";
   style?: { y: MotionValue<string> };
   className?: string;
+  pointer?: NamePointer;
+  // Visual-only copy: not a heading, hidden from assistive tech, no handlers
+  decorative?: boolean;
 }) => {
   const reduce = useReducedMotion() ?? false;
   const ref = useRef<HTMLHeadingElement>(null);
-  const centers = useRef<{ x: number; w: number }[]>([]);
-  const pointerX = useMotionValue(-9999);
-  const presence = useSpring(0, { stiffness: 120, damping: 20 });
+  const own = useNamePointer();
+  const { x: pointerX, presence, centers } = pointer ?? own;
 
   // Snapshot letter positions while the word is at rest
   const measure = () => {
@@ -122,6 +144,31 @@ const KineticName = ({
     presence.set(1);
   };
 
+  const letters = name.split("").map((ch, i) => (
+    <Letter
+      key={ch + i}
+      ch={ch}
+      index={i}
+      pointerX={pointerX}
+      presence={presence}
+      centers={centers}
+      state={state}
+      reduce={reduce}
+    />
+  ));
+
+  if (decorative) {
+    return (
+      <motion.div
+        aria-hidden="true"
+        style={reduce ? undefined : style}
+        className={cn("flex overflow-hidden", className)}
+      >
+        {letters}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.h1
       ref={ref}
@@ -132,18 +179,7 @@ const KineticName = ({
       onPointerLeave={() => presence.set(0)}
       className={cn("flex overflow-hidden", className)}
     >
-      {name.split("").map((ch, i) => (
-        <Letter
-          key={ch + i}
-          ch={ch}
-          index={i}
-          pointerX={pointerX}
-          presence={presence}
-          centers={centers}
-          state={state}
-          reduce={reduce}
-        />
-      ))}
+      {letters}
     </motion.h1>
   );
 };

@@ -128,6 +128,40 @@
   }
 }
 
+/* HDR: TYPE ROLES
+   One family, Recursive, mapped onto the three roles the components already
+   use. Its axes do the work a second and third family used to:
+   display  - Casual (brush-lettered), slanted, cursive forms
+   sans     - Linear, upright: comfortable reading text
+   mono     - Mono axis on: labels, numbers, code */
+body {
+  --font-display: var(--font-recursive);
+  --font-sans: var(--font-recursive);
+  --font-mono: var(--font-recursive);
+  font-variation-settings: "CASL" 0, "MONO" 0, "slnt" 0, "CRSV" 0.5;
+}
+@layer utilities {
+  .font-display {
+    font-variation-settings: "CASL" 0.55, "MONO" 0, "slnt" -5, "CRSV" 1;
+  }
+  /* Half-casual reads as brush only with enough body behind it */
+  .font-display.font-semibold {
+    font-weight: 760;
+  }
+  .font-sans {
+    font-variation-settings: "CASL" 0, "MONO" 0, "slnt" 0, "CRSV" 0.5;
+  }
+  .font-mono {
+    font-variation-settings: "CASL" 0, "MONO" 1, "slnt" 0, "CRSV" 0;
+  }
+}
+code,
+kbd,
+samp,
+pre {
+  font-variation-settings: "CASL" 0, "MONO" 1, "slnt" 0, "CRSV" 0;
+}
+
 /* HDR: BASE */
 @layer base {
   * {
@@ -136,9 +170,18 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 2rem;
+    /* Mobile Safari tints its bars from the root background when there's no
+       theme-color (before hydration, and on versions that ignore the tag) */
+    background-color: hsl(var(--background));
   }
   body {
     @apply bg-background text-foreground overflow-x-hidden;
+  }
+  /* Radix locks scroll with overflow:hidden on <body>, which only reaches the
+     viewport through overflow propagation. Lock <html> directly so the page
+     behind any open modal (blog search, admin command menu) can't scroll. */
+  html:has(> body[data-scroll-locked]) {
+    overflow: hidden;
   }
 }
 
@@ -153,11 +196,25 @@
 }
 
 /*
+  BROWSER-BAR COLOUR (iOS 26+ Safari)
+  Safari 26 ignores <meta name="theme-color">. It tints the status bar and
+  the area behind its bottom bar from the html/body background, unless a
+  position: fixed/sticky element sits at that edge (within ~4px of the top or
+  ~3px of the bottom, 80%+ wide, 3px+ tall): then it uses that element's own
+  background-color / backdrop-filter / border colour, and only re-reads it
+  when the element is added, removed or moved, not when it's recoloured.
+  So full-width fixed bars here keep their own box transparent and paint on
+  an absolute child (header, reading progress), and the footer is an inset
+  card in normal flow that ends on the page background.
+*/
+
+/*
   Z-INDEX SCALE (public site)
   40  floating section nav
   100 site header + menu
   500 floating music player (501 for its panel + hint)
   110 intro preloader
+  2001 skip link (only visible while focused)
   120 grain overlay (pointer-events: none)
 */
 .grain {
@@ -174,6 +231,219 @@
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+}
+
+/* HDR: BLOG VIEW TRANSITIONS (lib/blog/view-transitions.ts)
+   Root stays static (rule above); the page, cover and title get their own groups. */
+
+/* Keep fixed chrome above the animating page. Skipped during a theme switch
+   so the circle reveal still covers the whole screen. */
+html:active-view-transition:not([data-theme-switching]) .vt-chrome-header {
+  view-transition-name: vt-chrome-header;
+}
+html:active-view-transition:not([data-theme-switching]) .vt-chrome-player {
+  view-transition-name: vt-chrome-player;
+}
+::view-transition-group(vt-chrome-header),
+::view-transition-group(vt-chrome-player) {
+  animation: none;
+}
+
+/* Card cover -> post hero */
+::view-transition-group(.vt-morph) {
+  animation-duration: 550ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+::view-transition-old(.vt-morph),
+::view-transition-new(.vt-morph) {
+  /* Crop instead of stretch while the aspect ratio changes */
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Card title -> post heading: slide into place and cross-fade, never squash */
+::view-transition-group(.vt-morph-text) {
+  animation-duration: 550ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+::view-transition-old(.vt-morph-text),
+::view-transition-new(.vt-morph-text) {
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+}
+
+/* Rest of the page slides in the direction of travel */
+::view-transition-old(.vt-page-forward) {
+  animation: 180ms ease-in both vt-fade-out, 400ms cubic-bezier(0.16, 1, 0.3, 1) both vt-to-left;
+}
+::view-transition-new(.vt-page-forward) {
+  animation: 320ms ease-out 120ms both vt-fade-in, 500ms cubic-bezier(0.16, 1, 0.3, 1) both vt-from-right;
+}
+::view-transition-old(.vt-page-back) {
+  animation: 180ms ease-in both vt-fade-out, 400ms cubic-bezier(0.16, 1, 0.3, 1) both vt-to-right;
+}
+::view-transition-new(.vt-page-back) {
+  animation: 320ms ease-out 120ms both vt-fade-in, 500ms cubic-bezier(0.16, 1, 0.3, 1) both vt-from-left;
+}
+::view-transition-old(.vt-page-fade) {
+  animation: 180ms ease-in both vt-fade-out;
+}
+::view-transition-new(.vt-page-fade) {
+  animation: 320ms ease-out 80ms both vt-fade-in;
+}
+
+@keyframes vt-fade-in { from { opacity: 0; } }
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-from-right { from { transform: translateX(48px); } }
+@keyframes vt-from-left { from { transform: translateX(-48px); } }
+@keyframes vt-to-left { to { transform: translateX(-48px); } }
+@keyframes vt-to-right { to { transform: translateX(48px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* HDR: ROUTE LOADER (app/(public)/loading.tsx) */
+.route-loader {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: calc(100dvh - 3.5rem);
+  overflow: hidden;
+  /* Wait a beat so fast navigations never flash the loader */
+  opacity: 0;
+  animation: route-loader-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+.route-loader::before {
+  /* Faint dot grid that fades out toward the edges */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(hsl(var(--foreground) / 0.12) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at center, black 10%, transparent 65%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 10%, transparent 65%);
+}
+.route-loader__mark {
+  position: absolute;
+  width: min(34rem, 80vw);
+  aspect-ratio: 1;
+  color: var(--clr);
+  opacity: 0.07;
+  animation: route-loader-spin 24s linear infinite;
+}
+.route-loader__name {
+  display: flex;
+  align-items: baseline;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(3.5rem, 13vw, 9rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: hsl(var(--foreground));
+}
+.route-loader__name > span {
+  display: inline-block;
+  font-variation-settings: "wght" 900, "CASL" 1, "MONO" 0, "slnt" -10;
+  animation: route-loader-breathe 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+}
+.route-loader__name > .route-loader__dot {
+  color: var(--clr);
+  animation: route-loader-pulse 0.9s ease-in-out infinite alternate;
+}
+.route-loader__track {
+  position: relative;
+  margin-top: 2rem;
+  width: min(15rem, 60vw);
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: hsl(var(--foreground) / 0.1);
+}
+.route-loader__track > div {
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: var(--clr);
+  box-shadow: 0 0 12px var(--clr);
+  animation: route-loader-sweep 1.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.route-loader__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  color: hsl(var(--muted-foreground));
+}
+.route-loader__ticker {
+  display: block;
+  height: 1.25rem;
+  overflow: hidden;
+}
+.route-loader__ticker > span {
+  display: flex;
+  flex-direction: column;
+  animation: route-loader-ticker 6.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.route-loader__ticker > span > span {
+  height: 1.25rem;
+  line-height: 1.25rem;
+}
+.route-loader__caret {
+  width: 0.5em;
+  height: 1em;
+  background: var(--clr);
+  animation: route-loader-blink 1s steps(1) infinite;
+}
+
+@keyframes route-loader-in {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes route-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes route-loader-breathe {
+  to {
+    font-variation-settings: "wght" 500, "CASL" 0, "MONO" 1, "slnt" 0;
+    transform: translateY(-0.06em);
+  }
+}
+@keyframes route-loader-pulse {
+  to {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+}
+@keyframes route-loader-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+@keyframes route-loader-ticker {
+  0%, 20% { transform: translateY(0); }
+  25%, 45% { transform: translateY(-1.25rem); }
+  50%, 70% { transform: translateY(-2.5rem); }
+  75%, 95% { transform: translateY(-3.75rem); }
+  100% { transform: translateY(-5rem); }
+}
+@keyframes route-loader-blink {
+  50% {
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -245,30 +515,70 @@
   }
 }
 
-/* HDR: TIPTAP CONTENT STYLES */
+/* HDR: TIPTAP CONTENT STYLES (rendered posts + admin preview) */
+/* Reading typography: ~68ch measure, 1.125rem body, display-font headings */
+.tiptap-content {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: hsl(var(--foreground) / 0.86);
+}
+@media (min-width: 768px) {
+  .tiptap-content {
+    font-size: 1.125rem;
+  }
+}
+.tiptap-content > :first-child {
+  margin-top: 0;
+}
+.tiptap-content :is(h1, h2, h3, h4) {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  scroll-margin-top: 6rem;
+}
 .tiptap-content h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 1.5rem 0 0.75rem;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  line-height: 1.1;
+  margin: 3.5rem 0 1rem;
 }
 .tiptap-content h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 1.25rem 0 0.5rem;
+  font-size: clamp(1.65rem, 3vw, 2.15rem);
+  line-height: 1.15;
+  margin: 3.25rem 0 1rem;
 }
 .tiptap-content h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 1rem 0 0.5rem;
+  font-size: clamp(1.3rem, 2.2vw, 1.55rem);
+  line-height: 1.25;
+  margin: 2.5rem 0 0.75rem;
+}
+.tiptap-content h4 {
+  font-size: 1.15rem;
+  margin: 2rem 0 0.5rem;
 }
 .tiptap-content p {
-  margin: 0.75rem 0;
-  line-height: 1.7;
+  margin: 1.35rem 0;
+}
+.tiptap-content strong {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+.tiptap-content a {
+  color: hsl(var(--foreground));
+  text-decoration: underline;
+  text-decoration-color: var(--clr);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s, color 0.2s;
+}
+.tiptap-content a:hover {
+  color: hsl(var(--accent-ink));
 }
 .tiptap-content ul,
 .tiptap-content ol {
   padding-left: 1.5rem;
-  margin: 0.75rem 0;
+  margin: 1.35rem 0;
 }
 .tiptap-content ul {
   list-style: disc;
@@ -277,45 +587,109 @@
   list-style: decimal;
 }
 .tiptap-content li {
-  margin: 0.25rem 0;
+  margin: 0.5rem 0;
+  padding-left: 0.25rem;
+}
+.tiptap-content li::marker {
+  color: var(--clr);
+  font-weight: 600;
 }
 .tiptap-content blockquote {
-  border-left: 3px solid hsl(var(--accent));
-  padding-left: 1rem;
-  margin: 1rem 0;
-  font-style: italic;
-  color: hsl(var(--muted-foreground));
+  position: relative;
+  margin: 2.5rem 0;
+  padding: 0.25rem 0 0.25rem 1.5rem;
+  border-left: 3px solid var(--clr);
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.3em;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: hsl(var(--foreground));
+}
+.tiptap-content blockquote p {
+  margin: 0.5rem 0;
+}
+.tiptap-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 2.5rem auto;
+  border-radius: 1rem;
+}
+.tiptap-content iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  margin: 2.5rem 0;
+  border: 0;
+  border-radius: 1rem;
+}
+.tiptap-content hr {
+  border: 0;
+  height: auto;
+  margin: 3.5rem 0;
+  text-align: center;
+  overflow: visible;
+}
+/* Three accent dots instead of a hairline */
+.tiptap-content hr::after {
+  content: "\2022\00a0\00a0\2022\00a0\00a0\2022";
+  color: var(--clr);
+  font-size: 1.1rem;
+  letter-spacing: 0.3em;
+}
+.tiptap-content table {
+  width: 100%;
+  margin: 2.5rem 0;
+  border-collapse: collapse;
+  font-size: 0.95em;
+  display: block;
+  overflow-x: auto;
+}
+.tiptap-content th,
+.tiptap-content td {
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid hsl(var(--foreground) / 0.1);
+}
+.tiptap-content th {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--foreground) / 0.25);
 }
 .tiptap-content pre {
   background: var(--code-bg);
   color: var(--code-text);
   border: 1px solid var(--code-border);
-  border-radius: 0.5rem;
-  padding: 1rem;
+  border-radius: 1rem;
+  padding: 1.1rem 1.25rem;
   overflow-x: auto;
-  margin: 1rem 0;
+  margin: 2rem 0;
 }
 .tiptap-content code {
-  background: hsl(var(--muted));
-  padding: 0.15rem 0.3rem;
-  border-radius: 0.25rem;
-  font-size: 0.9em;
+  background: hsl(var(--foreground) / 0.07);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.375rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.86em;
 }
 .tiptap-content pre code {
   background: none;
   padding: 0;
   color: inherit;
-  font-family: "JetBrains Mono NL", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: "JetBrains Mono NL", var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.875rem;
-  line-height: 1.65;
+  line-height: 1.7;
 }
-
 .tiptap-content .code-block {
-  margin: 1rem 0;
+  margin: 2rem 0;
 }
 .tiptap-content .code-block pre {
   margin: 0;
-  padding-right: 3rem;
+  padding-top: 2.6rem;
+}
+.tiptap-content .code-block-lang {
+  color: var(--code-comment);
 }
 .tiptap-content .code-block-copy {
   background: var(--code-bg);
@@ -324,6 +698,33 @@
 }
 .tiptap-content .code-block-copy:hover {
   color: var(--code-text);
+}
+
+/* HDR: PLACE MARKS (components/blog/PlaceMarker)
+   A highlighter stroke behind the words a reader marked: more ink where the
+   nib lands and lifts, chisel-cut ends, a hair off level like a real swipe.
+   The draft is the pencil version: a faint wash and an underline. */
+.place-stroke {
+  --ink: color-mix(in oklab, var(--clr) 40%, transparent);
+  --ink-heavy: color-mix(in oklab, var(--clr) 58%, transparent);
+  background: linear-gradient(
+    90deg,
+    var(--ink-heavy),
+    var(--ink) 0.55em,
+    var(--ink) calc(100% - 0.55em),
+    var(--ink-heavy)
+  );
+  border-radius: 0.2em 0.45em 0.25em 0.5em / 0.5em 0.25em 0.45em 0.2em;
+  transform: rotate(-0.4deg);
+}
+.dark .place-stroke {
+  --ink: color-mix(in oklab, var(--clr) 44%, transparent);
+  --ink-heavy: color-mix(in oklab, var(--clr) 62%, transparent);
+}
+.place-stroke-draft {
+  background: color-mix(in oklab, var(--clr) 14%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in oklab, var(--clr) 75%, transparent);
+  border-radius: 0.2em;
 }
 
 /* HDR: CODE SYNTAX HIGHLIGHTING (editor + rendered posts) */
@@ -451,19 +852,6 @@
 :is(.tiptap.ProseMirror, .tiptap-content) pre .hljs-strong {
   font-weight: 600;
 }
-.tiptap-content a {
-  color: hsl(var(--accent));
-  text-decoration: underline;
-}
-.tiptap-content img {
-  max-width: 100%;
-  border-radius: 0.5rem;
-  margin: 1rem 0;
-}
-.tiptap-content hr {
-  border-color: hsl(var(--border));
-  margin: 2rem 0;
-}
 
 /* Tiptap editor placeholder */
 .tiptap p.is-editor-empty:first-child::before {
@@ -506,4 +894,105 @@
     width: 20px;
     right: -100px;
   }
+}
+
+/* HDR: KIDS MODE
+   <html data-audience> is set before first paint (lib/audience.ts), so these
+   hide adult-only links with no flash, before React hydrates. The proxy turns
+   kids away from the portfolio pages themselves. */
+html[data-audience="kid"] [data-adult-only],
+html:not([data-audience="kid"]) [data-kid-only],
+html[data-audience] [data-audience-prompt] {
+  display: none !important;
+}
+/* Kids series first in the series list */
+html[data-audience="kid"] [data-for-kids] {
+  order: -1;
+}
+
+/* A small playground palette, only for the kids prompt and badges. Fills sit
+   under foreground-colored strokes and text, so contrast rides on the
+   foreground, not on these */
+@layer base {
+  :root {
+    --kid-sun: 42 95% 56%;
+    --kid-sky: 199 88% 62%;
+    --kid-coral: 8 88% 68%;
+    --kid-leaf: 145 55% 50%;
+    --kid-grape: 262 72% 72%;
+  }
+  .dark {
+    --kid-sun: 42 88% 54%;
+    --kid-sky: 199 78% 56%;
+    --kid-coral: 8 78% 64%;
+    --kid-leaf: 145 48% 46%;
+    --kid-grape: 262 60% 68%;
+  }
+}
+
+@layer utilities {
+  /* Recursive at full Casual: the brush-lettered end of the site's own face */
+  .font-playful {
+    font-variation-settings: "CASL" 1, "MONO" 0, "slnt" -6, "CRSV" 1;
+    font-weight: 800;
+  }
+}
+
+@keyframes kid-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+}
+@keyframes kid-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes kid-float {
+  50% {
+    transform: translateY(-9px) rotate(var(--kid-tilt, 8deg));
+  }
+}
+@keyframes kid-bob {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes kid-shake {
+  20%, 60% {
+    transform: translateX(-7px);
+  }
+  40%, 80% {
+    transform: translateX(7px);
+  }
+}
+
+/* HDR: SERIES SHELF (components/blog/series/SeriesShelf)
+   No scrollbar: the peeking card, the edge fades and the arrows carry it.
+   Each edge fades only while there's more to scroll on that side. */
+.shelf-row {
+  scrollbar-width: none;
+  --fade-start: 0px;
+  --fade-end: 0px;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+}
+.shelf-row::-webkit-scrollbar {
+  display: none;
+}
+.shelf-fade-start {
+  --fade-start: 2.5rem;
+}
+.shelf-fade-end {
+  --fade-end: 3.5rem;
+}
+/* Kids series first on the shelf too (the card is inside the shelf's <li>) */
+html[data-audience="kid"] .shelf-row > li:has(> [data-for-kids]) {
+  order: -1;
 }

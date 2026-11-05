@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import { revalidatePath, revalidateTag, updateTag } from "next/cache";
+import { projectSlug, toSlug } from "@/lib/projects/slug";
 
 /**
  * Invalidate both the Runtime Cache (use cache: remote) and
@@ -14,10 +15,86 @@ const invalidateProjectCaches = () => {
   updateTag(CACHE_TAGS.projects);
   revalidateTag(CACHE_TAGS.projects, "max");
 
-  // 2. CDN/ISR Page Cache: explicitly invalidate the portfolio page
+  // 2. CDN/ISR Page Cache: explicitly invalidate every page showing projects
   //    (PPR pages cache the full response at the CDN level separately)
+  revalidatePath("/");
   revalidatePath("/portfolio");
+  revalidatePath("/work/[slug]", "page");
 };
+
+/**
+ * Slug for /work/[slug]: the admin's choice or the name, made unique against
+ * every other project's effective slug (stored or derived from its name).
+ */
+async function uniqueSlug(input: { slug?: string; name: string }, excludeId?: string) {
+  const base = toSlug(input.slug?.trim() || input.name);
+  const others = await prisma.project.findMany({
+    where: excludeId ? { id: { not: excludeId } } : undefined,
+    select: { slug: true, name: true },
+  });
+  const taken = new Set(others.map(projectSlug));
+  let slug = base;
+  for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+  return slug;
+}
+
+/** Empty editor output ("<p></p>") counts as no case study. */
+const caseStudyHtml = (html?: string) =>
+  html && html.replace(/<[^>]*>/g, "").trim() ? html : null;
+
+type ShowcaseInput = {
+  platform?: string;
+  status?: string;
+  role?: string;
+  team?: string;
+  highlights?: string[];
+  videoUrl?: string;
+  posterUrl?: string;
+  screenshots?: string[];
+  appStoreUrl?: string;
+  playStoreUrl?: string;
+  betaUrl?: string;
+};
+
+/**
+ * The cover image is optional for mobile projects with their own media: fall
+ * back to the video poster, then the first screenshot. Stored in `img` so
+ * every consumer (home, admin lists, cards) keeps working unchanged.
+ */
+function resolveCover(data: { img?: string } & ShowcaseInput) {
+  const cover = data.img?.trim();
+  if (cover) return cover;
+  const isMobile = data.platform === "mobile" || data.platform === "both";
+  const fallback = isMobile
+    ? data.posterUrl?.trim() || data.screenshots?.find((s) => s.trim())
+    : undefined;
+  if (!fallback) {
+    throw new Error("A cover image is required unless a mobile project has a video or screenshots");
+  }
+  return fallback;
+}
+
+const PLATFORM_VALUES = new Set(["web", "mobile", "both"]);
+const STATUS_VALUES = new Set(["live", "beta", "prototype", "internal", "in-development"]);
+
+/** Empty strings become null; lists are trimmed and de-blanked. */
+function showcaseData(data: ShowcaseInput) {
+  const text = (v?: string) => (v && v.trim() ? v.trim() : null);
+  const list = (v?: string[]) => (v ?? []).map((s) => s.trim()).filter(Boolean);
+  return {
+    platform: data.platform && PLATFORM_VALUES.has(data.platform) ? data.platform : "web",
+    status: data.status && STATUS_VALUES.has(data.status) ? data.status : null,
+    role: text(data.role),
+    team: text(data.team),
+    highlights: list(data.highlights),
+    videoUrl: text(data.videoUrl),
+    posterUrl: text(data.posterUrl),
+    screenshots: list(data.screenshots).slice(0, 6),
+    appStoreUrl: text(data.appStoreUrl),
+    playStoreUrl: text(data.playStoreUrl),
+    betaUrl: text(data.betaUrl),
+  };
+}
 
 /**
  * Within each category (featured/other), ordering invariant:
@@ -87,13 +164,16 @@ export async function createProject(data: {
   stack?: string[];
   featured?: boolean;
   visible?: boolean;
-}) {
+  slug?: string;
+  caseStudy?: string;
+} & ShowcaseInput) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
-  if (!data.name || !data.description || !data.img) {
-    throw new Error("Name, description, and image are required");
+  if (!data.name || !data.description) {
+    throw new Error("Name and description are required");
   }
+  const cover = resolveCover(data);
 
   const isFeatured = data.featured || false;
   const isVisible = data.visible ?? true;
@@ -106,7 +186,7 @@ export async function createProject(data: {
       name: data.name,
       tag: data.tag || null,
       description: data.description,
-      img: data.img,
+      img: cover,
       mediaType: data.mediaType || "image",
       live: data.live || null,
       code: data.code || null,
@@ -114,6 +194,9 @@ export async function createProject(data: {
       featured: isFeatured,
       visible: isVisible,
       order: insertOrder,
+      slug: await uniqueSlug(data),
+      caseStudy: caseStudyHtml(data.caseStudy),
+      ...showcaseData(data),
     },
   });
 
@@ -134,7 +217,9 @@ export async function updateProject(
     stack?: string[];
     featured?: boolean;
     visible?: boolean;
-  },
+    slug?: string;
+    caseStudy?: string;
+  } & ShowcaseInput,
 ) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
@@ -169,7 +254,7 @@ export async function updateProject(
       name: data.name,
       tag: data.tag,
       description: data.description,
-      img: data.img,
+      img: resolveCover(data),
       mediaType: data.mediaType,
       live: data.live,
       code: data.code,
@@ -177,6 +262,9 @@ export async function updateProject(
       featured: newFeatured,
       visible: newVisible,
       order: newOrder,
+      slug: await uniqueSlug(data, id),
+      caseStudy: caseStudyHtml(data.caseStudy),
+      ...showcaseData(data),
     },
   });
 
@@ -237,6 +325,39 @@ export async function reorderProject(id: string, newOrder: number) {
     where: { id },
     data: { order: newOrder },
   });
+
+  invalidateProjectCaches();
+}
+
+/**
+ * Saves a drag-and-drop ordering for one category. `visibleIds` is the full
+ * list of visible projects in their new order; hidden ones keep their
+ * relative order after them, as elsewhere.
+ */
+export async function reorderProjects(featured: boolean, visibleIds: string[]) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const group = await prisma.project.findMany({
+    where: { featured },
+    orderBy: { order: "asc" },
+    select: { id: true, visible: true },
+  });
+  const visible = group.filter((p) => p.visible).map((p) => p.id);
+  const hidden = group.filter((p) => !p.visible).map((p) => p.id);
+
+  // Reject stale or tampered lists instead of scrambling the order
+  const sameSet =
+    visibleIds.length === visible.length &&
+    new Set(visibleIds).size === visibleIds.length &&
+    visibleIds.every((id) => visible.includes(id));
+  if (!sameSet) throw new Error("Project list is out of date");
+
+  await prisma.$transaction(
+    [...visibleIds, ...hidden].map((id, order) =>
+      prisma.project.update({ where: { id }, data: { order } }),
+    ),
+  );
 
   invalidateProjectCaches();
 }

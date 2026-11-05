@@ -1,8 +1,12 @@
 "use client";
 
+import { useActionToast } from "@/components/admin/useActionToast";
 import FileDrop from "@/components/admin/form/FileDrop";
 import FormSection, { ToggleRow } from "@/components/admin/form/FormSection";
 import TagInput from "@/components/admin/form/TagInput";
+import TiptapEditor from "@/components/admin/TiptapEditor";
+import VideoDrop from "@/components/admin/form/VideoDrop";
+import ScreenshotsDrop from "@/components/admin/form/ScreenshotsDrop";
 import { useFormShortcuts } from "@/components/admin/form/useFormShortcuts";
 import { Kbd } from "@/components/admin/shell/CommandMenu";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -21,12 +25,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { createProject, updateProject } from "@/lib/actions/projects";
 import { adminZ } from "@/lib/admin-z";
 import routes from "@/lib/routes";
-import { projectFormSchema, type ProjectFormValues } from "@/lib/schemas/project";
+import {
+  hasOwnMedia,
+  projectFormSchema,
+  type ProjectFormValues,
+} from "@/lib/schemas/project";
 import { cn } from "@/lib/utils";
+import { toSlug } from "@/lib/projects/slug";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -42,7 +50,35 @@ interface ProjectFormData {
   stack: string[];
   featured: boolean;
   visible: boolean;
+  platform?: string | null;
+  status?: string | null;
+  role?: string | null;
+  team?: string | null;
+  highlights?: string[];
+  videoUrl?: string | null;
+  posterUrl?: string | null;
+  screenshots?: string[];
+  appStoreUrl?: string | null;
+  playStoreUrl?: string | null;
+  betaUrl?: string | null;
+  slug?: string | null;
+  caseStudy?: string | null;
 }
+
+const PLATFORM_OPTIONS = [
+  { value: "web", label: "Web" },
+  { value: "mobile", label: "Mobile" },
+  { value: "both", label: "Web + Mobile" },
+] as const;
+
+const STATUS_OPTIONS = [
+  { value: "", label: "No label" },
+  { value: "live", label: "Live" },
+  { value: "beta", label: "In beta" },
+  { value: "prototype", label: "Prototype" },
+  { value: "internal", label: "Internal (NDA)" },
+  { value: "in-development", label: "In development" },
+] as const;
 
 interface ProjectFormProps {
   initialData?: ProjectFormData;
@@ -50,7 +86,7 @@ interface ProjectFormProps {
 }
 
 export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
-  const router = useRouter();
+  const runAction = useActionToast();
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
@@ -65,27 +101,51 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
       stack: initialData?.stack ?? [],
       featured: initialData?.featured ?? false,
       visible: initialData?.visible ?? true,
+      platform: (initialData?.platform as ProjectFormValues["platform"]) || "web",
+      status: (initialData?.status as ProjectFormValues["status"]) || "",
+      role: initialData?.role ?? "",
+      team: initialData?.team ?? "",
+      highlights: initialData?.highlights ?? [],
+      videoUrl: initialData?.videoUrl ?? "",
+      posterUrl: initialData?.posterUrl ?? "",
+      screenshots: initialData?.screenshots ?? [],
+      appStoreUrl: initialData?.appStoreUrl ?? "",
+      playStoreUrl: initialData?.playStoreUrl ?? "",
+      betaUrl: initialData?.betaUrl ?? "",
+      slug: initialData?.slug ?? "",
+      caseStudy: initialData?.caseStudy ?? "",
     },
   });
 
   const { isSubmitting, isDirty } = form.formState;
   const featured = useWatch({ control: form.control, name: "featured" });
   const description = useWatch({ control: form.control, name: "description" });
+  const name = useWatch({ control: form.control, name: "name" });
+  const platform = useWatch({ control: form.control, name: "platform" });
+  const isMobile = platform === "mobile" || platform === "both";
+  const [videoUrl, posterUrl, screenshots] = useWatch({
+    control: form.control,
+    name: ["videoUrl", "posterUrl", "screenshots"],
+  });
+  const coverOptional = hasOwnMedia({ platform, videoUrl, posterUrl, screenshots });
 
   const onSubmit = async (values: ProjectFormValues) => {
-    try {
-      if (isEdit && initialData?.id) {
-        await updateProject(initialData.id, values);
-      } else {
-        await createProject(values);
-      }
-      form.reset(values);
-      toast.success(isEdit ? "Project saved" : "Project created");
-      router.push(routes.admin.projects);
-      router.refresh();
-    } catch {
-      toast.error("Could not save the project");
-    }
+    await runAction(
+      async () => {
+        if (isEdit && initialData?.id) {
+          await updateProject(initialData.id, values);
+        } else {
+          await createProject(values);
+        }
+        form.reset(values);
+      },
+      {
+        loading: isEdit ? "Saving project…" : "Creating project…",
+        success: isEdit ? "Project saved" : "Project created",
+        error: "Could not save the project",
+        navigateTo: routes.admin.projects,
+      },
+    );
   };
 
   const submit = form.handleSubmit(onSubmit, () =>
@@ -114,6 +174,30 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
                   <FormControl>
                     <Input className="h-10" autoFocus={!isEdit} {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Page URL <span className="font-normal text-muted-foreground">(optional)</span>
+                  </FormLabel>
+                  <div className="flex h-10 items-center rounded-md border border-input bg-transparent focus-within:ring-1 focus-within:ring-ring">
+                    <span className="select-none pl-3 text-sm text-muted-foreground">/work/</span>
+                    <FormControl>
+                      <input
+                        className="h-full min-w-0 flex-1 bg-transparent pr-3 text-sm outline-none placeholder:text-muted-foreground/60"
+                        placeholder={name ? toSlug(name) : "project-name"}
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormDescription>Leave empty to use the project name. Changing it breaks old links.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -154,7 +238,134 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
             />
           </FormSection>
 
-          <FormSection title="Links" description="Both are optional. Visitors see a button for each one you add.">
+          <FormSection title="Type & status">
+            <FormField
+              control={form.control}
+              name="platform"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Platform</FormLabel>
+                  <div role="radiogroup" aria-label="Platform" className="flex w-fit rounded-full border p-1">
+                    {PLATFORM_OPTIONS.map((o) => (
+                      <button
+                        key={o.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={field.value === o.value}
+                        onClick={() => field.onChange(o.value)}
+                        className={cn(
+                          "h-8 rounded-full px-4 text-sm font-medium transition-colors",
+                          field.value === o.value
+                            ? "bg-foreground text-background"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                  <FormDescription>Mobile projects show in a phone frame and get store links.</FormDescription>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status label</FormLabel>
+                  <FormControl>
+                    <select
+                      className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-64"
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    >
+                      {STATUS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormDescription>
+                    Be upfront: &ldquo;Internal (NDA)&rdquo; for company apps you can only show, &ldquo;In beta&rdquo; for TestFlight or APK builds.
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+          </FormSection>
+
+          <FormSection title="Your role" description="What you did on this project. Recruiters read this first on team work.">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <FormControl>
+                      <Input className="h-10" placeholder="Mobile developer" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="team"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Team</FormLabel>
+                    <FormControl>
+                      <Input className="h-10" placeholder="Team of 6 at Acme" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="highlights"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>What you built</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      className="min-h-28 resize-y"
+                      placeholder={"Built the offline sync layer\nImplemented checkout and the payment SDK\nCut app start-up time from 3.1s to 1.4s"}
+                      value={field.value.join("\n")}
+                      onChange={(e) => field.onChange(e.target.value.split("\n"))}
+                    />
+                  </FormControl>
+                  <FormDescription>One per line. The first 3 show on the card.</FormDescription>
+                </FormItem>
+              )}
+            />
+          </FormSection>
+
+          <FormSection
+            title="Case study (optional)"
+            description="The story on the project's page: the problem, your approach, the result. Use headings to break it into sections."
+          >
+            <FormField
+              control={form.control}
+              name="caseStudy"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="sr-only">Case study</FormLabel>
+                  <FormControl>
+                    <TiptapEditor
+                      content={field.value}
+                      onChange={field.onChange}
+                      placeholder="What problem did this project solve?"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </FormSection>
+
+          <FormSection title="Links" description="All optional. Visitors see a button for each one you add.">
             <div className="grid gap-5 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -183,6 +394,46 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
                 )}
               />
             </div>
+            {isMobile && (
+              <div className="grid gap-5 sm:grid-cols-3">
+                <FormField
+                  control={form.control}
+                  name="appStoreUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>App Store</FormLabel>
+                      <FormControl>
+                        <Input className="h-10" type="url" placeholder="https://apps.apple.com/" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="playStoreUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Google Play</FormLabel>
+                      <FormControl>
+                        <Input className="h-10" type="url" placeholder="https://play.google.com/" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="betaUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Beta or demo</FormLabel>
+                      <FormControl>
+                        <Input className="h-10" type="url" placeholder="TestFlight, APK or Expo" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
           </FormSection>
 
           <FormSection title="Tech stack">
@@ -207,7 +458,16 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-20 lg:self-start">
-          <FormSection title="Cover image">
+          <FormSection
+            title={coverOptional ? "Cover image (optional)" : "Cover image"}
+            description={
+              coverOptional
+                ? "Leave empty to use the video poster or first screenshot. Used on the home page and admin lists."
+                : isMobile
+                  ? "Or add a video or screenshots below and this becomes optional."
+                  : undefined
+            }
+          >
             <FormField
               control={form.control}
               name="img"
@@ -228,6 +488,32 @@ export default function ProjectForm({ initialData, isEdit }: ProjectFormProps) {
               )}
             />
           </FormSection>
+
+          {isMobile && (
+            <>
+              <FormSection title="App preview video" description="Plays muted on loop inside a phone frame.">
+                <VideoDrop
+                  value={form.watch("videoUrl")}
+                  onChange={(url) => form.setValue("videoUrl", url, { shouldDirty: true })}
+                  onPoster={(url) => form.setValue("posterUrl", url, { shouldDirty: true })}
+                />
+              </FormSection>
+
+              <FormSection title="Screenshots" description="Portrait app screens. Shown when there's no video.">
+                <FormField
+                  control={form.control}
+                  name="screenshots"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="sr-only">Screenshots</FormLabel>
+                      <ScreenshotsDrop value={field.value} onChange={(urls) => form.setValue("screenshots", urls, { shouldDirty: true })} />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </FormSection>
+            </>
+          )}
 
           <FormSection title="Visibility">
             <FormField

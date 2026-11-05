@@ -15,6 +15,8 @@ const Skills = async () => {
         id: s.id,
         title: s.title,
         iconName: s.iconName,
+        iconLib: s.iconLib,
+        iconSvg: s.iconSvg,
       }))}
     />
   );
