@@ -19,11 +19,6 @@ type FileDropProps = {
   id?: string;
 };
 
-/** next.config only allow-lists Uploadthing hosts; anything else skips optimisation. */
-function canOptimize(url: string) {
-  return url.startsWith("/") || /^https:\/\/([^/]+\.)?(utfs\.io|ufs\.sh)\//.test(url);
-}
-
 const ACCEPT = { imageUploader: "image/*", documentUploader: "application/pdf" };
 
 /**
@@ -100,7 +95,7 @@ export default function FileDrop({
       {value && !isUploading ? (
         isImage ? (
           <div className={cn("group relative overflow-hidden rounded-lg border bg-muted", aspectClass)}>
-            <Image src={value} alt="Uploaded preview" fill sizes="(max-width: 1024px) 100vw, 400px" unoptimized={!canOptimize(value)} className="object-cover" />
+            <Image src={value} alt="Uploaded preview" fill sizes="(max-width: 1024px) 100vw, 400px" unoptimized className="object-cover" />
             <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1.5 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
               <Button type="button" size="sm" variant="secondary" className="h-8 rounded-full" onClick={openPicker}>
                 <RefreshCw className="size-3.5" />
