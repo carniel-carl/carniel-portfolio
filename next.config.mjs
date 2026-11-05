@@ -39,7 +39,18 @@ const nextConfig = {
       },
     ];
   },
+  // Vercel bills one transformation per source image x width x format it
+  // has to (re)generate, so keep each of those small:
   images: {
+    // Uploads are immutable (a new upload gets a new URL), so a resized copy
+    // never goes stale. Without this, cached copies expire after 4 hours and
+    // the next visitor triggers (and is billed for) a fresh transformation.
+    minimumCacheTTL: 2678400, // 31 days
+    // Fewer candidate widths means fewer variants per image. Defaults are
+    // 8 device + 7 image sizes (up to 3840px); 1920 covers full-width images
+    // on retina laptops, and the small set covers avatars and thumbnails.
+    deviceSizes: [640, 828, 1200, 1920],
+    imageSizes: [64, 128, 256, 384],
     remotePatterns: [
       {
         protocol: "https",
