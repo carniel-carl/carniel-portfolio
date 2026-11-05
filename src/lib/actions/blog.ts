@@ -1,6 +1,12 @@
 "use server";
 
 import { auth } from "@/lib/auth";
+import {
+  getRecommendedPosts,
+  RECOMMENDATION_LIMIT,
+} from "@/lib/blog/recommendations";
+import { isLevel } from "@/lib/blog/levels";
+import { compactSeries, placeInSeries, RESERVED_POST_SLUGS } from "@/lib/blog/series";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import prisma from "@/lib/prisma";
 import { revalidatePath, revalidateTag, updateTag } from "next/cache";
@@ -13,6 +19,8 @@ function slugify(text: string): string {
     .replace(/[\s_]+/g, "-")
     .replace(/-+/g, "-");
 }
+
+const toLevel = (level?: string) => (isLevel(level) ? level : null);
 
 const invalidateBlogCaches = () => {
   updateTag(CACHE_TAGS.blog);
@@ -29,6 +37,8 @@ export async function createBlogPost(data: {
   published?: boolean;
   categoryId: string;
   tags?: string[];
+  seriesId?: string;
+  level?: string;
 }) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
@@ -40,7 +50,7 @@ export async function createBlogPost(data: {
   let slug = data.slug || slugify(data.title);
 
   const existing = await prisma.blogPost.findUnique({ where: { slug } });
-  if (existing) {
+  if (existing || RESERVED_POST_SLUGS.has(slug)) {
     slug = `${slug}-${Date.now()}`;
   }
 
@@ -56,8 +66,12 @@ export async function createBlogPost(data: {
       authorId: session.user.id,
       categoryId: data.categoryId,
       tags: data.tags || [],
+      level: toLevel(data.level),
     },
   });
+
+  // New episodes go to the end of their series
+  if (data.seriesId) await placeInSeries(post.id, data.seriesId);
 
   invalidateBlogCaches();
   return post;
@@ -74,6 +88,8 @@ export async function updateBlogPost(
     published?: boolean;
     categoryId?: string;
     tags?: string[];
+    seriesId?: string;
+    level?: string;
   },
 ) {
   const session = await auth();
@@ -86,7 +102,7 @@ export async function updateBlogPost(
   let slug = data.slug;
   if (slug !== existing.slug) {
     const conflict = await prisma.blogPost.findUnique({ where: { slug } });
-    if (conflict) {
+    if (conflict || RESERVED_POST_SLUGS.has(slug)) {
       slug = `${slug}-${Date.now()}`;
     }
   }
@@ -111,17 +127,63 @@ export async function updateBlogPost(
       publishedAt,
       ...(data.categoryId && { categoryId: data.categoryId }),
       ...(data.tags !== undefined && { tags: data.tags }),
+      ...(data.level !== undefined && { level: toLevel(data.level) }),
     },
   });
 
+  // Keeps its place when the series is unchanged; a new series appends it
+  if (data.seriesId !== undefined && (data.seriesId || null) !== (existing.seriesId ?? null)) {
+    await placeInSeries(id, data.seriesId || null);
+  }
+
   invalidateBlogCaches();
   return post;
+}
+
+/**
+ * Public: the posts most similar to the given one (see getRecommendedPosts).
+ * Returns [] for unknown or unpublished posts.
+ */
+export async function getPostRecommendations(
+  slug: string,
+  limit: number = RECOMMENDATION_LIMIT,
+) {
+  const post = await prisma.blogPost.findUnique({
+    where: { slug },
+    select: { id: true, published: true },
+  });
+  if (!post?.published) return [];
+
+  // Clamp: server actions are callable from any client
+  const safeLimit = Math.min(Math.max(1, Math.trunc(limit) || RECOMMENDATION_LIMIT), 12);
+  return getRecommendedPosts(post.id, safeLimit);
+}
+
+/** Publishes a draft without resubmitting the rest of the post. */
+export async function publishBlogPost(id: string) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const existing = await prisma.blogPost.findUnique({
+    where: { id },
+    select: { published: true, publishedAt: true },
+  });
+  if (!existing) throw new Error("Not found");
+  if (existing.published) return;
+
+  await prisma.blogPost.update({
+    where: { id },
+    data: { published: true, publishedAt: existing.publishedAt ?? new Date() },
+  });
+
+  invalidateBlogCaches();
 }
 
 export async function deleteBlogPost(id: string) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
-  await prisma.blogPost.delete({ where: { id } });
+  const post = await prisma.blogPost.delete({ where: { id }, select: { seriesId: true } });
+  if (post.seriesId) await compactSeries(post.seriesId);
   invalidateBlogCaches();
 }

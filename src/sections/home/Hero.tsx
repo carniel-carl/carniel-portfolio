@@ -14,11 +14,16 @@ import PillLink from "@/components/motion/PillLink";
 import Magnetic from "@/components/motion/Magnetic";
 import routes from "@/lib/routes";
 import { trackEvent } from "@/lib/mixpanel";
-import KineticName from "@/sections/home/KineticName";
+import KineticName, { useNamePointer } from "@/sections/home/KineticName";
 import { useIntroReady } from "@/components/layout/Intro";
+import { AvailabilityBadge } from "@/components/general/Availability";
+import type { ContactInfo } from "@/lib/availability";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const NAME = "Carniel";
+// Shared by the name and its masked copy so both set identically
+const NAME_TYPE =
+  "pb-[0.06em] pt-[0.12em] font-display text-[20vw] font-bold leading-[0.84] tracking-[-0.035em] md:text-[24.5vw] 2xl:text-[min(24.5vw,24rem)]";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -29,7 +34,7 @@ const fadeUp: Variants = {
   }),
 };
 
-const Hero = () => {
+const Hero = ({ contact }: { contact: ContactInfo }) => {
   const ready = useIntroReady();
   const ref = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
@@ -43,6 +48,9 @@ const Hero = () => {
   const portraitY = useTransform(scrollYProgress, [0, 1], ["0%", "-22%"]);
   const imageScale = useTransform(scrollYProgress, [0, 1], [1, 1.18]);
   const copyOpacity = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
+  // Cancels portraitY so the name's masked copy stays locked to the real name
+  const maskY = useTransform(scrollYProgress, [0, 1], ["0%", "22%"]);
+  const namePointer = useNamePointer();
 
   const state: "hidden" | "visible" = reduce || ready ? "visible" : "hidden";
 
@@ -108,10 +116,11 @@ const Hero = () => {
             </motion.div>
           </motion.div>
 
-          {/* SUB: Portrait, clip-revealed from the bottom edge */}
+          {/* SUB: Portrait, clip-revealed from the bottom edge. On mobile it
+              sits above the name so the masked copy below can take over. */}
           <motion.div
             style={reduce ? undefined : { y: portraitY }}
-            className="relative z-[1] flex min-h-[18rem] w-full flex-1 flex-col md:col-span-5 md:col-start-8 md:block md:min-h-0 lg:col-span-4 lg:col-start-9"
+            className="relative z-[4] flex min-h-[18rem] w-full flex-1 flex-col md:z-[1] md:col-span-5 md:col-start-8 md:block md:min-h-0 lg:col-span-4 lg:col-start-9"
           >
             <motion.div
               initial={reduce ? false : { clipPath: "inset(100% 0% 0% 0% round 1.25rem)" }}
@@ -143,6 +152,38 @@ const Hero = () => {
                   />
                 </motion.div>
               </motion.div>
+
+              {/* Mobile: the part of the name that dips into the photo, redrawn
+                  in a light ink and clipped to the photo's edges. top-[...]
+                  must mirror the name's -mt-[13vw]. */}
+              <motion.div
+                style={reduce ? undefined : { y: maskY }}
+                className="pointer-events-none absolute inset-0 md:hidden"
+              >
+                <KineticName
+                  name={NAME}
+                  state={state}
+                  style={{ y: nameY }}
+                  pointer={namePointer}
+                  decorative
+                  className={`${NAME_TYPE} absolute inset-x-0 top-[calc(100%-13vw)] text-[color:var(--name-ink)] [--name-ink:hsl(var(--background))] dark:[--name-ink:hsl(var(--foreground))]`}
+                />
+              </motion.div>
+
+              {/* Availability: overlaid on the photo so it takes no space in
+                  the layout. Inside the clip so it's revealed with the photo,
+                  outside the zoom layers so it doesn't scale. */}
+              {contact.availability && (
+                <motion.div
+                  custom={1.2}
+                  variants={fadeUp}
+                  initial={reduce ? false : "hidden"}
+                  animate={state}
+                  className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] rounded-full border border-foreground/10 bg-background/75 px-3.5 py-2 shadow-[0_8px_24px_-12px_hsl(var(--foreground)/0.4)] backdrop-blur-md md:left-4 md:top-4"
+                >
+                  <AvailabilityBadge info={contact} className="text-xs md:text-[0.8rem]" />
+                </motion.div>
+              )}
             </motion.div>
           </motion.div>
         </div>
@@ -152,7 +193,8 @@ const Hero = () => {
           name={NAME}
           state={state}
           style={{ y: nameY }}
-          className="relative z-[3] -mt-[15vw] pb-[0.06em] pt-[0.12em] font-display text-[23vw] font-bold leading-[0.8] tracking-[-0.035em] md:-mt-[13.5vw] md:text-[29vw] 2xl:text-[min(29vw,28rem)]"
+          pointer={namePointer}
+          className={`${NAME_TYPE} relative z-[3] -mt-[13vw] md:-mt-[11.4vw]`}
         />
       </div>
     </section>

@@ -1,5 +1,6 @@
 "use client";
 
+import { RESUME_FILENAME, RESUME_PATH } from "@/lib/site";
 import { Download } from "lucide-react";
 import Image from "next/image";
 import { useRef } from "react";
@@ -10,7 +11,7 @@ import {
   useTransform,
 } from "framer-motion";
 import parse from "html-react-parser";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 import { trackEvent } from "@/lib/mixpanel";
 import SplitText from "@/components/motion/SplitText";
 import PillLink from "@/components/motion/PillLink";
@@ -32,7 +33,6 @@ const AboutClient = ({ about }: AboutClientProps) => {
     about?.bio ||
     "<p>I discovered my passion for coding while building a website for my art business. Since then, I have immersed myself in the world of technology, continuously expanding my skills and exploring its vast potential. Combining creativity with functionality, makes my journey in tech both fulfilling and dynamic.</p>";
   const profilePicUrl = about?.profilePicUrl || "/images/profile-pic.jpg";
-  const resumeUrl = about?.resumeUrl || "/chimezie-resume.pdf";
 
   const frameRef = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
@@ -55,7 +55,7 @@ const AboutClient = ({ about }: AboutClientProps) => {
           as="h1"
           text="About me"
           by="char"
-          className="font-display text-[clamp(4rem,13vw,11rem)] font-semibold leading-[0.85] tracking-[-0.045em] [font-stretch:75%]"
+          className="font-display text-[clamp(4rem,13vw,11rem)] font-semibold leading-[0.85] tracking-[-0.045em]"
         />
 
         <motion.div
@@ -65,8 +65,8 @@ const AboutClient = ({ about }: AboutClientProps) => {
           className="mt-10 max-w-[52ch] text-lg leading-relaxed text-foreground/75 md:mt-14 md:text-xl [&_a]:text-accent-ink [&_a]:underline [&_a]:underline-offset-4 [&_li]:ml-5 [&_li]:list-disc [&_p+p]:mt-5 [&_strong]:text-foreground"
         >
           {parse(
-            DOMPurify.sanitize(bio, {
-              ALLOWED_TAGS: [
+            sanitizeHtml(bio, {
+              allowedTags: [
                 "b",
                 "i",
                 "em",
@@ -82,7 +82,7 @@ const AboutClient = ({ about }: AboutClientProps) => {
                 "h4",
                 "ol",
               ],
-              ALLOWED_ATTR: ["href", "target", "rel"],
+              allowedAttributes: { a: ["href", "target", "rel"] },
             }),
           )}
         </motion.div>
@@ -95,9 +95,9 @@ const AboutClient = ({ about }: AboutClientProps) => {
         >
           <Magnetic strength={0.25}>
             <PillLink
-              href={resumeUrl}
+              href={RESUME_PATH}
               icon={<Download />}
-              download="chimezie-resume"
+              download={RESUME_FILENAME}
               onClick={() =>
                 trackEvent("Resume Downloaded", { source_page: "about" })
               }

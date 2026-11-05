@@ -63,13 +63,13 @@ export default function AdminSidebar({ user, badges = {} }: AdminSidebarProps) {
             <SidebarMenuButton
               asChild
               size="lg"
-              className="hover:bg-transparent active:bg-transparent group-data-[collapsible=icon]:!p-1.5"
+              className="hover:bg-transparent active:bg-transparent group-data-[collapsible=icon]:!p-0"
             >
               <Link href={routes.admin.dashboard}>
                 <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-foreground text-accent">
                   <SVGIcon width="1.1rem" height="1.1rem" />
                 </span>
-                <span className="grid leading-tight">
+                <span className="grid leading-tight group-data-[collapsible=icon]:hidden">
                   <span className="font-display text-[15px] font-semibold tracking-tight text-foreground">
                     Carniel
                   </span>
@@ -183,12 +183,12 @@ function UserMenu({ user }: { user: AdminUser }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="gap-2.5 hover:bg-sidebar-accent/70 data-[state=open]:bg-sidebar-accent group-data-[collapsible=icon]:!p-1.5"
+              className="gap-2.5 hover:bg-sidebar-accent/70 data-[state=open]:bg-sidebar-accent group-data-[collapsible=icon]:!p-0"
             >
               <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-accent-on">
                 {initials(user.name, user.email)}
               </span>
-              <span className="grid min-w-0 flex-1 text-left leading-tight">
+              <span className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate text-sm font-medium text-foreground">
                   {user.name || "Admin"}
                 </span>
@@ -196,7 +196,7 @@ function UserMenu({ user }: { user: AdminUser }) {
                   {user.isSuperAdmin ? "Super admin" : "Admin"}
                 </span>
               </span>
-              <ChevronsUpDown className="ml-auto !size-4 text-muted-foreground" />
+              <ChevronsUpDown className="ml-auto !size-4 text-muted-foreground group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent

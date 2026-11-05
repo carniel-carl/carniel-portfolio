@@ -1,6 +1,8 @@
 import BlogPostContent from "@/components/blog/BlogPostContent";
+import { getEpisodeParts } from "@/components/blog/series/episodeParts";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import StatusPill from "@/components/admin/ui/StatusPill";
+import PublishPostButton from "@/components/admin/PublishPostButton";
 import { buttonVariants } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -32,6 +34,7 @@ export default async function BlogPreviewPage({
   });
 
   if (!post) notFound();
+  const episode = await getEpisodeParts(post, { preview: true });
 
   return (
     <>
@@ -54,16 +57,26 @@ export default async function BlogPreviewPage({
                 Open live
               </a>
             )}
-            <Link href={routes.admin.blogEdit(id)} className={buttonVariants()}>
+            <Link
+              href={routes.admin.blogEdit(id)}
+              className={buttonVariants(post.published ? undefined : { variant: "outline" })}
+            >
               <Pencil />
               Edit
             </Link>
+            {!post.published && <PublishPostButton id={id} />}
           </>
         }
       />
 
       <div className="surface overflow-hidden">
-        <BlogPostContent post={post} preview />
+        <BlogPostContent
+          post={post}
+          preview
+          kicker={episode?.kicker}
+          beforeBody={episode?.navigator}
+          footer={episode?.pager}
+        />
       </div>
     </>
   );

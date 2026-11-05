@@ -4,6 +4,10 @@ const routes = {
     portfolio: "/portfolio",
     blog: "/blog",
     blogPost: (slug: string) => `/blog/${slug}`,
+    blogSeries: "/blog/series",
+    series: (slug: string) => `/blog/series/${slug}`,
+    work: (slug: string) => `/work/${slug}`,
+    privacy: "/privacy",
   },
   admin: {
     dashboard: "/admin",
@@ -14,13 +18,17 @@ const routes = {
     about: "/admin/about",
     blog: "/admin/blog",
     blogCategories: "/admin/blog/categories",
+    blogSeries: "/admin/blog/series",
+    blogSeriesEdit: (id: string) => `/admin/blog/series/${id}`,
     social: "/admin/social",
     users: "/admin/users",
     blogPreview: (id: string) => `/admin/blog/${id}/preview`,
     blogEdit: (id: string) => `/admin/blog/${id}/edit`,
     blogNew: "/admin/blog/new",
+    blogNewInSeries: (seriesId: string) => `/admin/blog/new?series=${seriesId}`,
     projectEdit: (id: string) => `/admin/projects/${id}/edit`,
     projectNew: "/admin/projects/new",
+    oauthAuthorize: "/admin/oauth/authorize",
   },
 };
 

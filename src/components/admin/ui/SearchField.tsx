@@ -8,6 +8,7 @@ type SearchFieldProps = {
   onChange: (value: string) => void;
   placeholder: string;
   className?: string;
+  autoFocus?: boolean;
 };
 
 export default function SearchField({
@@ -15,6 +16,7 @@ export default function SearchField({
   onChange,
   placeholder,
   className,
+  autoFocus,
 }: SearchFieldProps) {
   return (
     <div className={cn("relative", className)}>
@@ -24,6 +26,7 @@ export default function SearchField({
       />
       <input
         type="search"
+        autoFocus={autoFocus}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => e.key === "Escape" && onChange("")}

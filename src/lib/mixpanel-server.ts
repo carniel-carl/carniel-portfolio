@@ -89,7 +89,17 @@ const TRACKED_EVENTS = [
   "Resume Downloaded",
   "Social Link Clicked",
   "Project Link Clicked",
+  // Engagement (redesign)
+  "Blog Post Shared",
+  "Blog Search Result Opened",
+  "Author Card Clicked",
+  "Home CTA Clicked",
+  "Footer CTA Clicked",
 ];
+
+type Ranked = { label: string; count: number };
+const toRanked = (rows: [string, number][], limit = 10): Ranked[] =>
+  rows.slice(0, limit).map(([label, count]) => ({ label, count }));
 
 const PAGE_VIEW_EVENTS = new Set(["Home Viewed", "Portfolio Viewed"]);
 
@@ -126,6 +136,31 @@ function regionsFrom(events: RawEvent[]): LocationData[] {
   return tally(views, pickRegion).map(([region, count]) => ({ country: "", region, count }));
 }
 
+/** Page views per day, every day in the range present (quiet days are 0). */
+function dailyVisitsFrom(
+  events: RawEvent[],
+  fromDate: string,
+  toDate: string,
+): { date: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const e of events) {
+    const time = e.properties.time;
+    if (!PAGE_VIEW_EVENTS.has(e.event) || typeof time !== "number") continue;
+    const day = formatDate(new Date(time * 1000));
+    counts.set(day, (counts.get(day) || 0) + 1);
+  }
+  const days: { date: string; count: number }[] = [];
+  for (
+    const d = new Date(`${fromDate}T00:00:00Z`);
+    formatDate(d) <= toDate;
+    d.setUTCDate(d.getUTCDate() + 1)
+  ) {
+    const date = formatDate(d);
+    days.push({ date, count: counts.get(date) || 0 });
+  }
+  return days;
+}
+
 function socialClicksFrom(events: RawEvent[]): SocialClickData[] {
   const clicks = events.filter((e) => e.event === "Social Link Clicked");
   return tally(clicks, (e) => e.properties.platform as string | undefined).map(
@@ -147,6 +182,50 @@ function topProjectsFrom(events: RawEvent[]): ProjectClickData[] {
     .map(([project, total]) => ({ project, live_clicks: 0, code_clicks: 0, total }));
 }
 
+const SHARE_LABELS: Record<string, string> = {
+  copy_link: "Copy link",
+  x: "X",
+  linkedin: "LinkedIn",
+  whatsapp: "WhatsApp",
+};
+
+function sharesByPlatformFrom(events: RawEvent[]): Ranked[] {
+  const shares = events.filter((e) => e.event === "Blog Post Shared");
+  return toRanked(
+    tally(shares, (e) => {
+      const p = e.properties.platform as string | undefined;
+      return p ? (SHARE_LABELS[p] ?? p) : undefined;
+    }),
+  );
+}
+
+// Shares carry the post URL; the slug is its last path segment
+function topSharedPostsFrom(events: RawEvent[]): Ranked[] {
+  const shares = events.filter((e) => e.event === "Blog Post Shared");
+  return toRanked(
+    tally(shares, (e) => {
+      const url = e.properties.url as string | undefined;
+      return url?.split("/blog/")[1]?.split(/[?#]/)[0] || undefined;
+    }),
+  );
+}
+
+// Only searches that led to a post; opens from suggestions have no query
+function topSearchesFrom(events: RawEvent[]): Ranked[] {
+  const opens = events.filter((e) => e.event === "Blog Search Result Opened");
+  return toRanked(
+    tally(opens, (e) => {
+      const q = (e.properties.query as string | undefined)?.trim().toLowerCase();
+      return q || undefined;
+    }),
+  );
+}
+
+function authorCardTargetsFrom(events: RawEvent[]): Ranked[] {
+  const clicks = events.filter((e) => e.event === "Author Card Clicked");
+  return toRanked(tally(clicks, (e) => e.properties.target as string | undefined));
+}
+
 /**
  * Everything the analytics page needs from ONE raw export.
  * The export API is rate limited, so avoid one request per chart.
@@ -160,8 +239,13 @@ export async function getAnalyticsSnapshot(days: number = 30) {
     eventCounts: eventCountsFrom(events),
     locations: locationsFrom(events),
     regions: regionsFrom(events),
+    dailyVisits: dailyVisitsFrom(events, from_date, to_date),
     socialClicks: socialClicksFrom(events),
     topPosts: topBlogPostsFrom(events),
     topProjects: topProjectsFrom(events),
+    sharesByPlatform: sharesByPlatformFrom(events),
+    topSharedPosts: topSharedPostsFrom(events),
+    topSearches: topSearchesFrom(events),
+    authorCardTargets: authorCardTargetsFrom(events),
   };
 }

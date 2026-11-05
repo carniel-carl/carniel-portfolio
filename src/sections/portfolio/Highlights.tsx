@@ -44,7 +44,8 @@ const Highlights = ({
   articles: number;
 }) => {
   const stats: Stat[] = [
-    { value: projects, label: "Projects shipped", note: "Web and mobile" },
+    // Only the showcased subset lives in the database, not every shipped project
+    { value: projects, label: "Selected projects", note: "Picked from many more" },
     { value: 3, label: "Platforms", note: "Web, iOS and Android" },
     { value: skills, label: "Tools in the kit", note: "And counting" },
     { value: articles, label: "Articles written", note: "On the blog" },

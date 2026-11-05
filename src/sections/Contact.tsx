@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useRef } from "react";
 import { useForm, ValidationError } from "@formspree/react";
 import { toast } from "sonner";
@@ -12,13 +13,19 @@ import PillLink, {
   pillClasses,
 } from "@/components/motion/PillLink";
 import { cn } from "@/lib/utils";
+import type { PortfolioData } from "@/lib/actions/utils";
+import { RESUME_FILENAME, RESUME_PATH } from "@/lib/site";
+import { AvailabilityBadge } from "@/components/general/Availability";
+import type { ContactInfo } from "@/lib/availability";
 
 const ID = process.env.NEXT_PUBLIC_FORM_ID!;
 
 const fieldClass =
   "w-full rounded-none border-0 border-b border-foreground/25 bg-transparent px-0 py-3 text-lg text-foreground outline-none transition-colors duration-300 focus:border-accent-ink focus-visible:ring-0 md:text-xl";
 
-const Contact = () => {
+type ContactProps = PortfolioData & { contactInfo: ContactInfo };
+
+const Contact = ({ githubUrl, contactInfo }: ContactProps) => {
   const formRef = useRef<HTMLFormElement | null>(null);
   const reduce = useReducedMotion();
   const [state, handleSubmit] = useForm(ID);
@@ -41,19 +48,21 @@ const Contact = () => {
         <SplitText
           as="h2"
           text="Let's work together"
-          className="max-w-[10ch] font-display text-[clamp(3.25rem,9vw,8rem)] font-semibold leading-[0.9] tracking-[-0.045em] [font-stretch:75%]"
+          className="max-w-[10ch] font-display text-[clamp(3.25rem,9vw,8rem)] font-semibold leading-[0.9] tracking-[-0.045em]"
         />
         <p className="max-w-[40ch] text-lg leading-relaxed text-foreground/70">
           Have a project, a role or a question? Send a message and I&apos;ll
           get back to you.
         </p>
 
+        <AvailabilityBadge info={contactInfo} />
+
         <div className="flex flex-wrap gap-3">
           <PillLink
-            href="/chimezie-resume.pdf"
+            href={RESUME_PATH}
             variant="ghost"
             icon={<Download />}
-            download="chimezie-resume"
+            download={RESUME_FILENAME}
             onClick={() =>
               trackEvent("Resume Downloaded", {
                 source_page: "contact",
@@ -62,20 +71,22 @@ const Contact = () => {
           >
             Download resume
           </PillLink>
-          <PillLink
-            href="https://github.com/carniel-carl"
-            variant="ghost"
-            icon={<Github />}
-            onClick={() =>
-              trackEvent("Social Link Clicked", {
-                platform: "github",
-                url: "https://github.com/carniel-carl",
-                source_page: "contact",
-              })
-            }
-          >
-            Github
-          </PillLink>
+          {githubUrl && (
+            <PillLink
+              href={githubUrl}
+              variant="ghost"
+              icon={<Github />}
+              onClick={() =>
+                trackEvent("Social Link Clicked", {
+                  platform: "github",
+                  url: githubUrl,
+                  source_page: "contact",
+                })
+              }
+            >
+              Github
+            </PillLink>
+          )}
         </div>
       </div>
 

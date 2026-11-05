@@ -2,8 +2,7 @@ import RankedList from "@/components/admin/analytics/RankedList";
 import { RefreshAnalyticsButton } from "@/components/admin/RefreshAnalyticsButton";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import StatTile from "@/components/admin/ui/StatTile";
-import { CACHE_TAGS } from "@/lib/cache-tags";
-import { getAnalyticsSnapshot } from "@/lib/mixpanel-server";
+import { getAnalyticsData } from "@/lib/analytics-data";
 import dayjs from "dayjs";
 import {
   BookOpen,
@@ -13,20 +12,16 @@ import {
   FolderKanban,
   Globe2,
   MapPin,
+  Megaphone,
   MousePointerClick,
+  Search,
+  Send,
   Share2,
+  UserRound,
 } from "lucide-react";
 import type { Metadata } from "next";
-import { cacheLife, cacheTag } from "next/cache";
 
 export const metadata: Metadata = { title: "Analytics" };
-
-async function getAnalyticsData() {
-  "use cache";
-  cacheTag(CACHE_TAGS.analytics);
-  cacheLife("hours");
-  return getAnalyticsSnapshot(30);
-}
 
 const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
 function countryName(code: string) {
@@ -53,6 +48,13 @@ export default async function AnalyticsPage() {
   const categoryViews = count("Blog Category Viewed");
   const socialClicks = count("Social Link Clicked");
   const projectClicks = count("Project Link Clicked");
+  const shares = count("Blog Post Shared");
+  const searchOpens = count("Blog Search Result Opened");
+  const authorClicks = count("Author Card Clicked");
+  const heroCta = count("Home CTA Clicked");
+  const footerCta = count("Footer CTA Clicked");
+  const authorTo = (target: string) =>
+    data.authorCardTargets.find((t) => t.label === target)?.count ?? 0;
 
   return (
     <div className="space-y-8">
@@ -89,7 +91,41 @@ export default async function AnalyticsPage() {
         />
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <section aria-labelledby="engagement" className="space-y-3">
+        <h2 id="engagement" className="text-sm font-semibold">
+          Engagement
+        </h2>
+        <div className="stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatTile
+            label="Post shares"
+            value={shares.toLocaleString()}
+            icon={Send}
+            detail="Copy link, X, LinkedIn, WhatsApp"
+          />
+          <StatTile
+            label="Search opens"
+            value={searchOpens.toLocaleString()}
+            icon={Search}
+            detail="Posts opened from blog search"
+          />
+          <StatTile
+            label="Author card clicks"
+            value={authorClicks.toLocaleString()}
+            icon={UserRound}
+            detail={`${authorTo("home").toLocaleString()} to home, ${authorTo("portfolio").toLocaleString()} to portfolio`}
+          />
+          <StatTile
+            label="CTA clicks"
+            value={(heroCta + footerCta).toLocaleString()}
+            icon={Megaphone}
+            detail={`${heroCta.toLocaleString()} hero "View work", ${footerCta.toLocaleString()} footer "Get in touch"`}
+          />
+        </div>
+      </section>
+
+      {/* grid-cols-1 (minmax(0,1fr)): an implicit mobile column grows to the
+          longest un-wrappable label and the admin shell clips the overflow */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <RankedList
           title="Most read posts"
           unit="reads"
@@ -117,6 +153,27 @@ export default async function AnalyticsPage() {
           icon={MapPin}
           emptyText="No region data for this period."
           rows={data.regions.map((r) => ({ label: r.region, value: r.count }))}
+        />
+        <RankedList
+          title="Top searches"
+          unit="opens"
+          icon={Search}
+          emptyText="Search terms show up once readers open a post from search."
+          rows={data.topSearches.map((q) => ({ label: `“${q.label}”`, value: q.count }))}
+        />
+        <RankedList
+          title="Most shared posts"
+          unit="shares"
+          icon={Send}
+          emptyText="Shared posts will appear here."
+          rows={data.topSharedPosts.map((p) => ({ label: humanize(p.label), value: p.count }))}
+        />
+        <RankedList
+          title="Shares by platform"
+          unit="shares"
+          icon={Share2}
+          emptyText="No posts have been shared in this period."
+          rows={data.sharesByPlatform.map((p) => ({ label: p.label, value: p.count }))}
         />
       </div>
 

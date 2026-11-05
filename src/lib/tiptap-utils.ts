@@ -12,8 +12,11 @@ import {
   type Editor,
   type NodeWithPos,
 } from "@tiptap/react"
+import { UploadAbortedError } from "uploadthing/client"
+import { uploadFiles } from "@/lib/uploadthing"
 
-export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+// Matches the imageUploader route's maxFileSize in app/api/uploadthing/core.ts
+export const MAX_FILE_SIZE = 4 * 1024 * 1024 // 4MB
 
 export const MAC_SYMBOLS: Record<string, string> = {
   mod: "⌘",
@@ -374,17 +377,23 @@ export const handleImageUpload = async (
     )
   }
 
-  // For demo/testing: Simulate upload progress. In production, replace the following code
-  // with your own upload implementation.
-  for (let progress = 0; progress <= 100; progress += 10) {
-    if (abortSignal?.aborted) {
+  try {
+    const [uploaded] = await uploadFiles("imageUploader", {
+      files: [file],
+      signal: abortSignal,
+      onUploadProgress: ({ progress }) => onProgress?.({ progress }),
+    })
+
+    // serverData.url is what onUploadComplete returned: the served ufsUrl
+    const url = uploaded?.serverData?.url ?? uploaded?.ufsUrl
+    if (!url) throw new Error("Upload finished without a file URL")
+    return url
+  } catch (error) {
+    if (error instanceof UploadAbortedError || abortSignal?.aborted) {
       throw new Error("Upload cancelled")
     }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onProgress?.({ progress })
+    throw error instanceof Error ? error : new Error("Upload failed")
   }
-
-  return "/images/tiptap-ui-placeholder-image.jpg"
 }
 
 type ProtocolOptions = {

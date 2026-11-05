@@ -1,5 +1,6 @@
 "use client";
 
+import { useActionToast } from "@/components/admin/useActionToast";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -33,9 +34,7 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 
 type User = {
   id: string;
@@ -59,14 +58,13 @@ function initials(user: User) {
 }
 
 export default function UsersClient({ users, currentUserEmail }: UsersClientProps) {
-  const router = useRouter();
+  const runAction = useActionToast(users);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
 
   const currentUserIsSuper = users.find((u) => u.email === currentUserEmail)?.isAdmin;
 
@@ -74,47 +72,41 @@ export default function UsersClient({ users, currentUserEmail }: UsersClientProp
     e.preventDefault();
     setSubmitting(true);
     setFormError(null);
-    try {
-      await registerUser(formData);
-      toast.success(`${formData.name || formData.email} can now sign in`);
+    const added = await runAction(() => registerUser(formData), {
+      loading: `Adding ${formData.name || formData.email}…`,
+      success: `${formData.name || formData.email} can now sign in`,
+      // Shown inside the form, next to the fields to fix
+      error: (err) => {
+        setFormError(err instanceof Error ? err.message : "Could not register this user");
+        return null;
+      },
+    });
+    setSubmitting(false);
+    if (added) {
       setDialogOpen(false);
       setFormData(emptyForm);
-      router.refresh();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not register this user");
-    } finally {
-      setSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      await deleteUser(deleteTarget.id);
-      toast.success("User removed");
-      router.refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not remove user");
-    }
+    await runAction(() => deleteUser(deleteTarget.id), {
+      loading: "Removing user…",
+      success: "User removed",
+      error: (err) => (err instanceof Error ? err.message : "Could not remove user"),
+    });
   };
 
-  const handleToggleAdmin = (user: User) => {
+  const handleToggleAdmin = async (user: User) => {
     setBusyId(user.id);
-    startTransition(async () => {
-      try {
-        await updateUser(user.id, { isAdmin: !user.isAdmin });
-        toast.success(
-          user.isAdmin
-            ? `${user.name || user.email} is now an admin`
-            : `${user.name || user.email} is now a super admin`,
-        );
-        router.refresh();
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Could not update role");
-      } finally {
-        setBusyId(null);
-      }
+    await runAction(() => updateUser(user.id, { isAdmin: !user.isAdmin }), {
+      loading: "Updating role…",
+      success: user.isAdmin
+        ? `${user.name || user.email} is now an admin`
+        : `${user.name || user.email} is now a super admin`,
+      error: (err) => (err instanceof Error ? err.message : "Could not update role"),
     });
+    setBusyId(null);
   };
 
   return (
